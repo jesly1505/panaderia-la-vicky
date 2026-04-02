@@ -1,0 +1,6 @@
+USERS:
+ID: 1 | Email: admin@lavicky.com | Rol: 1 | Estado: activo
+
+ROLES:
+ID: 1 | Name: Administrador
+ID: 2 | Name: Cajero
