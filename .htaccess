@@ -1,0 +1,8 @@
+# Desactivar el listado de directorios por seguridad
+Options -Indexes
+
+# Bloquear acceso a archivos sensibles de configuración y scripts de desarrollo/diagnóstico
+<FilesMatch "^\.env|schema_dump\.sql|\.git|db_schema_usuarios\.txt|error_summary\.txt|composer\.json|composer\.lock|package\.json|package-lock\.json|.*\.log|reset_admin\.php|check_users\.php|db_check\.php|lint\.php|read_logs\.php|update_.*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
