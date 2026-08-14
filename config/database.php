@@ -4,11 +4,18 @@ require_once __DIR__ . '/../backend/Core/Interfaces/DatabaseInterface.php';
 use Core\Interfaces\DatabaseInterface;
 
 class Database implements DatabaseInterface {
-    private $host = 'localhost';
-    private $db_name = 'la_vicky_db';
-    private $username = 'root';
-    private $password = '';
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     public $conn;
+
+    public function __construct() {
+        $this->host     = $_ENV['DB_HOST'] ?? null;
+        $this->db_name  = $_ENV['DB_NAME'] ?? null;
+        $this->username = $_ENV['DB_USER'] ?? null;
+        $this->password = $_ENV['DB_PASS'] ?? null;
+    }
 
     public function getConnection() {
         $this->conn = null;
