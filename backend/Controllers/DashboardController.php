@@ -1,11 +1,13 @@
 <?php
-require_once __DIR__ . '/../Models/DashboardModel.php';
+namespace App\Controllers;
+
+use App\Models\DashboardModel;
 
 class DashboardController {
     private $model;
 
-    public function __construct() {
-        $this->model = new DashboardModel();
+    public function __construct(DashboardModel $model) {
+        $this->model = $model;
     }
 
     public function getResumen() {

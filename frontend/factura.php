@@ -35,8 +35,8 @@ $venta_id = $_GET['id'] ?? null;
 
     <div class="invoice-card" id="invoiceContent">
         <div class="header">
-            <h3>🥖 LA VICKY</h3>
-            <p>Panadería & Pastelería<br>Dir: Av. Principal calle 5<br>Tel: 1234-5678</p>
+            <h3 id="empresaNombre">🥖 LA VICKY</h3>
+            <p id="empresaInfo">Panadería & Pastelería<br>Dir: Av. Principal calle 5<br>Tel: 1234-5678</p>
         </div>
         <div id="loading" class="text-center">Cargando datos...</div>
         <div id="invoiceData" style="display:none;">
@@ -70,14 +70,28 @@ $venta_id = $_GET['id'] ?? null;
         </div>
     </div>
 
+    <script src="../assets/js/api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
             if(!id) return;
 
-            const res = await fetch(`../backend/api.php?route=get_venta_detalles&id=${id}`);
-            const json = await res.json();
+            // Datos del negocio (cabecera de la factura) desde el perfil de la panadería.
+            try {
+                const emp = await api('get_datos_empresa');
+                if (emp.success && emp.data) {
+                    const e = emp.data;
+                    document.getElementById('empresaNombre').textContent = '🥖 ' + (e.nombre || 'LA VICKY');
+                    let info = e.descripcion ? escapeHtml(e.descripcion) + '<br>' : '';
+                    if (e.ruc) info += 'RUC: ' + escapeHtml(e.ruc) + '<br>';
+                    if (e.direccion) info += 'Dir: ' + escapeHtml(e.direccion) + '<br>';
+                    if (e.telefono) info += 'Tel: ' + escapeHtml(e.telefono);
+                    document.getElementById('empresaInfo').innerHTML = info;
+                }
+            } catch (err) { /* Mantener la cabecera por defecto */ }
+
+            const json = await api('get_venta_detalles', 'GET', null, { id: id });
             
             if(json.success && json.data) {
                 const v = json.data;
@@ -98,11 +112,14 @@ $venta_id = $_GET['id'] ?? null;
                 const body = document.getElementById('detallesBody');
                 v.detalles.forEach(d => {
                     let itemTotal = (d.cantidad * d.precio_unitario);
+                    const descSuffix = Number(d.descuento) > 0
+                        ? '<br><small>Desc: -$' + escapeHtml(d.descuento) + '</small>'
+                        : '';
                     body.innerHTML += `
                         <tr>
-                            <td>${d.cantidad}</td>
-                            <td>${d.producto_nombre} ${d.descuento > 0 ? '<br><small>Desc: -$'+d.descuento+'</small>' : ''}</td>
-                            <td class="text-end">$${d.subtotal}</td>
+                            <td>${escapeHtml(d.cantidad)}</td>
+                            <td>${escapeHtml(d.producto_nombre)}${descSuffix}</td>
+                            <td class="text-end">$${escapeHtml(d.subtotal)}</td>
                         </tr>
                     `;
                 });
@@ -110,11 +127,11 @@ $venta_id = $_GET['id'] ?? null;
                 const pBody = document.getElementById('pagosBody');
                 if (v.pagos && v.pagos.length > 0) {
                     v.pagos.forEach(p => {
-                        pBody.innerHTML += `<div class="d-flex justify-content-between"><span>${p.metodo_pago.toUpperCase()}</span><span>$${p.monto}</span></div>`;
+                        pBody.innerHTML += `<div class="d-flex justify-content-between"><span>${escapeHtml(p.metodo_pago.toUpperCase())}</span><span>$${escapeHtml(p.monto)}</span></div>`;
                     });
                 } else {
                     // Fallback for old sales
-                    pBody.innerHTML = `<div class="d-flex justify-content-between"><span>Efectivo</span><span>$${v.total}</span></div>`;
+                    pBody.innerHTML = `<div class="d-flex justify-content-between"><span>Efectivo</span><span>$${escapeHtml(v.total)}</span></div>`;
                 }
             }
         });

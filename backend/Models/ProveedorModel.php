@@ -1,17 +1,14 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class ProveedorModel {
     private $conn;
     private $table_name = "proveedores";
 
-    public function __construct($db = null) {
-        if ($db) {
-            $this->conn = $db;
-        } else {
-            $database = new Database();
-            $this->conn = $database->getConnection();
-        }
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     public function create($nombre, $contacto, $telefono, $email) {
@@ -26,7 +23,9 @@ class ProveedorModel {
     }
 
     public function readAll() {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY nombre ASC";
+        $query = "SELECT * FROM " . $this->table_name . " 
+                  WHERE deleted_at IS NULL 
+                  ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -46,14 +45,14 @@ class ProveedorModel {
     }
 
     public function delete($id) {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+        return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();

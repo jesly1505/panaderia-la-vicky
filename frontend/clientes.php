@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('clientes.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -63,42 +68,18 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php" class="active"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Gestión de Clientes</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
+        <?php $active = 'clientes'; $titulo = 'Gestión de Clientes'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center pt-4 pb-3">
                     <h5 class="card-title m-0">Directorio de Clientes</h5>
+                    <?php if (tiene_permiso('clientes.gestionar')): ?>
                     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addClienteModal">
                         <i class="fas fa-user-plus"></i> Nuevo Cliente
                     </button>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <table class="table table-hover">
@@ -242,8 +223,9 @@ if (!isset($_SESSION['usuario'])) {
                                 <td>
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-outline-primary" onclick="viewHistory(${c.id})" title="Ver Historial"><i class="fas fa-history"></i></button>
+                                        ${tienePermiso('clientes.gestionar') ? `
                                         <button class="btn btn-sm btn-outline-warning" onclick='editCliente(${JSON.stringify(c).replace(/'/g, "&#39;")})' title="Editar"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCliente(${c.id}, '${c.nombre}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCliente(${c.id}, '${c.nombre}')" title="Eliminar"><i class="fas fa-trash"></i></button>` : ''}
                                     </div>
                                 </td>
                             </tr>

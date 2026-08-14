@@ -1,11 +1,13 @@
 <?php
-require_once __DIR__ . '/../Models/ReporteModel.php';
+namespace App\Controllers;
+
+use App\Models\ReporteModel;
 
 class ReporteController {
     private $model;
 
-    public function __construct() {
-        $this->model = new ReporteModel();
+    public function __construct(ReporteModel $model) {
+        $this->model = $model;
     }
 
     /** GET ?route=get_ventas_semanales */

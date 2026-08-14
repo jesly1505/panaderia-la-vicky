@@ -1,12 +1,16 @@
 <?php
-require_once __DIR__ . '/../Models/ProductoModel.php';
-require_once __DIR__ . '/../Models/InsumoModel.php';
+namespace App\Utils;
+
+use App\Models\ProductoModel;
+use App\Models\InsumoModel;
 
 class InventoryLogic {
-    private $db;
+    private $productoModel;
+    private $insumoModel;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct(ProductoModel $productoModel, InsumoModel $insumoModel) {
+        $this->productoModel = $productoModel;
+        $this->insumoModel = $insumoModel;
     }
 
     public function descontarVarios($detalles) {
@@ -25,23 +29,20 @@ class InventoryLogic {
      * Descuenta el stock de un producto y sus insumos asociados.
      */
     public function descontarStockYReceta($producto_id, $cantidad) {
-        $productoModel = new ProductoModel($this->db);
-        $insumoModel = new InsumoModel($this->db);
-
         // 1. Descontar stock del producto
-        $producto = $productoModel->getById($producto_id);
+        $producto = $this->productoModel->getById($producto_id);
         if ($producto) {
             $nuevoStockProducto = $producto['stock_actual'] - $cantidad;
-            $productoModel->updateStock($producto_id, $nuevoStockProducto);
+            $this->productoModel->updateStock($producto_id, $nuevoStockProducto);
 
             // 2. Obtener receta y descontar insumos
-            $receta = $productoModel->getReceta($producto_id);
+            $receta = $this->productoModel->getReceta($producto_id);
             foreach ($receta as $item) {
                 $insumo_id = $item['insumo_id'];
                 $cantidad_requerida_total = $item['cantidad_requerida'] * $cantidad;
                 
                 // updateStock resta si el valor es negativo
-                $insumoModel->updateStock($insumo_id, -$cantidad_requerida_total);
+                $this->insumoModel->updateStock($insumo_id, -$cantidad_requerida_total);
             }
         }
     }
@@ -50,23 +51,20 @@ class InventoryLogic {
      * Revierte el stock de un producto e insumos (suma en lugar de restar).
      */
     public function revertirStockYReceta($producto_id, $cantidad) {
-        $productoModel = new ProductoModel($this->db);
-        $insumoModel = new InsumoModel($this->db);
-
-        $producto = $productoModel->getById($producto_id);
+        $producto = $this->productoModel->getById($producto_id);
         if ($producto) {
             $nuevoStockProducto = $producto['stock_actual'] + $cantidad;
-            $productoModel->updateStock($producto_id, $nuevoStockProducto);
+            $this->productoModel->updateStock($producto_id, $nuevoStockProducto);
 
-            $receta = $productoModel->getReceta($producto_id);
+            $receta = $this->productoModel->getReceta($producto_id);
             foreach ($receta as $item) {
                 $insumo_id = $item['insumo_id'];
                 $cantidad_requerida_total = $item['cantidad_requerida'] * $cantidad;
                 
                 // updateStock suma si el valor es positivo
-                $insumoModel->updateStock($insumo_id, $cantidad_requerida_total);
+                $this->insumoModel->updateStock($insumo_id, $cantidad_requerida_total);
             }
         }
     }
 }
-?>
+

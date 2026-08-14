@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('ventas.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -70,33 +75,7 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php" class="active"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Ventas y Finanzas</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
+        <?php $active = 'ventas'; $titulo = 'Ventas y Finanzas'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -138,7 +117,7 @@ if (!isset($_SESSION['usuario'])) {
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between mb-1">
-                                    <span>Impuestos (IVA 15%):</span>
+                                    <span id="taxLabel">Impuestos (IVA 15%):</span>
                                     <span id="taxDisplay">$0.00</span>
                                 </div>
                                 <div class="d-flex justify-content-between fw-bold mt-2 text-danger fs-5">
@@ -175,7 +154,9 @@ if (!isset($_SESSION['usuario'])) {
                                 <span id="balanceDisplay" class="text-danger">$0.00</span>
                             </div>
 
+                            <?php if (tiene_permiso('ventas.gestionar')): ?>
                             <button class="btn btn-success w-100 py-2 fs-5" id="btnProcesar" onclick="procesarVenta()" disabled><i class="fas fa-check-circle"></i> Efectuar Venta</button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -247,12 +228,28 @@ if (!isset($_SESSION['usuario'])) {
             toPay: 0
         };
 
-        const TAX_RATE = 0.15; // 15% IVA
+        let TAX_RATE = 0.15; // 15% IVA (se actualiza con el perfil de la panadería)
 
         document.addEventListener('DOMContentLoaded', () => {
             loadProductos();
             loadVentas();
+            loadProfile();
         });
+
+        // Carga la tasa de impuesto configurada en el perfil de la panadería.
+        async function loadProfile() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_datos_empresa');
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+                const tasa = parseFloat(json.data.tasa_impuesto);
+                if (isNaN(tasa) || tasa < 0) return;
+                TAX_RATE = tasa / 100;
+                const lbl = document.getElementById('taxLabel');
+                if (lbl) lbl.textContent = `Impuestos (IVA ${tasa}%):`;
+                if (typeof curCart !== 'undefined' && curCart.length > 0) renderCart();
+            } catch (e) { /* Mantener 15% por defecto */ }
+        }
 
         async function loadProductos() {
             try {
@@ -300,7 +297,7 @@ if (!isset($_SESSION['usuario'])) {
                                 <td>
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-outline-primary" onclick="printInvoice(${v.id})" title="Ver Factura"><i class="fas fa-file-invoice"></i></button>
-                                        ${v.estado === 'completado' ? `
+                                        ${v.estado === 'completado' && tienePermiso('ventas.gestionar') ? `
                                             <button class="btn btn-sm btn-outline-danger" onclick="cancelarVenta(${v.id})" title="Cancelar Venta"><i class="fas fa-times-circle"></i></button>
                                         ` : ''}
                                     </div>
@@ -472,14 +469,15 @@ if (!isset($_SESSION['usuario'])) {
             totals.toPay = totals.total - paid;
             
             const bal = document.getElementById('balanceDisplay');
+            const btnProcesar = document.getElementById('btnProcesar');
             if (totals.toPay <= 0 && totals.total > 0) {
                 bal.textContent = 'PAGADO (Cambio: $' + Math.abs(totals.toPay).toFixed(2) + ')';
                 bal.className = 'text-success';
-                document.getElementById('btnProcesar').disabled = false;
+                if (btnProcesar) btnProcesar.disabled = false;
             } else {
                 bal.textContent = '$' + (totals.toPay > 0 ? totals.toPay.toFixed(2) : '0.00');
                 bal.className = 'text-danger';
-                document.getElementById('btnProcesar').disabled = true;
+                if (btnProcesar) btnProcesar.disabled = true;
             }
         }
 

@@ -1,17 +1,28 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class ProductoModel {
     private $conn;
     private $table_name = "productos";
 
-    public function __construct($db = null) {
-        if ($db) {
-            $this->conn = $db;
-        } else {
-            $database = new Database();
-            $this->conn = $database->getConnection();
-        }
+    /**
+     * Subconsulta SQL del costo de insumos de una receta, agregada por venta.
+     * Única fuente de verdad para ganancias; usada por ReporteModel y VentaModel.
+     * Requiere el alias "v" para la tabla ventas y columnas venta_id/cantidad
+     * en detalle_venta.
+     */
+    public const COSTO_VENTA_SUBQUERY = "(
+        SELECT SUM(dv.cantidad * pr.cantidad_requerida * i.precio_costo)
+        FROM detalle_venta dv
+        JOIN producto_receta pr ON pr.producto_id = dv.producto_id
+        JOIN insumos i ON i.id = pr.insumo_id
+        WHERE dv.venta_id = v.id
+    )";
+
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     public function create($nombre, $descripcion, $precio, $categoria, $cantidad, $ingredientes, $stock_minimo = 0) {
@@ -64,20 +75,24 @@ class ProductoModel {
             $this->conn->commit();
             return true;
         } catch (Exception $e) {
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
             return false;
         }
     }
 
     public function readAll() {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY categoria ASC, nombre ASC";
+        $query = "SELECT * FROM " . $this->table_name . " 
+                  WHERE deleted_at IS NULL 
+                  ORDER BY categoria ASC, nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByCategoria($categoria) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE categoria = :categoria ORDER BY nombre ASC";
+        $query = "SELECT * FROM " . $this->table_name . " 
+                  WHERE categoria = :categoria AND deleted_at IS NULL 
+                  ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':categoria', $categoria);
         $stmt->execute();
@@ -85,7 +100,7 @@ class ProductoModel {
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
@@ -227,29 +242,39 @@ class ProductoModel {
             return true;
 
         } catch (Exception $e) {
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
             return ['error' => $e->getMessage()];
         }
     }
 
-    /** Elimina el producto y toda su receta (CASCADE o manual) */
+    /**
+     * Da de baja un producto (borrado lógico).
+     * Si el producto aparece en ventas o pedidos no se elimina:
+     * devuelve ['en_uso' => true] para preservar el histórico.
+     * La receta se conserva para permitir una futura restauración.
+     *
+     * @return true|array
+     */
     public function delete($id) {
         try {
-            $this->conn->beginTransaction();
-            // Borrar receta
-            $qR = "DELETE FROM producto_receta WHERE producto_id = :id";
-            $sR = $this->conn->prepare($qR);
-            $sR->bindParam(':id', $id);
-            $sR->execute();
-            // Borrar producto
-            $qP = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+            $qUse = "SELECT
+                        (SELECT COUNT(*) FROM detalle_venta WHERE producto_id = :id) +
+                        (SELECT COUNT(*) FROM detalle_pedido WHERE producto_id = :id) AS usos";
+            $sUse = $this->conn->prepare($qUse);
+            $sUse->bindParam(':id', $id);
+            $sUse->execute();
+            $usos = (int)$sUse->fetchColumn();
+
+            if ($usos > 0) {
+                return ['en_uso' => true];
+            }
+
+            $qP = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
             $sP = $this->conn->prepare($qP);
             $sP->bindParam(':id', $id);
-            $sP->execute();
-            $this->conn->commit();
-            return true;
+            $ok = $sP->execute() && $sP->rowCount() > 0;
+            return $ok;
         } catch (Exception $e) {
-            $this->conn->rollBack();
             return false;
         }
     }

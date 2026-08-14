@@ -1,16 +1,13 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class ProduccionModel {
     private $conn;
 
-    public function __construct($db = null) {
-        if ($db) {
-            $this->conn = $db;
-        } else {
-            $database = new Database();
-            $this->conn = $database->getConnection();
-        }
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     /**

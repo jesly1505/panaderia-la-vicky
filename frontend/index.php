@@ -29,6 +29,9 @@ if (!isset($_SESSION['usuario'])) {
             height: 100vh;
             background-color: #685569;
             padding-top: 20px;
+            position: fixed;
+            width: 16.666667%;
+            overflow-y: auto;
         }
 
         .sidebar a {
@@ -48,6 +51,7 @@ if (!isset($_SESSION['usuario'])) {
 
         .main-content {
             padding: 30px;
+            margin-left: 16.666667%;
         }
 
         .top-navbar {
@@ -57,6 +61,7 @@ if (!isset($_SESSION['usuario'])) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-left: 16.666667%;
         }
 
         .card-stat {
@@ -89,39 +94,14 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- Sidebar -->
-            <div class="col-md-2 sidebar d-none d-md-block">
-                <div class="text-center mb-4">
-                    <h3 class="text-white">🥖 La Vicky</h3>
-                </div>
-                <a href="index.php" class="active"><i class="fas fa-home me-2"></i> Dashboard</a>
-                <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-                <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-                <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-                <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-                <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-                <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-            </div>
-
-            <!-- Main Content -->
-            <div class="col-md-10">
-                <!-- Top Navbar -->
-                <div class="top-navbar">
-                    <div>
-                        <h4 class="m-0">Resumen General</h4>
+        <?php $active = 'index'; $titulo = 'Resumen General'; include 'includes/sidebar.php'; ?>
+        <!-- Dashboard Content -->
+        <div class="main-content">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div id="lowStockAlertContainer"></div>
+                        </div>
                     </div>
-                    <div>
-                        <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                        <a href="login.html" class="btn btn-outline-danger btn-sm"><i class="fas fa-sign-out-alt"></i>
-                            Salir</a>
-                    </div>
-                </div>
-
-                <!-- Dashboard Content -->
-                <div class="main-content">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="card-stat bg-sales">
@@ -191,8 +171,6 @@ if (!isset($_SESSION['usuario'])) {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
 
     <!-- Bootstrap JS -->

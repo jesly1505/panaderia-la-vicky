@@ -1,5 +1,5 @@
 <?php
-namespace Core\Interfaces;
+namespace App\Core\Interfaces;
 
 interface InsumoRepositoryInterface {
     public function readAll();

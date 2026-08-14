@@ -1,12 +1,19 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
+use App\Core\Money;
+use App\Utils\InventoryLogic;
 
 class VentaModel {
     private $conn;
+    private $inventoryLogic;
+    private $productoModel;
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db, InventoryLogic $inventoryLogic, ProductoModel $productoModel) {
+        $this->conn = $db;
+        $this->inventoryLogic = $inventoryLogic;
+        $this->productoModel = $productoModel;
     }
 
     public function readAll() {
@@ -20,31 +27,23 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function createDirecta($data) {
-        require_once __DIR__ . '/../Utils/InventoryLogic.php';
-        require_once __DIR__ . '/ProductoModel.php';
-        
-        $inventoryLogic = new InventoryLogic($this->conn);
-        $productoModel = new ProductoModel();
-
+    public function createDirecta($data, ?int $usuario_id = null) {
         try {
             $this->conn->beginTransaction();
 
-            $subtotal = $data['subtotal'] ?? 0;
-            $impuestos = $data['impuestos'] ?? 0;
-            $descuento = $data['descuento'] ?? 0;
-            $total = $data['total'] ?? 0;
+            $subtotal = Money::round($data['subtotal'] ?? 0);
+            $impuestos = Money::round($data['impuestos'] ?? 0);
+            $descuento = Money::round($data['descuento'] ?? 0);
+            $total = Money::round($data['total'] ?? 0);
             $detalles = $data['detalles'] ?? [];
             $pagos = $data['pagos'] ?? [];
 
             // Calcular ganancias reales (ventas - costos de insumos)
             $costoTotal = 0;
             foreach ($detalles as $detalle) {
-                $costoTotal += $productoModel->getCost($detalle['producto_id']) * $detalle['cantidad'];
+                $costoTotal += $this->productoModel->getCost($detalle['producto_id']) * $detalle['cantidad'];
             }
-            $ganancias = $total - $costoTotal;
-
-            $usuario_id = $_SESSION['usuario_id'] ?? NULL;
+            $ganancias = Money::round($total - $costoTotal);
 
             // 1. Insertar Venta
             $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, ganancias, estado, usuario_id) 
@@ -65,14 +64,15 @@ class VentaModel {
                 $qd = "INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario, descuento, subtotal)
                        VALUES (:venta_id, :prod_id, :cant, :precio, :desc, :subtotal)";
                 $stmtD = $this->conn->prepare($qd);
-                $d_subtotal = ($detalle['cantidad'] * $detalle['precio']) - ($detalle['descuento'] ?? 0);
-                $stmtV_desc = $detalle['descuento'] ?? 0;
-                
+                $d_precio = Money::round($detalle['precio']);
+                $d_desc = Money::round($detalle['descuento'] ?? 0);
+                $d_subtotal = Money::round($detalle['cantidad'] * $d_precio - $d_desc);
+
                 $stmtD->bindParam(":venta_id", $venta_id);
                 $stmtD->bindParam(":prod_id", $detalle['producto_id']);
                 $stmtD->bindParam(":cant", $detalle['cantidad']);
-                $stmtD->bindParam(":precio", $detalle['precio']);
-                $stmtD->bindParam(":desc", $stmtV_desc);
+                $stmtD->bindParam(":precio", $d_precio);
+                $stmtD->bindParam(":desc", $d_desc);
                 $stmtD->bindParam(":subtotal", $d_subtotal);
                 $stmtD->execute();
             }
@@ -82,15 +82,16 @@ class VentaModel {
                 $qp = "INSERT INTO pagos (venta_id, monto, metodo_pago, estado, referencia) 
                        VALUES (:venta_id, :monto, :metodo, 'completado', :ref)";
                 $stmtP = $this->conn->prepare($qp);
+                $p_monto = Money::round($pago['monto']);
                 $stmtP->bindParam(":venta_id", $venta_id);
-                $stmtP->bindParam(":monto", $pago['monto']);
+                $stmtP->bindParam(":monto", $p_monto);
                 $stmtP->bindParam(":metodo", $pago['metodo']);
-                $stmtP->bindParam(":ref", $pago['referencia']);
+                $stmtP->bindParam(":ref", $pago['referencia'] ?? null);
                 $stmtP->execute();
             }
 
             // 4. Descontar inventario
-            $inventoryLogic->descontarVarios($detalles);
+            $this->inventoryLogic->descontarVarios($detalles);
 
             $this->conn->commit();
             return $venta_id;
@@ -102,9 +103,6 @@ class VentaModel {
     }
 
     public function cancelarVenta($id) {
-        require_once __DIR__ . '/../Utils/InventoryLogic.php';
-        $inventoryLogic = new InventoryLogic($this->conn);
-
         try {
             $this->conn->beginTransaction();
 
@@ -127,7 +125,7 @@ class VentaModel {
             $detalles = $stmtD->fetchAll(PDO::FETCH_ASSOC);
 
             // 3. Revertir Inventario
-            $inventoryLogic->revertirVarios($detalles);
+            $this->inventoryLogic->revertirVarios($detalles);
 
             // 4. Actualizar estado de la venta
             $qU = "UPDATE ventas SET estado = 'cancelado' WHERE id = :id";
@@ -150,13 +148,7 @@ class VentaModel {
         }
     }
 
-    public function createFromPedido($pedido_id, $data = []) {
-        require_once __DIR__ . '/../Utils/InventoryLogic.php';
-        require_once __DIR__ . '/ProductoModel.php';
-        
-        $inventoryLogic = new InventoryLogic($this->conn);
-        $productoModel = new ProductoModel();
-
+    public function createFromPedido($pedido_id, $data = [], ?int $usuario_id = null) {
         try {
             $this->conn->beginTransaction();
 
@@ -176,17 +168,17 @@ class VentaModel {
 
             $costoTotal = 0;
             foreach ($detalles as $detalle) {
-                $costoTotal += $productoModel->getCost($detalle['producto_id']) * $detalle['cantidad'];
+                $costoTotal += $this->productoModel->getCost($detalle['producto_id']) * $detalle['cantidad'];
             }
-            $ganancias = $pedido['total'] - $costoTotal;
+            $pedido_total = Money::round($pedido['total']);
+            $ganancias = Money::round($pedido_total - $costoTotal);
 
             // 3. Registrar Venta (simplificada para pedidos previa implementación total)
-            $usuario_id = $_SESSION['usuario_id'] ?? NULL;
             $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, ganancias, estado, usuario_id) 
                       VALUES (:pedido_id, :total, 0, 0, :total, :ganancias, 'completado', :usuario_id)";
             $stmtV = $this->conn->prepare($query);
             $stmtV->bindParam(":pedido_id", $pedido_id);
-            $stmtV->bindParam(":total", $pedido['total']);
+            $stmtV->bindParam(":total", $pedido_total);
             $stmtV->bindParam(":ganancias", $ganancias);
             $stmtV->bindParam(":usuario_id", $usuario_id);
             $stmtV->execute();
@@ -197,11 +189,12 @@ class VentaModel {
                 $qd = "INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
                        VALUES (:venta_id, :prod_id, :cant, :precio, :sub)";
                 $sd = $this->conn->prepare($qd);
-                $sub = $detalle['cantidad'] * $detalle['precio_unitario'];
+                $precio = Money::round($detalle['precio_unitario']);
+                $sub = Money::round($detalle['cantidad'] * $precio);
                 $sd->bindParam(":venta_id", $venta_id);
                 $sd->bindParam(":prod_id", $detalle['producto_id']);
                 $sd->bindParam(":cant", $detalle['cantidad']);
-                $sd->bindParam(":precio", $detalle['precio_unitario']);
+                $sd->bindParam(":precio", $precio);
                 $sd->bindParam(":sub", $sub);
                 $sd->execute();
             }
@@ -212,12 +205,12 @@ class VentaModel {
                    VALUES (:venta_id, :monto, :metodo, 'completado')";
             $sp = $this->conn->prepare($qp);
             $sp->bindParam(":venta_id", $venta_id);
-            $sp->bindParam(":monto", $pedido['total']);
+            $sp->bindParam(":monto", $pedido_total);
             $sp->bindParam(":metodo", $metodo);
             $sp->execute();
 
             // 5. Descontar Inventario
-            $inventoryLogic->descontarVarios($detalles);
+            $this->inventoryLogic->descontarVarios($detalles);
 
             $this->conn->commit();
             return $venta_id;
@@ -293,6 +286,5 @@ class VentaModel {
         }
         return $venta;
     }
-}
 }
 ?>

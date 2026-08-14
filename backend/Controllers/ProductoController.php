@@ -1,11 +1,22 @@
 <?php
-require_once __DIR__ . '/../Models/ProductoModel.php';
+namespace App\Controllers;
+
+use App\Core\AuditService;
+use App\Core\Interfaces\InsumoRepositoryInterface;
+use App\Core\Money;
+use App\Core\Validator;
+use App\Helpers\UnitConverter;
+use App\Models\ProductoModel;
 
 class ProductoController {
     private $productoModel;
+    private $insumoModel;
+    private $audit;
 
-    public function __construct() {
-        $this->productoModel = new ProductoModel();
+    public function __construct(ProductoModel $productoModel, InsumoRepositoryInterface $insumoModel, AuditService $audit) {
+        $this->productoModel = $productoModel;
+        $this->insumoModel = $insumoModel;
+        $this->audit = $audit;
     }
 
     public function getAll() {
@@ -32,15 +43,27 @@ class ProductoController {
         $ingredientes = $data['ingredientes'] ?? [];
 
         $stock_minimo = $data['stock_minimo'] ?? 0;
- 
-        if (empty($nombre) || $precio <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Nombre y precio válido obligatorios.']);
+
+        $error = Validator::firstError([
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::numeric($precio, 'Precio de venta'),
+            Validator::greaterThan($precio, 0, 'Precio de venta'),
+            Validator::numeric($cantidad, 'Cantidad'),
+            Validator::min($cantidad, 0, 'Cantidad'),
+            Validator::numeric($stock_minimo, 'Stock mínimo'),
+            Validator::min($stock_minimo, 0, 'Stock mínimo'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
-        require_once __DIR__ . '/../Helpers/UnitConverter.php';
-        require_once __DIR__ . '/../Models/InsumoModel.php';
-        $insumoModel = new InsumoModel();
+        $precio      = Money::round($precio);
+        $cantidad    = Money::round($cantidad);
+        $stock_minimo = Money::round($stock_minimo);
+
+        $insumoModel = $this->insumoModel;
 
         // Convertir y validar los ingredientes (receta)
         $ingredientes_procesados = [];
@@ -73,6 +96,7 @@ class ProductoController {
         }
 
         if ($this->productoModel->create($nombre, $descripcion, $precio, $categoria, $cantidad, $ingredientes_procesados, $stock_minimo)) {
+            $this->audit->log('Productos', 'Alta de producto', "Producto creado: {$nombre}");
             echo json_encode(['success' => true, 'message' => 'Producto creado correctamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear producto. Verifique que haya stock suficiente de insumos.']);
@@ -92,12 +116,20 @@ class ProductoController {
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         $id = $_POST['id'] ?? 0;
-        if (empty($id)) {
-            echo json_encode(['success' => false, 'message' => 'ID no proporcionado.']);
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
-        if ($this->productoModel->delete($id)) {
+        $result = $this->productoModel->delete($id);
+        if ($result === true) {
+            $this->audit->log('Productos', 'Baja de producto', "Producto ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Producto eliminado correctamente.']);
+        } elseif (is_array($result) && isset($result['en_uso'])) {
+            echo json_encode(['success' => false, 'message' => 'No se puede eliminar el producto: aparece en ventas o pedidos registrados.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al eliminar el producto.']);
         }
@@ -116,10 +148,16 @@ class ProductoController {
         $cantidad    = $data['cantidad']    ?? 0;
 
         // ── Validación básica ──────────────────────────────────────────────
-        if (empty($producto_id) || $cantidad <= 0) {
+        $error = Validator::firstError([
+            Validator::integer($producto_id, 'Producto'),
+            Validator::greaterThan($producto_id, 0, 'Producto'),
+            Validator::numeric($cantidad, 'Cantidad'),
+            Validator::greaterThan($cantidad, 0, 'Cantidad'),
+        ]);
+        if ($error) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Debes indicar un producto y una cantidad mayor a cero.'
+                'message' => $error
             ]);
             return;
         }
@@ -129,6 +167,7 @@ class ProductoController {
 
         if ($resultado === true) {
             // Éxito: todo se procesó correctamente
+            $this->audit->log('Producción', 'Producción de lote', "Producto ID {$producto_id}: se produjeron {$cantidad} unidades.");
             echo json_encode([
                 'success' => true,
                 'message' => "Producción registrada correctamente. Se agregaron {$cantidad} unidades al stock."

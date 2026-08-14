@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('pedidos.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -63,33 +68,7 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php" class="active"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Gestión de Pedidos</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
+        <?php $active = 'pedidos'; $titulo = 'Gestión de Pedidos'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -132,8 +111,10 @@ if (!isset($_SESSION['usuario'])) {
                                 <span id="cartTotal">$0.00</span>
                             </div>
 
+                            <?php if (tiene_permiso('pedidos.gestionar')): ?>
                             <button class="btn btn-success w-100" onclick="procesarPedido()"><i
                                     class="fas fa-check"></i> Finalizar Pedido</button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -285,17 +266,19 @@ if (!isset($_SESSION['usuario'])) {
                                 </td>
                                 <td>${p.cliente_nombre || '<span class="text-muted">Consumidor Final</span>'}</td>
                                 <td>
-                                    <select class="form-select form-select-sm badge ${colorEstado} border-0" onchange="cambiarEstadoPedido(${p.id}, this.value)">
-                                        <option value="pendiente" class="bg-white text-dark" ${p.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                                        <option value="en_proceso" class="bg-white text-dark" ${p.estado === 'en_proceso' ? 'selected' : ''}>En Proceso</option>
-                                        <option value="entregado" class="bg-white text-dark" ${p.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
-                                    </select>
+                                    ${tienePermiso('pedidos.gestionar')
+                                        ? `<select class="form-select form-select-sm badge ${colorEstado} border-0" onchange="cambiarEstadoPedido(${p.id}, this.value)">
+                                            <option value="pendiente" class="bg-white text-dark" ${p.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                                            <option value="en_proceso" class="bg-white text-dark" ${p.estado === 'en_proceso' ? 'selected' : ''}>En Proceso</option>
+                                            <option value="entregado" class="bg-white text-dark" ${p.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
+                                        </select>`
+                                        : `<span class="badge ${colorEstado}">${p.estado.charAt(0).toUpperCase() + p.estado.slice(1)}</span>`}
                                 </td>
                                 <td class="fw-bold text-success">$${p.total}</td>
                                 <td><small class="text-muted"><i class="fas fa-user-tag me-1"></i>${p.vendedor || 'Sistema'}</small></td>
                                 <td>
                                     <button class="btn btn-sm btn-outline-info" title="Ver detalle" onclick="verDetalle(${p.id}, '${p.total}', '${p.vendedor || 'Sistema'}')"><i class="fas fa-eye"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="eliminarPedido(${p.id})"><i class="fas fa-trash"></i></button>
+                                    ${tienePermiso('pedidos.gestionar') ? `<button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="eliminarPedido(${p.id})"><i class="fas fa-trash"></i></button>` : ''}
                                 </td>
                             </tr>
                         `;

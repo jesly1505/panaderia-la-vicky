@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('empleados.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -63,69 +68,22 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="configuracion.php" class="active"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Configuración del Sistema</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
+        <?php $active = 'configuracion'; $titulo = 'Configuración del Sistema'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
             <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white pt-3 pb-2">
-                            <h5 class="m-0"><i class="fas fa-store text-primary"></i> Perfil de la Panadería</h5>
-                        </div>
-                        <div class="card-body">
-                            <form>
-                                <div class="mb-3">
-                                    <label>Nombre del Negocio</label>
-                                    <input type="text" class="form-control" value="Panadería La Vicky">
-                                </div>
-                                <div class="mb-3">
-                                    <label>Moneda Base</label>
-                                    <select class="form-select">
-                                        <option selected>Dólar USD ($)</option>
-                                        <option>Peso Méxicano (MXN)</option>
-                                        <option>Euro (€)</option>
-                                    </select>
-                                </div>
-                                <button type="button" class="btn btn-primary"
-                                    onclick="alert('Configuración guardada')">Guardar Cambios</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-md-6 mb-4">
+                <?php if (tiene_permiso('empleados.ver')): ?>
+                <div class="col-md-12 mb-4">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-header bg-white pt-3 pb-2 d-flex justify-content-between align-items-center">
                             <h5 class="m-0"><i class="fas fa-users text-info"></i> Gestión de Empleados</h5>
+                            <?php if (tiene_permiso('empleados.gestionar')): ?>
                             <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
                                 <i class="fas fa-plus"></i> Añadir
                             </button>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <table class="table table-sm">
@@ -143,7 +101,9 @@ if (!isset($_SESSION['usuario'])) {
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if (tiene_permiso('empleados.ver')): ?>
                 <div class="col-md-12 mb-4">
                     <div class="card shadow-sm border-0">
                         <div class="card-header bg-dark text-white pt-3 pb-2">
@@ -156,6 +116,7 @@ if (!isset($_SESSION['usuario'])) {
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -184,9 +145,8 @@ if (!isset($_SESSION['usuario'])) {
                         </div>
                         <div class="mb-3">
                             <label>Rol</label>
-                            <select name="rol_id" class="form-select">
-                                <option value="2">Cajero</option>
-                                <option value="1">Administrador</option>
+                            <select name="rol_id" class="form-select" id="employeeRolSelect" required>
+                                <option value="">Cargando...</option>
                             </select>
                         </div>
                     </div>
@@ -205,22 +165,26 @@ if (!isset($_SESSION['usuario'])) {
             loadEmployees();
             loadEmployeeStats();
             checkAccess();
+            loadEmployeeRoles();
         });
 
         async function checkAccess() {
             const res = await fetch('../backend/api.php?route=check_session');
             const data = await res.json();
             if (!data.logged_in) window.location.href = 'login.html';
-            if (data.user.rol !== 'Administrador') {
+            const permisos = data.permisos || [];
+            const ok = permisos.includes('empleados.ver') || permisos.includes('permisos.gestionar');
+            if (!ok) {
                 alert('Acceso no autorizado');
                 window.location.href = 'index.php';
             }
         }
 
         async function loadEmployees() {
+            const tbody = document.getElementById('employeeTableBody');
+            if (!tbody) return;
             const res = await fetch('../backend/api.php?route=get_employees');
             const data = await res.json();
-            const tbody = document.getElementById('employeeTableBody');
             tbody.innerHTML = '';
             if (data.success) {
                 data.data.forEach(emp => {
@@ -229,7 +193,7 @@ if (!isset($_SESSION['usuario'])) {
                             <td>${emp.nombre}</td>
                             <td><span class="badge ${emp.rol_nombre === 'Administrador' ? 'bg-primary' : 'bg-info'}">${emp.rol_nombre}</span></td>
                             <td>
-                                ${emp.id != 1 ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteEmployee(${emp.id})"><i class="fas fa-trash"></i></button>` : ''}
+                                ${emp.id != 1 && tienePermiso('empleados.gestionar') ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteEmployee(${emp.id})"><i class="fas fa-trash"></i></button>` : ''}
                             </td>
                         </tr>
                     `;
@@ -238,9 +202,10 @@ if (!isset($_SESSION['usuario'])) {
         }
 
         async function loadEmployeeStats() {
+            const container = document.getElementById('employeeStatsRows');
+            if (!container) return;
             const res = await fetch('../backend/api.php?route=get_employee_stats');
             const data = await res.json();
-            const container = document.getElementById('employeeStatsRows');
             container.innerHTML = '';
             if (data.success && data.data.length > 0) {
                 data.data.forEach(stat => {
@@ -294,6 +259,29 @@ if (!isset($_SESSION['usuario'])) {
         }
 
         function logout() { fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html'); }
+
+        // ── Roles para el alta de empleados ─────────────────────────────────
+        async function loadEmployeeRoles() {
+            const sel = document.getElementById('employeeRolSelect');
+            if (!sel) return;
+            try {
+                const res = await fetch('../backend/api.php?route=get_roles');
+                const data = await res.json();
+                sel.innerHTML = '';
+                if (data.success) {
+                    data.data.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.id;
+                        opt.textContent = r.nombre;
+                        sel.appendChild(opt);
+                    });
+                } else {
+                    sel.innerHTML = '<option value="">Sin roles disponibles</option>';
+                }
+            } catch (e) {
+                sel.innerHTML = '<option value="">Error al cargar roles</option>';
+            }
+        }
     </script>
 </body>
 

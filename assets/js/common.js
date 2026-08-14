@@ -12,37 +12,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Update user info in navbar
+        // Update user info in navbar (el sidebar ya lo muestra en servidor; se mantiene por consistencia)
         const userNameEl = document.querySelector('.top-navbar span');
         if (userNameEl) {
             userNameEl.innerHTML = `<i class="fas fa-user-circle"></i> ${data.user.nombre} <small class="text-muted">(${data.user.rol})</small>`;
-        }
-
-        // Role-based restrictions
-        if (data.user.rol !== 'Administrador') {
-            // Hide configuration link
-            const configLink = document.querySelector('a[href="configuracion.html"]');
-            if (configLink) configLink.remove();
-
-            // Redirect if on forbidden page
-            if (window.location.pathname.includes('configuracion.html')) {
-                window.location.href = 'index.html';
-            }
-
-            // Hide delete/admin-only actions after a short delay to account for dynamic rendering
-            const observer = new MutationObserver(() => {
-                const restrictedActions = document.querySelectorAll('.btn-outline-danger, .btn-danger, .delete-btn');
-                restrictedActions.forEach(btn => {
-                    // Check if it's a delete button (trash icon or specific text)
-                    if (btn.innerText.toLowerCase().includes('eliminar') ||
-                        btn.querySelector('.fa-trash') ||
-                        btn.classList.contains('btn-delete')) {
-                        btn.remove();
-                    }
-                });
-            });
-
-            observer.observe(document.body, { childList: true, subtree: true });
         }
     } catch (e) {
         console.error('Error checking session:', e);

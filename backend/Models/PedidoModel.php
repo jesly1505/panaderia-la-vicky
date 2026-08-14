@@ -1,17 +1,23 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
+use App\Core\Money;
 
 class PedidoModel {
     private $conn;
+    private $ventaModel;
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db, VentaModel $ventaModel) {
+        $this->conn = $db;
+        $this->ventaModel = $ventaModel;
     }
 
     public function create($cliente_id, $usuario_id, $total, $detalles, $fecha_entrega = null, $hora_entrega = null) {
         try {
             $this->conn->beginTransaction();
+
+            $total = Money::round($total);
 
             $query = "INSERT INTO pedidos (cliente_id, usuario_id, estado, total, fecha_entrega, hora_entrega) 
                       VALUES (:cliente_id, :usuario_id, 'pendiente', :total, :fecha_entrega, :hora_entrega)";
@@ -29,11 +35,12 @@ class PedidoModel {
                 $qd = "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
                        VALUES (:pedido_id, :prod_id, :cant, :precio, :subtotal)";
                 $stmtD = $this->conn->prepare($qd);
-                $subtotal = $detalle['cantidad'] * $detalle['precio'];
+                $precio = Money::round($detalle['precio']);
+                $subtotal = Money::round($detalle['cantidad'] * $precio);
                 $stmtD->bindParam(":pedido_id", $pedido_id);
                 $stmtD->bindParam(":prod_id", $detalle['producto_id']);
                 $stmtD->bindParam(":cant", $detalle['cantidad']);
-                $stmtD->bindParam(":precio", $detalle['precio']);
+                $stmtD->bindParam(":precio", $precio);
                 $stmtD->bindParam(":subtotal", $subtotal);
                 $stmtD->execute();
             }
@@ -41,7 +48,7 @@ class PedidoModel {
             $this->conn->commit();
             return true;
         } catch (Exception $e) {
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) $this->conn->rollBack();
             return false;
         }
     }
@@ -51,13 +58,14 @@ class PedidoModel {
                   FROM pedidos p 
                   LEFT JOIN clientes c ON p.cliente_id = c.id
                   LEFT JOIN usuarios u ON p.usuario_id = u.id
+                  WHERE p.deleted_at IS NULL
                   ORDER BY p.fecha_pedido DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function updateEstado($pedido_id, $estado, $hora_real = null) {
+    public function updateEstado($pedido_id, $estado, $hora_real = null, ?int $usuario_id = null) {
         try {
             $this->conn->beginTransaction();
 
@@ -74,9 +82,7 @@ class PedidoModel {
             $stmt->execute();
 
             if ($estado === 'entregado') {
-                require_once __DIR__ . '/VentaModel.php';
-                $ventaModel = new VentaModel();
-                $res = $ventaModel->createFromPedido($pedido_id);
+                $res = $this->ventaModel->createFromPedido($pedido_id, [], $usuario_id);
                 if (!$res) throw new Exception("Error al registrar la venta desde el pedido.");
             }
 
@@ -89,10 +95,10 @@ class PedidoModel {
     }
 
     public function delete($id) {
-        $query = "DELETE FROM pedidos WHERE id = :id";
+        $query = "UPDATE pedidos SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+        return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
     public function getDetalles($pedido_id) {

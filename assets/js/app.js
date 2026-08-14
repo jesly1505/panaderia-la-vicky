@@ -4,15 +4,19 @@ console.log('Sistema funcionando');
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('ventas-hoy')) {
         fetchDashboardStats();
-        setInterval(fetchDashboardStats, 5000); // Polling cada 5s
+        setInterval(fetchDashboardStats, 30000);
     }
 });
 
-function fetchDashboardStats() {
-    fetch('../backend/api.php?route=get_dashboard_resumen')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+let refrescandoDashboard = false;
+
+async function fetchDashboardStats() {
+    if (refrescandoDashboard) return;
+    refrescandoDashboard = true;
+    try {
+        const response = await fetch('../backend/api.php?route=get_dashboard_resumen');
+        const data = await response.json();
+        if (data.success) {
                 // Stats Card
                 document.getElementById('ventas-hoy').textContent = '$' + parseFloat(data.data.ventas_hoy).toFixed(2);
                 document.getElementById('pedidos-pendientes').textContent = data.data.pedidos_pendientes;
@@ -70,6 +74,9 @@ function fetchDashboardStats() {
             } else {
                 console.error('Error al obtener estadísticas del dashboard', data.message);
             }
-        })
-        .catch(error => console.error('Error en la petición de dashboard:', error));
+    } catch (error) {
+        console.error('Error en la petición de dashboard:', error);
+    } finally {
+        refrescandoDashboard = false;
+    }
 }

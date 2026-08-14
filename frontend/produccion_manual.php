@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('produccion.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -30,33 +35,7 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php" class="active"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Producción Manual Libre</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Salir</a>
-            </div>
-        </div>
+        <?php $active = 'produccion_manual'; $titulo = 'Producción Manual Libre'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -66,6 +45,7 @@ if (!isset($_SESSION['usuario'])) {
 
             <div class="row">
                 <!-- FORMULARIO DE PRODUCCIÓN -->
+                <?php if (tiene_permiso('produccion.gestionar')): ?>
                 <div class="col-lg-5 mb-4">
                     <div class="form-card">
                         <h5 class="mb-4"><i class="fas fa-plus-circle text-primary me-2"></i>Registrar Nueva Producción</h5>
@@ -102,9 +82,10 @@ if (!isset($_SESSION['usuario'])) {
                         </form>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- HISTORIAL -->
-                <div class="col-lg-7">
+                <div class="col-lg-<?= tiene_permiso('produccion.gestionar') ? '7' : '12' ?>">
                     <div class="table-card h-100">
                         <h5 class="mb-4"><i class="fas fa-history text-secondary me-2"></i>Historial de Producción</h5>
                         
@@ -210,7 +191,8 @@ if (!isset($_SESSION['usuario'])) {
         }
 
         // ── 3. Guardar Producción ─────────────────────────────────────────
-        document.getElementById('produccionForm').addEventListener('submit', async (e) => {
+        const produccionFormEl = document.getElementById('produccionForm');
+        if (produccionFormEl) produccionFormEl.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnGuardar');
             btn.disabled = true;

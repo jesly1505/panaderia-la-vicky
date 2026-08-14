@@ -1,21 +1,24 @@
 <?php
-require_once __DIR__ . '/../Models/UserModel.php';
+namespace App\Controllers;
+
+use App\Core\AuditService;
+use App\Models\UserModel;
 
 class EmployeeController {
     private $userModel;
+    private $audit;
 
-    public function __construct() {
-        $this->userModel = new UserModel();
+    public function __construct(UserModel $userModel, AuditService $audit) {
+        $this->userModel = $userModel;
+        $this->audit = $audit;
     }
 
     public function getAll() {
-        $this->checkAdmin();
         $employees = $this->userModel->getAll();
         echo json_encode(['success' => true, 'data' => $employees]);
     }
 
     public function create() {
-        $this->checkAdmin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -27,6 +30,7 @@ class EmployeeController {
         }
 
         if ($this->userModel->create($data['nombre'], $data['email'], $data['password'], $data['rol_id'] ?? 2)) {
+            $this->audit->log('Empleados', 'Alta de empleado', "Empleado creado: {$data['email']} ({$data['nombre']})");
             echo json_encode(['success' => true, 'message' => 'Empleado creado exitosamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear empleado. El correo ya podría estar en uso.']);
@@ -34,7 +38,6 @@ class EmployeeController {
     }
 
     public function delete() {
-        $this->checkAdmin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -47,6 +50,7 @@ class EmployeeController {
         }
 
         if ($this->userModel->delete($id)) {
+            $this->audit->log('Empleados', 'Baja de empleado', "Empleado con ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Empleado eliminado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'No se puede eliminar este empleado.']);
@@ -54,18 +58,7 @@ class EmployeeController {
     }
 
     public function getStats() {
-        $this->checkAdmin();
         $stats = $this->userModel->getProfitsByUser();
         echo json_encode(['success' => true, 'data' => $stats]);
     }
-
-    private function checkAdmin() {
-        if (session_status() === PHP_SESSION_NONE) session_start();
-        if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'Administrador') {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Acceso denegado. Solo administradores.']);
-            exit;
-        }
-    }
 }
-?>

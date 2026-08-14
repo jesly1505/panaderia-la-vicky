@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('productos.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -33,42 +38,18 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php" class="active"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Gestión de Productos</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Salir</a>
-            </div>
-        </div>
+        <?php $active = 'productos'; $titulo = 'Gestión de Productos'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
             <!-- Cabecera y botón nuevo -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="text-muted m-0">Catálogo de Productos al Público</h5>
+                <?php if (tiene_permiso('productos.gestionar')): ?>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductoModal">
                     <i class="fas fa-plus"></i> Añadir Producto
                 </button>
+                <?php endif; ?>
             </div>
 
             <!-- ===== FILTROS POR CATEGORÍA ===== -->
@@ -267,15 +248,17 @@ if (!isset($_SESSION['usuario'])) {
                                         ${isLow ? ' <span class="badge bg-danger ms-1">Bajo</span>' : ''}
                                     </p>
                                     <div class="d-flex gap-2 mt-auto">
+                                        ${tienePermiso('productos.gestionar') ? `
                                         <button class="btn btn-outline-success btn-sm flex-grow-1"
                                             onclick="abrirProducir(${prod.id}, '${prod.nombre.replace(/'/g,"\\'")}')"
                                             title="Producir unidades de este producto">
                                             <i class="fas fa-industry me-1"></i>Producir
-                                        </button>
+                                        </button>` : ''}
+                                        ${tienePermiso('productos.eliminar') ? `
                                         <button class="btn btn-outline-danger btn-sm"
                                             onclick="deleteProducto(${prod.id}, '${prod.nombre.replace(/'/g,"\\'")}')">
                                             <i class="fas fa-trash"></i>
-                                        </button>
+                                        </button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -288,9 +271,10 @@ if (!isset($_SESSION['usuario'])) {
                         <div class="col-12 text-center py-5 text-muted">
                             <i class="fas fa-bread-slice fa-3x mb-3 opacity-25"></i>
                             <p class="fs-5">No hay productos en <strong>${label}</strong>.</p>
+                            ${tienePermiso('productos.gestionar') ? `
                             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductoModal">
                                 <i class="fas fa-plus me-1"></i>Añadir el primero
-                            </button>
+                            </button>` : ''}
                         </div>`;
                 }
             } catch (e) {

@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('reportes.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -31,28 +36,7 @@ if (!isset($_SESSION['usuario'])) {
 </head>
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar">
-            <div class="text-center mb-4"><h3 class="text-white">🥖 La Vicky</h3></div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php" class="active"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <h4 class="m-0">Reportes y Estadísticas</h4>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" onclick="logout()" class="btn btn-outline-danger btn-sm">Salir</a>
-            </div>
-        </div>
+        <?php $active = 'reportes'; $titulo = 'Reportes y Estadísticas'; include 'includes/sidebar.php'; ?>
 
         <div class="main-content">
 
@@ -133,9 +117,11 @@ if (!isset($_SESSION['usuario'])) {
                                 <button class="btn btn-primary btn-sm" onclick="loadGastos()">
                                     <i class="fas fa-search"></i> Ver gastos
                                 </button>
+                                <?php if (tiene_permiso('gastos.gestionar')): ?>
                                 <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addGastoModal">
                                     <i class="fas fa-plus"></i> Nuevo Gasto
                                 </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -256,9 +242,10 @@ if (!isset($_SESSION['usuario'])) {
                             <td>${g.descripcion}</td>
                             <td>${fmt(g.monto)}</td>
                             <td class="text-end">
+                                ${tienePermiso('gastos.gestionar') ? `
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteGasto(${g.id})">
                                     <i class="fas fa-trash"></i>
-                                </button>
+                                </button>` : ''}
                             </td>
                         </tr>`;
                 });

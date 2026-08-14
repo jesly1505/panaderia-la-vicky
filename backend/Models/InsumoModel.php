@@ -1,14 +1,14 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../Core/Interfaces/InsumoRepositoryInterface.php';
+namespace App\Models;
 
-use Core\Interfaces\InsumoRepositoryInterface;
+use PDO;
+use App\Core\Interfaces\InsumoRepositoryInterface;
 
 class InsumoModel implements InsumoRepositoryInterface {
     private $conn;
     private $table_name = "insumos";
 
-    public function __construct($db) {
+    public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
@@ -37,10 +37,11 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function readAll($onlyVisible = true) {
-        $where = $onlyVisible ? " WHERE i.visible = 1 " : "";
+        $where = " i.deleted_at IS NULL ";
+        if ($onlyVisible) $where .= " AND i.visible = 1 ";
         $query = "SELECT i.*, p.nombre as proveedor_nombre FROM " . $this->table_name . " i 
                   LEFT JOIN proveedores p ON i.proveedor_id = p.id
-                  $where
+                  WHERE $where
                   ORDER BY i.nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -48,7 +49,7 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
@@ -64,17 +65,17 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function getLowStock() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE stock_actual <= stock_minimo AND visible = 1";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE stock_actual <= stock_minimo AND visible = 1 AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     public function delete($id) {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+        return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
     public function registrarCompra($insumo_id, $proveedor_id, $cantidad, $precio_compra) {

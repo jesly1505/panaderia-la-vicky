@@ -1,7 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/includes/permisos.php';
 if (!isset($_SESSION['usuario'])) {
     header("Location: login.html");
+    exit();
+}
+if (!tiene_permiso('inventario.ver')) {
+    header("Location: index.php");
     exit();
 }
 ?>
@@ -63,33 +68,7 @@ if (!isset($_SESSION['usuario'])) {
 
 <body>
     <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php" class="active"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
-
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Gestión de Inventario (Insumos)</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
+        <?php $active = 'inventario'; $titulo = 'Gestión de Inventario (Insumos)'; include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -103,15 +82,19 @@ if (!isset($_SESSION['usuario'])) {
                 <div class="card-header bg-white d-flex justify-content-between align-items-center pt-4 pb-3">
                     <h5 class="card-title m-0">Lista de Insumos Actuales</h5>
                     <div class="btn-group">
+                        <?php if (tiene_permiso('proveedores.ver', 'proveedores.gestionar')): ?>
                         <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#proveedoresModal" onclick="loadProveedoresTable()">
                             <i class="fas fa-truck"></i> Proveedores
                         </button>
+                        <?php endif; ?>
+                        <?php if (tiene_permiso('inventario.gestionar')): ?>
                         <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#registrarCompraModal">
                             <i class="fas fa-shopping-basket"></i> Registrar Compra
                         </button>
                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addInsumoModal">
                             <i class="fas fa-plus"></i> Nuevo Insumo
                         </button>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="card-body">
@@ -245,6 +228,7 @@ if (!isset($_SESSION['usuario'])) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <?php if (tiene_permiso('proveedores.gestionar')): ?>
                     <form id="addProveedorForm" class="row g-2 mb-4 border-bottom pb-3">
                         <div class="col-md-4">
                             <input type="text" name="nombre" class="form-control form-control-sm" placeholder="Nombre Empresa" required>
@@ -259,6 +243,7 @@ if (!isset($_SESSION['usuario'])) {
                             <button type="submit" class="btn btn-success btn-sm w-100"><i class="fas fa-plus"></i></button>
                         </div>
                     </form>
+                    <?php endif; ?>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead>
@@ -331,9 +316,11 @@ if (!isset($_SESSION['usuario'])) {
                                 <td>$${parseFloat(insumo.precio_costo).toFixed(2)}</td>
                                 <td>
                                     <div class="btn-group">
+                                        ${tienePermiso('inventario.gestionar') ? `
                                         <button class="btn btn-sm btn-outline-success" onclick="adjustStock(${insumo.id}, 1)"><i class="fas fa-plus"></i></button>
-                                        <button class="btn btn-sm btn-outline-warning" onclick="adjustStock(${insumo.id}, -1)"><i class="fas fa-minus"></i></button>
-                                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteInsumo(${insumo.id})"><i class="fas fa-trash"></i></button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="adjustStock(${insumo.id}, -1)"><i class="fas fa-minus"></i></button>` : ''}
+                                        ${tienePermiso('inventario.eliminar') ? `
+                                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteInsumo(${insumo.id})"><i class="fas fa-trash"></i></button>` : ''}
                                     </div>
                                 </td>
                             </tr>
@@ -376,7 +363,7 @@ if (!isset($_SESSION['usuario'])) {
                                 <td>${p.contacto || '-'}</td>
                                 <td>${p.telefono || '-'}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProveedor(${p.id})"><i class="fas fa-trash"></i></button>
+                                    ${tienePermiso('proveedores.gestionar') ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteProveedor(${p.id})"><i class="fas fa-trash"></i></button>` : ''}
                                 </td>
                             </tr>
                         `;
@@ -384,13 +371,6 @@ if (!isset($_SESSION['usuario'])) {
                 }
             } catch (e) { }
         }
-
-        document.getElementById('addProveedorForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const res = await fetch('../backend/api.php?route=add_provider', { method: 'POST', body: formData }); // Wait, check api route name
-            // Fixing route name based on what I planned: add_proveedor
-        });
 
         // Simplified Form Handlers
         async function handleForm(formId, route, modalId) {
@@ -442,10 +422,6 @@ if (!isset($_SESSION['usuario'])) {
         }
 
         function logout() { fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html'); }
-    </script>
-</body>
-
-</html>
     </script>
 </body>
 

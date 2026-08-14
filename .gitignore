@@ -34,14 +34,15 @@ composer.lock
 
 # Environment & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Logs & Databases
 .log
 .sqlite
 .sql
 .mysql
+!database/*.sql
 /database/*.sqlite
 
 # Operating System Files
@@ -56,5 +57,6 @@ dist/
 build/
 *.pid
 *.seed
+.phpunit.cache/
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocod
