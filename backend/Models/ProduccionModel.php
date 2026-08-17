@@ -1,16 +1,13 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class ProduccionModel {
     private $conn;
 
-    public function __construct($db = null) {
-        if ($db) {
-            $this->conn = $db;
-        } else {
-            $database = new Database();
-            $this->conn = $database->getConnection();
-        }
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     /**
@@ -95,7 +92,8 @@ class ProduccionModel {
     /**
      * Obtiene el historial de producciones.
      */
-    public function getAll() {
+    public function getAll(string $filterType = 'all', string $startDate = '', string $endDate = '') {
+        $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('p.fecha', $filterType, $startDate, $endDate);
         $query = "
             SELECT 
                 p.id, 
@@ -110,6 +108,7 @@ class ProduccionModel {
                 ) AS detalles_insumos
             FROM producciones p
             JOIN productos prod ON p.producto_id = prod.id
+            WHERE $dateCondition
             ORDER BY p.fecha DESC
         ";
         $stmt = $this->conn->prepare($query);

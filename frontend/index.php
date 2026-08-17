@@ -1,166 +1,168 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// frontend/index.php
 session_start();
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+require_once __DIR__ . '/includes/permisos.php';
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
     exit();
 }
+
+if (!tiene_permiso('dashboard.ver')) {
+    header("Location: ventas.php");
+    exit();
+}
+
+require_once __DIR__ . '/../backend/Helpers/DateFilterHelper.php';
+
+$filter = $_GET['filter'] ?? 'today';
+$startDate = $_GET['start_date'] ?? '';
+$endDate = $_GET['end_date'] ?? '';
+
+$pageTitle = "Dashboard";
+$pageHeader = "Panel de Control";
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - La Vicky</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        body {
-            background-color: #f4f6f9;
-        }
-
-        .sidebar {
-            height: 100vh;
-            background-color: #685569;
-            padding-top: 20px;
-        }
-
-        .sidebar a {
-            padding: 15px 20px;
-            text-decoration: none;
-            font-size: 16px;
-            color: #d1d8e0;
-            display: block;
-            transition: 0.3s;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            color: #fff;
-            background-color: #0d6efd;
-        }
-
-        .main-content {
-            padding: 30px;
-        }
-
-        .top-navbar {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-stat {
-            border-radius: 10px;
-            padding: 20px;
-            color: #fff;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .bg-sales {
-            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
-            color: #333;
-        }
-
-        .bg-orders {
-            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
-        }
-
-        .bg-products {
-            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-            color: #333;
-        }
-
-        .bg-customers {
-            background: linear-gradient(135deg, #fccb90 0%, #d57eeb 100%);
-        }
-    </style>
+    <?php include 'includes/head.php'; ?>
 </head>
-
 <body>
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- Sidebar -->
-            <div class="col-md-2 sidebar d-none d-md-block">
-                <div class="text-center mb-4">
-                    <h3 class="text-white">🥖 La Vicky</h3>
-                </div>
-                <a href="index.php" class="active"><i class="fas fa-home me-2"></i> Dashboard</a>
-                <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-                <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-                <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-                <a href="ventas.php"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-                <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-                <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-                <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-            </div>
+    <div class="wrapper">
+        <?php include 'includes/sidebar.php'; ?>
+        
+        <div class="main-content">
+            <?php include 'includes/navbar.php'; ?>
 
-            <!-- Main Content -->
-            <div class="col-md-10">
-                <!-- Top Navbar -->
-                <div class="top-navbar">
-                    <div>
-                        <h4 class="m-0">Resumen General</h4>
-                    </div>
-                    <div>
-                        <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                        <a href="login.html" class="btn btn-outline-danger btn-sm"><i class="fas fa-sign-out-alt"></i>
-                            Salir</a>
-                    </div>
-                </div>
+            <div class="container-fluid p-4 animate-fade-in">
+                
+                <!-- Filtro de fechas -->
+                <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $startDate, $endDate, 'index.php'); ?>
 
-                <!-- Dashboard Content -->
-                <div class="main-content">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="card-stat bg-sales">
-                                <h5>Ventas de Hoy</h5>
-                                <h2 id="ventas-hoy">$0.00</h2>
-                                <p class="mb-0"><i class="fas fa-arrow-up"></i> 0% vs ayer</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card-stat bg-orders">
-                                <h5>Pedidos Pendientes</h5>
-                                <h2 id="pedidos-pendientes">0</h2>
-                                <p class="mb-0"><i class="fas fa-clock"></i> Por entregar</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card-stat bg-products">
-                                <h5>Productos</h5>
-                                <h2 id="productos-catalogo">0</h2>
-                                <p class="mb-0"><i class="fas fa-check-circle"></i> En catálogo</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card-stat bg-customers">
-                                <h5>Clientes</h5>
-                                <h2 id="clientes-registrados">0</h2>
-                                <p class="mb-0"><i class="fas fa-users"></i> Registrados</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-md-8">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                                    <h5 class="card-title">Pedidos Pendientes</h5>
+                <!-- Tarjetas Principales de Estadísticas -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="stat-card shadow-sm h-100 bg-primary-gradient">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-uppercase mb-1 fw-semibold small opacity-75">Ventas Periodo</p>
+                                    <h2 class="mb-0 fw-bold" id="ventas-hoy">$0.00</h2>
                                 </div>
-                                <div class="card-body">
-                                    <table class="table table-hover">
+                                <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                    <i class="fas fa-chart-line fs-4 opacity-100 position-static"></i>
+                                </div>
+                            </div>
+                            <p class="mt-3 mb-0 small opacity-90"><i class="fas fa-cash-register me-1"></i> Total recaudado</p>
+                            <i class="fas fa-chart-line stat-bg-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="stat-card shadow-sm h-100 bg-success-gradient">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-uppercase mb-1 fw-semibold small opacity-75">Ganancias</p>
+                                    <h2 class="mb-0 fw-bold" id="ganancias-hoy">$0.00</h2>
+                                </div>
+                                <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                    <i class="fas fa-coins fs-4 opacity-100 position-static"></i>
+                                </div>
+                            </div>
+                            <p class="mt-3 mb-0 small opacity-90"><i class="fas fa-hand-holding-usd me-1"></i> Utilidad neta estimada</p>
+                            <i class="fas fa-coins stat-bg-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="stat-card shadow-sm h-100 bg-warning-gradient">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-uppercase mb-1 fw-semibold small opacity-75">Pedidos Pendientes</p>
+                                    <h2 class="mb-0 fw-bold" id="pedidos-pendientes">0</h2>
+                                </div>
+                                <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                    <i class="fas fa-clock fs-4 opacity-100 position-static"></i>
+                                </div>
+                            </div>
+                            <p class="mt-3 mb-0 small opacity-90"><i class="fas fa-truck-loading me-1"></i> Por procesar / entregar</p>
+                            <i class="fas fa-clock stat-bg-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="stat-card shadow-sm h-100 bg-info-gradient">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="text-uppercase mb-1 fw-semibold small opacity-75">Catálogo Activo</p>
+                                    <h2 class="mb-0 fw-bold" id="productos-catalogo">0</h2>
+                                </div>
+                                <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                    <i class="fas fa-bread-slice fs-4 opacity-100 position-static"></i>
+                                </div>
+                            </div>
+                            <p class="mt-3 mb-0 small opacity-90"><i class="fas fa-boxes me-1"></i> Productos en venta</p>
+                            <i class="fas fa-bread-slice stat-bg-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs Operativos / CMMI -->
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-users text-primary fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="clientes-registrados">0</div>
+                            <small class="text-muted">Clientes</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-user-check text-success fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="kpi-usuarios">0</div>
+                            <small class="text-muted">Usuarios Activos</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-receipt text-info fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="kpi-ventas-qty">0</div>
+                            <small class="text-muted">Tickets Emitidos</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-industry text-warning fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="kpi-produccion-qty">0</div>
+                            <small class="text-muted">Lotes Horneados</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-clipboard-list text-secondary fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="kpi-eventos">0</div>
+                            <small class="text-muted">Eventos Bitácora</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <div class="card p-3 text-center border-0 shadow-sm">
+                            <i class="fas fa-exclamation-circle text-danger fs-4 mb-2"></i>
+                            <div class="fw-bold fs-5 text-dark" id="kpi-errores">0</div>
+                            <small class="text-muted">Incidencias</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Tabla de Últimos Pedidos -->
+                    <div class="col-12 col-xl-8">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-shopping-cart text-primary me-2"></i>Pedidos Recientes</h5>
+                                <a href="pedidos.php" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
@@ -172,33 +174,41 @@ if (!isset($_SESSION['usuario'])) {
                                         </thead>
                                         <tbody id="ultimos-pedidos-body">
                                             <tr>
-                                                <td colspan="5" class="text-center text-muted">Cargando pedidos...</td>
+                                                <td colspan="5" class="text-center py-4 text-muted">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                                    Cargando pedidos...
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                                    <h5 class="card-title">Alerta de Stock</h5>
-                                </div>
-                                <div class="card-body" id="alertas-stock-container">
-                                    <div class="text-center text-muted">Cargando alertas...</div>
+                    </div>
+
+                    <!-- Alertas de Stock -->
+                    <div class="col-12 col-xl-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Alertas de Stock</h5>
+                                <a href="inventario.php" class="btn btn-sm btn-link text-decoration-none p-0 text-muted small">Ver inventario</a>
+                            </div>
+                            <div class="card-body" id="alertas-stock-container">
+                                <div class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+                                    Verificando inventario...
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/common.js"></script>
+    <!-- Scripts -->
+    <?php include 'includes/footer.php'; ?>
     <script src="../assets/js/app.js"></script>
 </body>
-
 </html>

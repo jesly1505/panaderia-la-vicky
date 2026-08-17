@@ -1,0 +1,2 @@
+# Denegar el acceso a todos los archivos de configuración
+Deny from all

@@ -1,13 +1,18 @@
 <?php
-require_once __DIR__ . '/../Core/Interfaces/InsumoRepositoryInterface.php';
+namespace App\Controllers;
 
-use Core\Interfaces\InsumoRepositoryInterface;
+use App\Core\AuditService;
+use App\Core\Interfaces\InsumoRepositoryInterface;
+use App\Core\Money;
+use App\Core\Validator;
 
 class InsumoController {
     private $insumoModel;
+    private $audit;
 
-    public function __construct(InsumoRepositoryInterface $insumoModel) {
+    public function __construct(InsumoRepositoryInterface $insumoModel, AuditService $audit) {
         $this->insumoModel = $insumoModel;
+        $this->audit = $audit;
     }
 
     public function getAll() {
@@ -25,13 +30,31 @@ class InsumoController {
         $minimo = !empty($_POST['stock_minimo']) ? $_POST['stock_minimo'] : 0;
         $precio = !empty($_POST['precio_costo']) ? $_POST['precio_costo'] : 0;
 
-        if (empty($nombre) || empty($unidad) || $precio <= 0) {
-            echo json_encode(['success' => false, 'message' => 'El nombre, la unidad y un precio válido son obligatorios.']);
+        $error = Validator::firstError([
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($unidad, 'Unidad de medida'),
+            Validator::length($unidad, 30, 'Unidad de medida'),
+            Validator::numeric($inicial, 'Stock inicial'),
+            Validator::min($inicial, 0, 'Stock inicial'),
+            Validator::numeric($minimo, 'Stock mínimo'),
+            Validator::min($minimo, 0, 'Stock mínimo'),
+            Validator::numeric($precio, 'Precio de costo'),
+            Validator::greaterThan($precio, 0, 'Precio de costo'),
+        ]);
+
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
+        $inicial = Money::round($inicial);
+        $minimo  = Money::round($minimo);
+        $precio  = Money::round($precio);
+
         try {
             if ($this->insumoModel->create($proveedor_id, $nombre, $unidad, $inicial, $minimo, $precio)) {
+                $this->audit->log('Inventario', 'Alta de insumo', "Insumo creado: {$nombre} ({$unidad})");
                 echo json_encode(['success' => true, 'message' => 'Insumo creado correctamente.']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'No se pudo guardar el insumo en la base de datos. Verifique si el nombre ya existe.']);
@@ -46,8 +69,21 @@ class InsumoController {
         
         $id = $_POST['id'] ?? 0;
         $cantidad = $_POST['cantidad'] ?? 0; // puede ser negativo
-        
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::numeric($cantidad, 'Cantidad'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $cantidad = Money::round($cantidad);
+
         if ($this->insumoModel->updateStock($id, $cantidad)) {
+            $this->audit->log('Inventario', 'Ajuste de stock', "Ajuste de stock en insumo ID {$id} (+/- {$cantidad})");
             echo json_encode(['success' => true, 'message' => 'Stock actualizado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error actualizando stock.']);
@@ -65,6 +101,7 @@ class InsumoController {
         }
 
         if ($this->insumoModel->delete($id)) {
+            $this->audit->log('Inventario', 'Baja de insumo', "Insumo ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Insumo eliminado correctamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al eliminar insumo. Puede estar en uso.']);
@@ -83,6 +120,7 @@ class InsumoController {
         }
 
         if ($this->insumoModel->setVisibility($id, $visible)) {
+            $this->audit->log('Inventario', 'Cambio de visibilidad', "Insumo ID {$id} visibilidad={$visible}");
             echo json_encode(['success' => true, 'message' => 'Visibilidad actualizada.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar visibilidad.']);
@@ -102,12 +140,26 @@ class InsumoController {
         $cantidad = $_POST['cantidad'] ?? 0;
         $precio = $_POST['precio_compra'] ?? 0;
 
-        if (empty($insumo_id) || empty($proveedor_id) || $cantidad <= 0 || $precio <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Todos los campos son obligatorios y deben ser mayores a cero.']);
+        $error = Validator::firstError([
+            Validator::integer($insumo_id, 'Insumo'),
+            Validator::greaterThan($insumo_id, 0, 'Insumo'),
+            Validator::integer($proveedor_id, 'Proveedor'),
+            Validator::greaterThan($proveedor_id, 0, 'Proveedor'),
+            Validator::numeric($cantidad, 'Cantidad'),
+            Validator::greaterThan($cantidad, 0, 'Cantidad'),
+            Validator::numeric($precio, 'Precio de compra'),
+            Validator::greaterThan($precio, 0, 'Precio de compra'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
+        $cantidad = Money::round($cantidad);
+        $precio   = Money::round($precio);
+
         if ($this->insumoModel->registrarCompra($insumo_id, $proveedor_id, $cantidad, $precio)) {
+            $this->audit->log('Inventario', 'Compra de insumo', "Compra de {$cantidad} unidades del insumo ID {$insumo_id}");
             echo json_encode(['success' => true, 'message' => 'Compra registrada y stock actualizado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al registrar la compra.']);

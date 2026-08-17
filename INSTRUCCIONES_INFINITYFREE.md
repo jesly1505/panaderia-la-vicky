@@ -74,7 +74,7 @@ Inicia sesión en tu cuenta de **InfinityFree** y entra al panel de tu cuenta (A
 ## 5. Acceder al Sistema e Iniciar Sesión
 
 1. Abre tu navegador y escribe la URL de tu sitio provista por InfinityFree (ej. `http://tusitio.infinityfreeapp.com`).
-2. El sistema te redireccionará automáticamente a la pantalla de Login en `frontend/login.php`.
+2. El sistema te redireccionará automáticamente a la pantalla de Login en `frontend/login.html`.
 3. Inicia sesión con las credenciales por defecto:
    * **Usuario**: `admin@lavicky.com`
    * **Contraseña**: `admin123`

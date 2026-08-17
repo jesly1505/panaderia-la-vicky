@@ -1,11 +1,16 @@
 <?php
-require_once __DIR__ . '/../Models/ProveedorModel.php';
+namespace App\Controllers;
+
+use App\Core\AuditService;
+use App\Models\ProveedorModel;
 
 class ProveedorController {
     private $proveedorModel;
+    private $audit;
 
-    public function __construct() {
-        $this->proveedorModel = new ProveedorModel();
+    public function __construct(ProveedorModel $proveedorModel, AuditService $audit) {
+        $this->proveedorModel = $proveedorModel;
+        $this->audit = $audit;
     }
 
     public function getAll() {
@@ -27,6 +32,7 @@ class ProveedorController {
         }
 
         if ($this->proveedorModel->create($nombre, $contacto, $telefono, $email)) {
+            $this->audit->log('Proveedores', 'Alta de proveedor', "Proveedor creado: {$nombre}");
             echo json_encode(['success' => true, 'message' => 'Proveedor registrado correctamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al registrar el proveedor.']);
@@ -48,6 +54,7 @@ class ProveedorController {
         }
 
         if ($this->proveedorModel->update($id, $nombre, $contacto, $telefono, $email)) {
+            $this->audit->log('Proveedores', 'Actualización de proveedor', "Proveedor ID {$id} actualizado.");
             echo json_encode(['success' => true, 'message' => 'Proveedor actualizado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar el proveedor.']);
@@ -64,6 +71,7 @@ class ProveedorController {
         }
 
         if ($this->proveedorModel->delete($id)) {
+            $this->audit->log('Proveedores', 'Baja de proveedor', "Proveedor ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Proveedor eliminado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al eliminar el proveedor.']);

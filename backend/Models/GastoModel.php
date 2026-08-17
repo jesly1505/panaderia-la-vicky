@@ -1,18 +1,19 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class GastoModel {
     private $conn;
     private $table = "gastos";
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     /** Gastos de un día específico (YYYY-MM-DD) */
     public function getByDate($fecha) {
-        $query = "SELECT * FROM {$this->table} WHERE DATE(fecha) = :fecha ORDER BY fecha DESC";
+        $query = "SELECT * FROM {$this->table} WHERE DATE(fecha) = :fecha AND eliminado = false ORDER BY fecha DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':fecha', $fecha);
         $stmt->execute();
@@ -21,7 +22,7 @@ class GastoModel {
 
     /** Registrar un nuevo gasto */
     public function create($descripcion, $monto, $fecha) {
-        $query = "INSERT INTO {$this->table} (descripcion, monto, fecha) VALUES (:descripcion, :monto, :fecha)";
+        $query = "INSERT INTO {$this->table} (descripcion, monto, fecha, eliminado) VALUES (:descripcion, :monto, :fecha, false)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':descripcion', $descripcion);
         $stmt->bindParam(':monto', $monto);
@@ -29,12 +30,11 @@ class GastoModel {
         return $stmt->execute();
     }
 
-    /** Eliminar un gasto */
+    /** Eliminar un gasto (borrado lógico) */
     public function delete($id) {
-        $query = "DELETE FROM {$this->table} WHERE id = :id";
+        $query = "UPDATE {$this->table} SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
-        return $stmt->execute();
+        return $stmt->execute() && $stmt->rowCount() > 0;
     }
 }
-?>
