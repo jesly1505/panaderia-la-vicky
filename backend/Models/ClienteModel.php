@@ -13,8 +13,8 @@ class ClienteModel {
 
     public function create($nombre, $email, $telefono, $direccion) {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (nombre, email, telefono, direccion) 
-                  VALUES (:nombre, :email, :telefono, :direccion)";
+                  (nombre, email, telefono, direccion, eliminado) 
+                  VALUES (:nombre, :email, :telefono, :direccion, false)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":email", $email);
@@ -25,11 +25,11 @@ class ClienteModel {
 
     public function readAll() {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE deleted_at IS NULL 
+                  WHERE eliminado = false 
                   ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getPurchaseHistory($cliente_id) {
@@ -47,7 +47,7 @@ class ClienteModel {
     public function update($id, $nombre, $email, $telefono, $direccion) {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre, email = :email, telefono = :telefono, direccion = :direccion 
-                  WHERE id = :id";
+                  WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":email", $email);
@@ -58,10 +58,9 @@ class ClienteModel {
     }
 
     public function delete($id) {
-        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
+        $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 }
-?>

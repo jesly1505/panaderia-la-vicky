@@ -14,8 +14,8 @@ class InsumoModel implements InsumoRepositoryInterface {
 
     public function create($proveedor_id, $nombre, $unidad_medida, $stock_inicial, $stock_minimo, $precio_costo) {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (proveedor_id, nombre, unidad_medida, stock_actual, stock_minimo, precio_costo) 
-                  VALUES (:proveedor_id, :nombre, :unidad_medida, :stock_inicial, :stock_minimo, :precio_costo)";
+                  (proveedor_id, nombre, unidad_medida, stock_actual, stock_minimo, precio_costo, eliminado, visible) 
+                  VALUES (:proveedor_id, :nombre, :unidad_medida, :stock_inicial, :stock_minimo, :precio_costo, false, 1)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":proveedor_id", $proveedor_id);
         $stmt->bindParam(":nombre", $nombre);
@@ -29,7 +29,7 @@ class InsumoModel implements InsumoRepositoryInterface {
 
     public function updateStock($id, $cantidad) {
         // La cantidad puede ser positiva o negativa
-        $query = "UPDATE " . $this->table_name . " SET stock_actual = stock_actual + :cantidad WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET stock_actual = stock_actual + :cantidad WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":cantidad", $cantidad);
         $stmt->bindParam(":id", $id);
@@ -37,7 +37,7 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function readAll($onlyVisible = true) {
-        $where = " i.deleted_at IS NULL ";
+        $where = " i.eliminado = false ";
         if ($onlyVisible) $where .= " AND i.visible = 1 ";
         $query = "SELECT i.*, p.nombre as proveedor_nombre FROM " . $this->table_name . " i 
                   LEFT JOIN proveedores p ON i.proveedor_id = p.id
@@ -49,7 +49,7 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
@@ -57,7 +57,7 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function setVisibility($id, $visible) {
-        $query = "UPDATE " . $this->table_name . " SET visible = :visible WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET visible = :visible WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":visible", $visible);
         $stmt->bindParam(":id", $id);
@@ -65,14 +65,14 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     public function getLowStock() {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE stock_actual <= stock_minimo AND visible = 1 AND deleted_at IS NULL";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE stock_actual <= stock_minimo AND visible = 1 AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     public function delete($id) {
-        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
+        $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         return $stmt->execute() && $stmt->rowCount() > 0;
@@ -97,7 +97,7 @@ class InsumoModel implements InsumoRepositoryInterface {
                        SET stock_actual = stock_actual + :cantidad, 
                            precio_costo = :precio_compra,
                            proveedor_id = :proveedor_id
-                       WHERE id = :id";
+                       WHERE id = :id AND eliminado = false";
             $stmtI = $this->conn->prepare($queryI);
             $stmtI->bindParam(":cantidad", $cantidad);
             $stmtI->bindParam(":precio_compra", $precio_compra);
@@ -107,10 +107,27 @@ class InsumoModel implements InsumoRepositoryInterface {
 
             $this->conn->commit();
             return true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->conn->rollBack();
             return false;
         }
     }
+
+    public function update($id, $proveedor_id, $nombre, $unidad_medida, $stock_minimo, $precio_costo) {
+        $query = "UPDATE " . $this->table_name . " 
+                  SET proveedor_id = :proveedor_id, 
+                      nombre = :nombre, 
+                      unidad_medida = :unidad_medida, 
+                      stock_minimo = :stock_minimo, 
+                      precio_costo = :precio_costo 
+                  WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":proveedor_id", $proveedor_id);
+        $stmt->bindParam(":nombre", $nombre);
+        $stmt->bindParam(":unidad_medida", $unidad_medida);
+        $stmt->bindParam(":stock_minimo", $stock_minimo);
+        $stmt->bindParam(":precio_costo", $precio_costo);
+        $stmt->bindParam(":id", $id);
+        return $stmt->execute();
+    }
 }
-?>

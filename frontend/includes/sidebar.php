@@ -1,126 +1,179 @@
 <?php
-/**
- * Navegación lateral compartida (sidebar + barra superior).
- * Las páginas deben iniciar sesión y validar $_SESSION['usuario'] antes de incluir.
- * Variables esperadas:
- *   $active: clave de la página actual (ver $nav).
- *   $titulo: título mostrado en la barra superior.
- */
+// frontend/includes/sidebar.php
 require_once __DIR__ . '/permisos.php';
 
-$rol = $_SESSION['rol'] ?? '';
-$usuario = $_SESSION['nombre'] ?? '';
-$active = $active ?? '';
-$titulo = $titulo ?? '';
+$currentPage = basename($_SERVER['PHP_SELF']);
+$active = $active ?? str_replace('.php', '', $currentPage);
 $permisos = $_SESSION['permisos'] ?? [];
 
-// clave => [archivo, icono, etiqueta, permisos requeridos (cualquiera)]
-$nav = [
-    'index'             => ['index.php',              'fa-home',           'Dashboard',     ['dashboard.ver']],
-    'inventario'        => ['inventario.php',         'fa-box',            'Inventario',    ['inventario.ver']],
-    'productos'         => ['productos.php',          'fa-bread-slice',    'Productos',     ['productos.ver']],
-    'produccion_manual' => ['produccion_manual.php',  'fa-industry',       'Prod. Manual',  ['produccion.ver']],
-    'pedidos'           => ['pedidos.php',            'fa-shopping-cart',  'Pedidos',       ['pedidos.ver']],
-    'ventas'            => ['ventas.php',             'fa-chart-line',     'Ventas',        ['ventas.ver']],
-    'clientes'          => ['clientes.php',           'fa-users',          'Clientes',      ['clientes.ver']],
-    'reportes'          => ['reportes.php',           'fa-file-alt',       'Reportes',      ['reportes.ver']],
-    'bitacora'          => ['bitacora.php',           'fa-shield-halved',  'Bitácora',      ['auditoria.ver']],
+// Lista de enlaces principales [archivo, icono, etiqueta, permisos requeridos]
+$mainNav = [
+    'index'             => ['index.php',              'fa-home',               'Dashboard',     ['dashboard.ver']],
+    'inventario'        => ['inventario.php',         'fa-box',                'Inventario',    ['inventario.ver']],
+    'productos'         => ['productos.php',          'fa-bread-slice',        'Productos',     ['productos.ver']],
+    'produccion_manual' => ['produccion_manual.php',  'fa-industry',           'Prod. Manual',  ['produccion.ver']],
+    'pedidos'           => ['pedidos.php',            'fa-shopping-cart',      'Pedidos',       ['pedidos.ver']],
+    'ventas'            => ['ventas.php',             'fa-chart-line',         'Ventas',        ['ventas.ver']],
+    'clientes'          => ['clientes.php',           'fa-users',              'Clientes',      ['clientes.ver']],
+    'reportes'          => ['reportes.php',           'fa-file-alt',           'Reportes',      ['reportes.ver']],
+    'bitacora'          => ['bitacora.php',           'fa-shield-halved',      'Bitácora',      ['auditoria.ver']],
+    'incidencias'       => ['incidencias.php',        'fa-exclamation-triangle','Incidencias',  ['dashboard.ver', 'auditoria.ver']],
 ];
 
-// Submódulos agrupados bajo la sección "Configuración".
-// Clave = $active de cada página.
+// Submódulos de Configuración
 $configSection = [
-    'perfil'        => ['perfil.php',              'fa-store',          'Perfil de la Panadería', ['perfil.gestionar']],
-    'configuracion' => ['configuracion.php',      'fa-users',          'Empleados',       ['empleados.ver']],
-    'roles'         => ['roles.php',              'fa-user-shield',    'Roles y Permisos', ['permisos.gestionar']],
+    'perfil'        => ['perfil.php',        'fa-store',       'Perfil de Empresa',  ['perfil.gestionar']],
+    'configuracion' => ['configuracion.php', 'fa-users-cog',   'Empleados',          ['empleados.ver']],
+    'roles'         => ['roles.php',         'fa-user-shield', 'Roles y Permisos',   ['permisos.gestionar']],
+    'respaldo'      => ['respaldo.php',      'fa-database',    'Respaldo',           ['permisos.gestionar', 'perfil.gestionar', 'auditoria.ver']],
 ];
+
+$configPermisos = array_reduce($configSection, function ($acc, $item) {
+    return array_merge($acc, $item[3]);
+}, []);
+$isConfigActive = array_key_exists($active, $configSection);
 ?>
-<!-- Sidebar -->
-<div class="col-md-2 sidebar d-none d-md-block">
-    <div class="text-center mb-4">
-        <h3 class="text-white">🥖 La Vicky</h3>
-    </div>
-    <?php foreach ($nav as $key => $item): ?>
-        <?php [$href, $icon, $label, $req] = $item; ?>
-        <?php if (tiene_permiso(...$req)): ?>
-            <a href="<?= $href ?>"<?= $key === $active ? ' class="active"' : '' ?>>
-                <i class="fas <?= $icon ?> me-2"></i> <?= $label ?>
-            </a>
-        <?php endif; ?>
-    <?php endforeach; ?>
 
-    <?php
-    $configPermisos = array_reduce($configSection, function ($acc, $item) {
-        return array_merge($acc, $item[3]);
-    }, []);
-    $configActive = array_key_exists($active, $configSection);
-    ?>
-    <?php if (tiene_permiso(...$configPermisos)): ?>
-        <style>
-            .sidebar-section-toggle { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px 5px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #d1b9c9; border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 5px; text-decoration: none; cursor: pointer; }
-            .sidebar-section-toggle:hover, .sidebar-section-toggle.open { color: #fff; background: transparent; }
-            .sidebar-section-toggle .sidebar-chevron { transition: transform .3s ease; font-size: 11px; }
-            .sidebar-section-items { display: none; }
-            .sidebar-section-items.open { display: block; }
-        </style>
-        <a href="#" id="configSectionToggle" class="sidebar-section-toggle" onclick="toggleConfigSection(event)" aria-expanded="false" aria-controls="configSectionItems">
-            <span><i class="fas fa-cog me-2"></i> Configuración</span>
-            <i class="fas fa-chevron-down sidebar-chevron"></i>
-        </a>
-        <div id="configSectionItems" class="sidebar-section-items">
-            <?php foreach ($configSection as $key => $item): ?>
-                <?php [$href, $icon, $label, $req] = $item; ?>
-                <?php if (tiene_permiso(...$req)): ?>
-                    <a href="<?= $href ?>"<?= $key === $active ? ' class="active"' : '' ?> style="padding-left:40px;">
-                        <i class="fas <?= $icon ?> me-2"></i> <?= $label ?>
-                    </a>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-        <script>
-            (function () {
-                const wrap = document.getElementById('configSectionItems');
-                const toggle = document.getElementById('configSectionToggle');
-                if (!wrap || !toggle) return;
-                const configActive = <?= $configActive ? 'true' : 'false' ?>;
-                const saved = localStorage.getItem('configSectionOpen');
-                let open = configActive;
-                if (saved !== null) open = saved === '1';
-                function apply(open) {
-                    wrap.classList.toggle('open', open);
-                    toggle.classList.toggle('open', open);
-                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                }
-                apply(open);
-                window.toggleConfigSection = function (e) {
-                    e.preventDefault();
-                    open = !wrap.classList.contains('open');
-                    localStorage.setItem('configSectionOpen', open ? '1' : '0');
-                    apply(open);
-                };
-            })();
-        </script>
-    <?php endif; ?>
-</div>
-
-<!-- Permisos del usuario para uso desde JS (ocultar botones de acción) -->
+<!-- Permisos de sesión expuestos a JavaScript -->
 <script>
     const SESION_PERMISOS = <?= json_encode($permisos, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     function tienePermiso(codigo) {
+        if (!SESION_PERMISOS || !Array.isArray(SESION_PERMISOS)) return false;
         return SESION_PERMISOS.includes(codigo);
     }
 </script>
 
-<!-- Top Navbar -->
-<div class="top-navbar">
-    <div>
-        <h4 class="m-0"><?= htmlspecialchars($titulo) ?></h4>
+<!-- Desktop Sidebar -->
+<aside class="sidebar d-none d-lg-block">
+    <div class="p-4 text-center border-bottom border-secondary border-opacity-25">
+        <h3 class="text-white fw-bold m-0"><i class="fas fa-bread-slice me-2" style="color: var(--primary);"></i>La Vicky</h3>
+        <p class="text-muted small mt-1 mb-0">Sistema de Gestión</p>
     </div>
-    <div>
-        <span class="me-3"><i class="fas fa-user-circle"></i> <?= htmlspecialchars($usuario) ?>
-            <small class="text-muted">(<?= htmlspecialchars($rol) ?>)</small></span>
-        <a href="#" class="btn btn-outline-danger btn-sm" onclick="event.preventDefault(); fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html');">
-            <i class="fas fa-sign-out-alt"></i> Salir
-        </a>
+    
+    <nav class="mt-3 pb-4">
+        <?php foreach ($mainNav as $key => [$href, $icon, $label, $req]): ?>
+            <?php if (empty($req) || tiene_permiso(...$req)): ?>
+                <a href="<?= $href ?>" class="nav-link <?= ($active === $key || $currentPage === $href) ? 'active' : '' ?>">
+                    <i class="fas <?= $icon ?>"></i> <?= htmlspecialchars($label) ?>
+                </a>
+            <?php endif; ?>
+        <?php endforeach; ?>
+
+        <?php if (tiene_permiso(...$configPermisos)): ?>
+            <a href="#" id="configSectionToggle" class="sidebar-section-toggle open" onclick="toggleConfigSection(event)" aria-expanded="true">
+                <i class="fas fa-cog"></i><span> Configuración</span>
+                <i class="fas fa-chevron-down sidebar-chevron"></i>
+            </a>
+            <div id="configSectionItems" class="sidebar-section-items open">
+                <?php foreach ($configSection as $key => [$href, $icon, $label, $req]): ?>
+                    <?php if (tiene_permiso(...$req)): ?>
+                        <a href="<?= $href ?>" class="nav-link <?= ($active === $key || $currentPage === $href) ? 'active' : '' ?>">
+                            <i class="fas <?= $icon ?>"></i> <?= htmlspecialchars($label) ?>
+                        </a>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </nav>
+</aside>
+
+<!-- Mobile Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+    <div class="offcanvas-header border-bottom border-secondary">
+        <h5 class="offcanvas-title fw-bold" id="sidebarOffcanvasLabel">
+            <i class="fas fa-bread-slice me-2" style="color: var(--primary);"></i>La Vicky
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <nav class="mt-2 pb-4">
+            <?php foreach ($mainNav as $key => [$href, $icon, $label, $req]): ?>
+                <?php if (empty($req) || tiene_permiso(...$req)): ?>
+                    <a href="<?= $href ?>" class="nav-link text-white py-3 px-4 border-bottom border-secondary border-opacity-25 <?= ($active === $key || $currentPage === $href) ? 'active bg-primary' : '' ?>" style="border-radius: 0; margin: 0;">
+                        <i class="fas <?= $icon ?> me-3"></i> <?= htmlspecialchars($label) ?>
+                    </a>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <?php if (tiene_permiso(...$configPermisos)): ?>
+                <a href="#" id="configSectionToggleMobile" class="sidebar-section-toggle open" onclick="toggleConfigSection(event)" aria-expanded="true" style="margin: 12px 12px 4px; color: rgba(255,255,255,0.8);">
+                    <span><i class="fas fa-cog me-2"></i> Configuración</span>
+                    <i class="fas fa-chevron-down sidebar-chevron"></i>
+                </a>
+                <div id="configSectionItemsMobile" class="sidebar-section-items open" style="margin: 0 12px 8px;">
+                    <?php foreach ($configSection as $key => [$href, $icon, $label, $req]): ?>
+                        <?php if (tiene_permiso(...$req)): ?>
+                            <a href="<?= $href ?>" class="nav-link text-white py-2 ps-5 pe-4 border-bottom border-secondary border-opacity-25 <?= ($active === $key || $currentPage === $href) ? 'active bg-primary' : '' ?>" style="border-radius: 0; margin: 0;">
+                                <i class="fas <?= $icon ?> me-2"></i> <?= htmlspecialchars($label) ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </nav>
     </div>
 </div>
+
+<script>
+    function toggleConfigSection(e) {
+        if (e) e.preventDefault();
+
+        const desktopWrap = document.getElementById('configSectionItems');
+        const desktopToggle = document.getElementById('configSectionToggle');
+        const mobileWrap = document.getElementById('configSectionItemsMobile');
+        const mobileToggle = document.getElementById('configSectionToggleMobile');
+
+        const isOpen = desktopWrap ? desktopWrap.classList.contains('open') : false;
+        const next = !isOpen;
+
+        if (desktopWrap) desktopWrap.classList.toggle('open', next);
+        if (desktopToggle) {
+            desktopToggle.classList.toggle('open', next);
+            desktopToggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+        }
+        if (mobileWrap) mobileWrap.classList.toggle('open', next);
+        if (mobileToggle) {
+            mobileToggle.classList.toggle('open', next);
+            mobileToggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+        }
+
+        try { localStorage.setItem('configSectionOpen', next ? '1' : '0'); } catch(err) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const desktopWrap = document.getElementById('configSectionItems');
+        const desktopToggle = document.getElementById('configSectionToggle');
+        const mobileWrap = document.getElementById('configSectionItemsMobile');
+        const mobileToggle = document.getElementById('configSectionToggleMobile');
+        const sidebar = document.querySelector('.sidebar.d-none.d-lg-block');
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+
+        const shouldOpen = false;
+
+        if (desktopWrap) desktopWrap.classList.toggle('open', shouldOpen);
+        if (desktopToggle) {
+            desktopToggle.classList.toggle('open', shouldOpen);
+            desktopToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        }
+        if (mobileWrap) mobileWrap.classList.toggle('open', shouldOpen);
+        if (mobileToggle) {
+            mobileToggle.classList.toggle('open', shouldOpen);
+            mobileToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        }
+
+        if (sidebar && sidebarToggleBtn) {
+            try {
+                if (localStorage.getItem('sidebarCollapsed') === '1') {
+                    sidebar.classList.add('collapsed');
+                }
+            } catch(err) {}
+
+            sidebarToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                try {
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
+                } catch(err) {}
+            });
+        }
+    });
+</script>

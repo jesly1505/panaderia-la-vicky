@@ -14,6 +14,7 @@ use App\Core\Router;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
 use App\Controllers\ClienteController;
+use App\Controllers\CmmiController;
 use App\Controllers\DashboardController;
 use App\Controllers\EmployeeController;
 use App\Controllers\EmpresaController;
@@ -49,13 +50,12 @@ $container->set(InsumoRepositoryInterface::class, function ($c) {
 $router = new Router();
 
 // Autenticación (públicas)
-// login / login_redirect procesan credenciales por POST:
-// login responde JSON (usado por assets/js/login.js) y
-// login_redirect redirige por HTTP (fallback del <form> de login.html).
 $router->register('login', AuthController::class, 'login', true, null, ['POST']);
 $router->register('login_redirect', AuthController::class, 'loginRedirect', false, null, ['POST']);
 $router->register('logout', AuthController::class, 'logout', true, null, ['GET']);
 $router->register('check_session', AuthController::class, 'checkSession', true, null, ['GET']);
+$router->register('forgot_password', AuthController::class, 'forgotPassword', true, null, ['POST']);
+$router->register('reset_password', AuthController::class, 'resetPassword', true, null, ['POST']);
 
 // Inventario (Insumos)
 $router->register('get_insumos', InsumoController::class, 'getAll', true, null, ['GET'], 'inventario.ver');
@@ -71,9 +71,14 @@ $router->register('get_gastos_by_date', GastoController::class, 'getByDate', tru
 $router->register('add_gasto', GastoController::class, 'add', true, null, ['POST'], 'gastos.gestionar');
 $router->register('delete_gasto', GastoController::class, 'delete', true, null, ['POST'], 'gastos.gestionar');
 
-// Reportes
+// Reportes y Exportaciones CSV
 $router->register('get_ventas_semanales', ReporteController::class, 'getVentasSemanales', true, null, ['GET'], 'reportes.ver');
 $router->register('get_ventas_mensuales', ReporteController::class, 'getVentasMensuales', true, null, ['GET'], 'reportes.ver');
+$router->register('get_ventas_stats_reporte', ReporteController::class, 'getVentasStats', true, null, ['GET'], 'reportes.ver');
+$router->register('export_ventas_csv', ReporteController::class, 'exportVentasCSV', false, null, ['GET'], 'reportes.ver');
+$router->register('export_insumos_csv', ReporteController::class, 'exportInsumosCSV', false, null, ['GET'], 'reportes.ver');
+$router->register('export_productos_csv', ReporteController::class, 'exportProductosCSV', false, null, ['GET'], 'reportes.ver');
+$router->register('export_gastos_csv', ReporteController::class, 'exportGastosCSV', false, null, ['GET'], 'reportes.ver');
 
 // Proveedores
 $router->register('get_proveedores', ProveedorController::class, 'getAll', true, null, ['GET'], 'proveedores.ver');
@@ -126,12 +131,15 @@ $router->register('get_employee_stats', EmployeeController::class, 'getStats', t
 // Perfil de la panadería (empresa)
 $router->register('get_perfil_empresa', EmpresaController::class, 'getPerfil', true, null, ['GET'], 'perfil.gestionar');
 $router->register('set_perfil_empresa', EmpresaController::class, 'updatePerfil', true, null, ['POST'], 'perfil.gestionar');
-// Datos del negocio para la factura (accesible a cualquier usuario autenticado).
 $router->register('get_datos_empresa', EmpresaController::class, 'getPerfil', true, [], ['GET']);
 
-// Auditoría
+// Auditoría y CMMI (Incidencias y Respaldo)
 $router->register('get_bitacora', AuditController::class, 'getBitacora', true, null, ['GET'], 'auditoria.ver');
 $router->register('get_accesos_denegados', AuditController::class, 'getDenied', true, null, ['GET'], 'auditoria.ver');
+$router->register('get_incidencias', CmmiController::class, 'getAll', true, null, ['GET'], 'auditoria.ver');
+$router->register('registrar_incidencia', CmmiController::class, 'registrarIncidencia', false, [], ['POST']);
+$router->register('resolver_incidencia', CmmiController::class, 'resolverIncidencia', false, null, ['GET', 'POST'], 'auditoria.ver');
+$router->register('backup_db', CmmiController::class, 'backupDatabase', false, null, ['GET'], 'permisos.gestionar');
 
 // Permisos de roles (RBAC)
 $router->register('get_permisos', PermisoController::class, 'getPermisos', true, null, ['GET'], 'permisos.gestionar');

@@ -16,11 +16,13 @@ class VentaModel {
         $this->productoModel = $productoModel;
     }
 
-    public function readAll() {
+    public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '') {
+        $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
         $query = "SELECT v.*, p.estado as estado_pedido, u.nombre as vendedor 
                   FROM ventas v 
                   LEFT JOIN pedidos p ON v.pedido_id = p.id
                   LEFT JOIN usuarios u ON v.usuario_id = u.id
+                  WHERE $dateCondition
                   ORDER BY v.fecha_venta DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();

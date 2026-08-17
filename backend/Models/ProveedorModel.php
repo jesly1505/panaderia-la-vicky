@@ -12,8 +12,8 @@ class ProveedorModel {
     }
 
     public function create($nombre, $contacto, $telefono, $email) {
-        $query = "INSERT INTO " . $this->table_name . " (nombre, contacto, telefono, email) 
-                  VALUES (:nombre, :contacto, :telefono, :email)";
+        $query = "INSERT INTO " . $this->table_name . " (nombre, contacto, telefono, email, eliminado) 
+                  VALUES (:nombre, :contacto, :telefono, :email, false)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":contacto", $contacto);
@@ -24,7 +24,7 @@ class ProveedorModel {
 
     public function readAll() {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE deleted_at IS NULL 
+                  WHERE eliminado = false 
                   ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -34,7 +34,7 @@ class ProveedorModel {
     public function update($id, $nombre, $contacto, $telefono, $email) {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre, contacto = :contacto, telefono = :telefono, email = :email 
-                  WHERE id = :id";
+                  WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":contacto", $contacto);
@@ -45,18 +45,17 @@ class ProveedorModel {
     }
 
     public function delete($id) {
-        $query = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
+        $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
-?>

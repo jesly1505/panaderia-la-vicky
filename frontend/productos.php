@@ -1,106 +1,106 @@
 <?php
+// frontend/productos.php
 session_start();
 require_once __DIR__ . '/includes/permisos.php';
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
     exit();
 }
+
 if (!tiene_permiso('productos.ver')) {
     header("Location: index.php");
     exit();
 }
+
+$pageTitle = "Productos";
+$pageHeader = "Catálogo y Recetas de Productos";
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Productos - La Vicky</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <?php include 'includes/head.php'; ?>
     <style>
-        body { background-color: #f4f6f9; }
-        .sidebar { height: 100vh; background-color: #685569; padding-top: 20px; position: fixed; width: 16.666667%; overflow-y: auto; }
-        .sidebar a { padding: 15px 20px; text-decoration: none; font-size: 16px; color: #d1d8e0; display: block; transition: 0.3s; }
-        .sidebar a:hover, .sidebar a.active { color: #fff; background-color: #0d6efd; }
-        .main-content { padding: 30px; margin-left: 16.666667%; }
-        .top-navbar { background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; margin-left: 16.666667%; }
-        .product-card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.05); transition: .25s; }
-        .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,.1); }
-        .category-badge { font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; }
-        .filter-btn { border-radius: 20px; padding: .3rem 1rem; font-size: .85rem; transition: .2s; }
-        .filter-btn.active { background-color: #685569; color: #fff; border-color: #685569; }
-        .product-icon { font-size: 2.5rem; }
+        .product-card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); transition: var(--transition); overflow: hidden; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .product-card .card-body { padding: 1.5rem; }
+        .product-icon-wrapper { width: 60px; height: 60px; margin: 0 auto 1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; background: var(--primary-light); color: var(--primary); }
+        .category-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 0.4em 0.8em; border-radius: 4px; }
+        .filter-btn { border-radius: 30px; padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 500; border: 1px solid #dee2e6; color: var(--text-muted); background: var(--white); transition: var(--transition); }
+        .filter-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); box-shadow: 0 4px 10px rgba(192, 86, 15, 0.3); }
+        .ingrediente-row { background: var(--light); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px; }
     </style>
 </head>
-
 <body>
-    <div class="container-fluid p-0">
-        <?php $active = 'productos'; $titulo = 'Gestión de Productos'; include 'includes/sidebar.php'; ?>
+    <div class="wrapper">
+        <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Main Content -->
         <div class="main-content">
-            <!-- Cabecera y botón nuevo -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="text-muted m-0">Catálogo de Productos al Público</h5>
-                <?php if (tiene_permiso('productos.gestionar')): ?>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductoModal">
-                    <i class="fas fa-plus"></i> Añadir Producto
-                </button>
-                <?php endif; ?>
-            </div>
+            <?php include 'includes/navbar.php'; ?>
 
-            <!-- ===== FILTROS POR CATEGORÍA ===== -->
-            <div class="mb-4 d-flex flex-wrap gap-2" id="categoryFilters">
-                <button class="btn btn-outline-secondary filter-btn active" onclick="filterCategoria('', this)">
-                    <i class="fas fa-th-large me-1"></i> Todos
-                </button>
-                <button class="btn btn-outline-warning filter-btn" onclick="filterCategoria('Pan Dulce', this)">
-                    🍞 Pan Dulce
-                </button>
-                <button class="btn btn-outline-info filter-btn" onclick="filterCategoria('Pan Salado', this)">
-                    🥖 Pan Salado
-                </button>
-                <button class="btn btn-outline-danger filter-btn" onclick="filterCategoria('Pastelería', this)">
-                    🎂 Pastelería
-                </button>
-                <button class="btn btn-outline-success filter-btn" onclick="filterCategoria('Bebidas', this)">
-                    ☕ Bebidas
-                </button>
-            </div>
+            <div class="container-fluid p-4 animate-fade-in">
+                <!-- Header Actions -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                    <div>
+                        <h5 class="mb-1 fw-bold text-dark">Catálogo de Productos</h5>
+                        <p class="text-muted small mb-0" id="productCount">Cargando catálogo...</p>
+                    </div>
+                    <?php if (tiene_permiso('productos.gestionar')): ?>
+                        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductoModal">
+                            <i class="fas fa-plus me-2"></i>Añadir Producto
+                        </button>
+                    <?php endif; ?>
+                </div>
 
-            <!-- Contador de resultados -->
-            <p class="text-muted small mb-3" id="productCount">Cargando...</p>
+                <!-- Category Filters -->
+                <div class="mb-4 d-flex flex-wrap gap-2" id="categoryFilters">
+                    <button class="filter-btn active" onclick="filterCategoria('', this)">
+                        <i class="fas fa-th-large me-2"></i>Todos
+                    </button>
+                    <button class="filter-btn" onclick="filterCategoria('Pan Dulce', this)">
+                        <span class="me-2">🍞</span>Pan Dulce
+                    </button>
+                    <button class="filter-btn" onclick="filterCategoria('Pan Salado', this)">
+                        <span class="me-2">🥖</span>Pan Salado
+                    </button>
+                    <button class="filter-btn" onclick="filterCategoria('Pastelería', this)">
+                        <span class="me-2">🎂</span>Pastelería
+                    </button>
+                    <button class="filter-btn" onclick="filterCategoria('Bebidas', this)">
+                        <span class="me-2">☕</span>Bebidas
+                    </button>
+                </div>
 
-            <!-- Grid de productos -->
-            <div class="row g-3" id="productosCatalog">
-                <div class="col-12 text-center text-muted py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i><br>Cargando productos...
+                <!-- Product Grid -->
+                <div class="row g-4" id="productosCatalog">
+                    <div class="col-12 text-center py-5 text-muted">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p>Cargando catálogo de productos...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== MODAL NUEVO PRODUCTO ===== -->
+    <!-- Modal Nuevo Producto -->
     <div class="modal fade" id="addProductoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
                 <form id="addProductoForm">
-                    <div class="modal-header">
-                        <h5 class="modal-title"><i class="fas fa-bread-slice me-2"></i>Registrar Nuevo Producto</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-header bg-dark text-white border-0 p-4">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-bread-slice me-2"></i>Registrar Nuevo Producto</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Nombre del Producto <span class="text-danger">*</span></label>
-                                <input type="text" name="nombre" class="form-control" required placeholder="Ej. Pan Francés">
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-7 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Nombre del Producto</label>
+                                <input type="text" name="nombre" class="form-control py-2" required maxlength="100" placeholder="Ej. Pan Francés Especial">
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Categoría <span class="text-danger">*</span></label>
-                                <select name="categoria" class="form-select" required>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Categoría</label>
+                                <select name="categoria" class="form-select py-2" required>
                                     <option value="Pan Dulce">🍞 Pan Dulce</option>
                                     <option value="Pan Salado">🥖 Pan Salado</option>
                                     <option value="Pastelería">🎂 Pastelería</option>
@@ -108,373 +108,344 @@ if (!tiene_permiso('productos.ver')) {
                                 </select>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Descripción</label>
-                            <textarea name="descripcion" class="form-control" rows="2" placeholder="Descripción corta del producto..."></textarea>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Descripción</label>
+                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Breve descripción del producto..."></textarea>
                         </div>
-                        <div class="row">
+                        <div class="row g-3">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Precio de Venta ($) <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" name="precio_venta" class="form-control" required>
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Precio Venta ($)</label>
+                                <input type="number" step="0.01" min="0.01" max="999999.99" name="precio_venta" class="form-control py-2" required>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Cantidad Inicial (Stock)</label>
-                                <input type="number" name="cantidad" class="form-control" value="0" min="0">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Stock Inicial</label>
+                                <input type="number" step="1" name="cantidad" class="form-control py-2" value="0" min="0" max="99999">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Stock Mínimo (Alerta)</label>
-                                <input type="number" name="stock_minimo" class="form-control" value="0" min="0">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Stock Mínimo</label>
+                                <input type="number" step="1" name="stock_minimo" class="form-control py-2" value="5" min="0" max="99999">
                             </div>
                         </div>
-                        <hr>
-                        <h6 class="mb-2"><i class="fas fa-list-ul me-1 text-secondary"></i>Receta / Insumos Requeridos</h6>
-                        <p class="text-muted small mb-2">Si tienes stock inicial, los insumos se descontarán automáticamente del inventario.</p>
-                        <div id="ingredientesList"></div>
-                        <button type="button" class="btn btn-sm btn-outline-success w-100 mt-2" onclick="addIngredienteRow()">
-                            <i class="fas fa-plus"></i> Añadir Insumo a Receta
-                        </button>
+                        
+                        <div class="mt-4 border rounded p-4 bg-light bg-opacity-50">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list-ul me-2 text-primary"></i>Receta / Insumos Requeridos</h6>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="addIngredienteRow()">
+                                    <i class="fas fa-plus me-1"></i>Añadir Insumo
+                                </button>
+                            </div>
+                            <p class="text-muted small mb-3">Defina los insumos necesarios para producir una unidad de este producto.</p>
+                            <div id="ingredientesList"></div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Guardar Producto</button>
+                    <div class="modal-footer border-0 p-3 bg-light">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">Guardar Producto</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- ===== MODAL PRODUCIR PRODUCTO ===== -->
-    <div class="modal fade" id="producirModal" tabindex="-1" aria-labelledby="producirModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="producirModalLabel">
-                        <i class="fas fa-industry me-2 text-success"></i>Producir Producto
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- Modal Producir -->
+    <div class="modal fade" id="producirModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title fw-bold" id="producirModalLabel"><i class="fas fa-industry me-2"></i>Producción</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <!-- Alerta de resultado (éxito o error) -->
-                    <div id="producirAlert" class="alert d-none mb-3"></div>
-
-                    <p class="mb-1 text-muted small">Producto:</p>
-                    <p class="fw-bold mb-3" id="producirNombreLabel">—</p>
-
-                    <label for="producirCantidad" class="form-label">Cantidad a producir <span class="text-danger">*</span></label>
-                    <input type="number" id="producirCantidad" class="form-control"
-                           min="1" step="1" placeholder="Ej. 50">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success" id="btnConfirmarProduccion"
-                            onclick="confirmarProduccion()">
-                        <i class="fas fa-check me-1"></i>Confirmar Producción
-                    </button>
-                </div>
+                <form id="producirForm">
+                    <div class="modal-body p-4 text-center">
+                        <input type="hidden" id="producirProductoId" name="producto_id">
+                        <h6 class="fw-bold mb-3" id="producirProductoNombre">Producto</h6>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-semibold">Cantidad a Hornear / Producir</label>
+                            <input type="number" id="producirCantidad" name="cantidad" class="form-control form-control-lg text-center fw-bold" value="10" min="1" max="99999" required>
+                        </div>
+                        <p class="text-muted small mb-0">Se descontarán automáticamente los insumos de la receta.</p>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light justify-content-center">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4">Producir</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/common.js"></script>
+    <!-- Scripts -->
+    <?php include 'includes/footer.php'; ?>
     <script>
-        // ---- Icons per category ----
-        const catIcons = {
-            'Pan Dulce':  { icon: '🍞', color: 'warning' },
-            'Pan Salado': { icon: '🥖', color: 'info'    },
-            'Pastelería': { icon: '🎂', color: 'danger'  },
-            'Bebidas':    { icon: '☕', color: 'success'  }
-        };
+        let allInsumos = [];
+        let currentCategoria = '';
 
-        let insumosGlob    = [];
-        let activeCategory = '';   // '' = todos
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProductos('');
-            loadInsumosDropdown();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadInsumos();
+            await loadProductos();
         });
 
-        // ---- Load insumos for recipe builder ----
-        async function loadInsumosDropdown() {
+        async function loadInsumos() {
             try {
-                const res  = await fetch('../backend/api.php?route=get_insumos');
-                const json = await res.json();
-                if (json.success) insumosGlob = json.data;
-            } catch (e) {}
+                const res = await fetch('../backend/api.php?route=get_insumos');
+                const data = await res.json();
+                if (data.success) {
+                    allInsumos = data.data;
+                }
+            } catch (e) {
+                console.error('Error fetching insumos:', e);
+            }
         }
 
-        // ---- Category filter button click ----
+        async function loadProductos(categoria = '') {
+            let url = '../backend/api.php?route=get_productos';
+            if (categoria) {
+                url = `../backend/api.php?route=get_productos_by_categoria&categoria=${encodeURIComponent(categoria)}`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const container = document.getElementById('productosCatalog');
+                const countBadge = document.getElementById('productCount');
+                container.innerHTML = '';
+
+                if (data.success && data.data && data.data.length > 0) {
+                    countBadge.textContent = `Mostrando ${data.data.length} producto(s)`;
+                    
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
+                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('productos.eliminar') : true);
+
+                    data.data.forEach(p => {
+                        let catEmoji = '🍞';
+                        let catBg = 'bg-warning text-dark';
+                        if (p.categoria === 'Pan Salado') { catEmoji = '🥖'; catBg = 'bg-info text-white'; }
+                        if (p.categoria === 'Pastelería') { catEmoji = '🎂'; catBg = 'bg-danger text-white'; }
+                        if (p.categoria === 'Bebidas') { catEmoji = '☕'; catBg = 'bg-secondary text-white'; }
+
+                        let stockBadge = '<span class="badge bg-success">En Stock</span>';
+                        if (p.stock_actual <= 0) {
+                            stockBadge = '<span class="badge bg-danger">Agotado</span>';
+                        } else if (p.stock_actual <= p.stock_minimo) {
+                            stockBadge = '<span class="badge bg-warning text-dark">Stock Bajo</span>';
+                        }
+
+                        container.innerHTML += `
+                            <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                                <div class="card product-card h-100 position-relative">
+                                    <div class="card-body d-flex flex-column text-center">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="category-badge ${catBg}">${p.categoria}</span>
+                                            ${stockBadge}
+                                        </div>
+
+                                        <div class="product-icon-wrapper">
+                                            <span>${catEmoji}</span>
+                                        </div>
+
+                                        <h5 class="fw-bold text-dark mb-1">${p.nombre}</h5>
+                                        <p class="text-muted small text-truncate mb-3" style="max-height: 40px;">${p.descripcion || 'Sin descripción'}</p>
+
+                                        <div class="bg-light p-2 rounded mb-3 mt-auto">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Precio Venta:</small>
+                                                <span class="fw-bold text-primary fs-5">$${parseFloat(p.precio_venta).toFixed(2)}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">Stock Disponible:</small>
+                                                <span class="fw-semibold text-dark">${p.stock_actual} unids</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            ${puedeGestionar ? `
+                                                <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')">
+                                                    <i class="fas fa-industry me-1"></i> Producir
+                                                </button>
+                                            ` : ''}
+                                            ${puedeEliminar ? `
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id}, '${escapeHtml(p.nombre)}')">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    countBadge.textContent = '0 productos encontrados';
+                    container.innerHTML = `
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="fas fa-box-open fs-1 mb-3 text-secondary"></i>
+                            <p>No se encontraron productos en esta categoría.</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Error fetching products:', e);
+            }
+        }
+
         function filterCategoria(cat, btn) {
-            activeCategory = cat;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            currentCategoria = cat;
+            document.querySelectorAll('#categoryFilters .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             loadProductos(cat);
         }
 
-        // ---- Load / render products ----
-        async function loadProductos(categoria = '') {
-            const catalog = document.getElementById('productosCatalog');
-            catalog.innerHTML = `<div class="col-12 text-center text-muted py-5">
-                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i><br>Cargando...</div>`;
-
-            const route = categoria
-                ? `get_productos_by_categoria&categoria=${encodeURIComponent(categoria)}`
-                : 'get_productos';
-
-            try {
-                const res  = await fetch(`../backend/api.php?route=${route}`);
-                const data = await res.json();
-                catalog.innerHTML = '';
-
-                if (data.success && data.data.length > 0) {
-                    document.getElementById('productCount').textContent =
-                        `Mostrando ${data.data.length} producto${data.data.length !== 1 ? 's' : ''}`;
-
-                    data.data.forEach(prod => {
-                        const ci    = catIcons[prod.categoria] || { icon: '📦', color: 'secondary' };
-                        const isLow = parseFloat(prod.stock_actual) <= parseFloat(prod.stock_minimo || 0);
-
-                        catalog.innerHTML += `
-                        <div class="col-sm-6 col-md-4 col-lg-3">
-                            <div class="card product-card h-100">
-                                <div class="card-body d-flex flex-column text-center p-3">
-                                    <div class="product-icon mb-2">${ci.icon}</div>
-                                    <span class="badge bg-${ci.color} category-badge mb-2">${prod.categoria}</span>
-                                    <h6 class="card-title fw-bold mb-1">${prod.nombre}</h6>
-                                    <p class="text-muted small flex-grow-1 mb-2">${prod.descripcion || 'Sin descripción'}</p>
-                                    <h5 class="text-success mb-1">$${parseFloat(prod.precio_venta).toFixed(2)}</h5>
-                                    <p class="mb-2 small ${isLow ? 'text-danger fw-bold' : 'text-muted'}">
-                                        <i class="fas fa-boxes me-1"></i>Stock: ${prod.stock_actual}
-                                        ${isLow ? ' <span class="badge bg-danger ms-1">Bajo</span>' : ''}
-                                    </p>
-                                    <div class="d-flex gap-2 mt-auto">
-                                        ${tienePermiso('productos.gestionar') ? `
-                                        <button class="btn btn-outline-success btn-sm flex-grow-1"
-                                            onclick="abrirProducir(${prod.id}, '${prod.nombre.replace(/'/g,"\\'")}')"
-                                            title="Producir unidades de este producto">
-                                            <i class="fas fa-industry me-1"></i>Producir
-                                        </button>` : ''}
-                                        ${tienePermiso('productos.eliminar') ? `
-                                        <button class="btn btn-outline-danger btn-sm"
-                                            onclick="deleteProducto(${prod.id}, '${prod.nombre.replace(/'/g,"\\'")}')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                    });
-                } else {
-                    const label = categoria || 'el catálogo';
-                    document.getElementById('productCount').textContent = '0 productos';
-                    catalog.innerHTML = `
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="fas fa-bread-slice fa-3x mb-3 opacity-25"></i>
-                            <p class="fs-5">No hay productos en <strong>${label}</strong>.</p>
-                            ${tienePermiso('productos.gestionar') ? `
-                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductoModal">
-                                <i class="fas fa-plus me-1"></i>Añadir el primero
-                            </button>` : ''}
-                        </div>`;
-                }
-            } catch (e) {
-                catalog.innerHTML = `<div class="col-12 text-center text-danger py-4">Error al cargar productos.</div>`;
-            }
-        }
-
-        // ---- Recipe ingredient row ----
         function addIngredienteRow() {
-            const list = document.getElementById('ingredientesList');
-            const row  = document.createElement('div');
-            row.className = 'row mb-2 ingrediente-row g-2 align-items-center';
-            let opts = '<option value="">Seleccione insumo...</option>';
-            insumosGlob.forEach(ins => opts += `<option value="${ins.id}">${ins.nombre} (${ins.unidad_medida})</option>`);
-            row.innerHTML = `
-                <div class="col-5">
-                    <select class="form-select form-select-sm insumo-select" required>${opts}</select>
-                </div>
-                <div class="col-3">
-                    <input type="number" step="0.01" class="form-control form-control-sm insumo-cant"
-                           placeholder="Cant. a usar" required>
-                </div>
-                <div class="col-3">
-                    <select class="form-select form-select-sm insumo-unidad" required>
-                        <option value="Gramos">Gramos (g)</option>
-                        <option value="Kg">Kilogramos (Kg)</option>
-                        <option value="Libras">Libras (lb)</option>
-                        <option value="Onzas">Onzas (oz)</option>
-                        <option value="Mililitros">Mililitros (ml)</option>
-                        <option value="Litros">Litros (L)</option>
-                        <option value="Unidades">Unidades (Und)</option>
-                    </select>
-                </div>
-                <div class="col-1 text-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm"
-                        onclick="this.closest('.ingrediente-row').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>`;
-            list.appendChild(row);
-        }
-
-        // ---- Submit new product ----
-        document.getElementById('addProductoForm').addEventListener('submit', async e => {
-            e.preventDefault();
-            const formObj = {
-                nombre:       e.target.nombre.value,
-                categoria:    e.target.categoria.value,
-                descripcion:  e.target.descripcion.value,
-                precio_venta: e.target.precio_venta.value,
-                cantidad:     e.target.cantidad.value,
-                stock_minimo: e.target.stock_minimo.value,
-                ingredientes: []
-            };
-
-            document.querySelectorAll('.ingrediente-row').forEach(row => {
-                const id  = row.querySelector('.insumo-select').value;
-                const qty = row.querySelector('.insumo-cant').value;
-                const unit = row.querySelector('.insumo-unidad').value;
-                if (id && qty) formObj.ingredientes.push({ 
-                    insumo_id: id, 
-                    cantidad_requerida: qty,
-                    unidad_usada: unit
-                });
+            const container = document.getElementById('ingredientesList');
+            const rowId = Date.now();
+            let options = '<option value="" disabled selected>Seleccione insumo...</option>';
+            allInsumos.forEach(i => {
+                options += `<option value="${i.id}" data-um="${i.unidad_medida}">${i.nombre} (${i.unidad_medida})</option>`;
             });
 
+            const row = document.createElement('div');
+            row.className = 'row g-2 align-items-center ingrediente-row';
+            row.id = `row-${rowId}`;
+            row.innerHTML = `
+                <div class="col-6">
+                    <select name="insumo_id[]" class="form-select form-select-sm" required onchange="updateRowUm(this, ${rowId})">
+                        ${options}
+                    </select>
+                </div>
+                <div class="col-4">
+                    <div class="input-group input-group-sm">
+                        <input type="number" step="0.001" min="0.001" name="cantidad_usada[]" class="form-control" placeholder="Cant" required>
+                        <span class="input-group-text um-label" id="um-${rowId}">u</span>
+                    </div>
+                </div>
+                <div class="col-2 text-end">
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="document.getElementById('row-${rowId}').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function updateRowUm(select, rowId) {
+            const opt = select.options[select.selectedIndex];
+            const um = opt.getAttribute('data-um') || 'u';
+            document.getElementById(`um-${rowId}`).textContent = um;
+        }
+
+        document.getElementById('addProductoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const insumoIds = formData.getAll('insumo_id[]');
+            const cantidades = formData.getAll('cantidad_usada[]');
+            
+            const receta = [];
+            for (let i = 0; i < insumoIds.length; i++) {
+                if (insumoIds[i] && cantidades[i]) {
+                    receta.push({
+                        insumo_id: parseInt(insumoIds[i]),
+                        cantidad_usada: parseFloat(cantidades[i])
+                    });
+                }
+            }
+
+            const payload = {
+                nombre: formData.get('nombre'),
+                categoria: formData.get('categoria'),
+                descripcion: formData.get('descripcion'),
+                precio_venta: parseFloat(formData.get('precio_venta')),
+                stock_inicial: parseInt(formData.get('cantidad') || 0),
+                stock_minimo: parseInt(formData.get('stock_minimo') || 5),
+                receta: receta
+            };
+
             try {
-                const res  = await fetch('../backend/api.php?route=add_producto', {
+                const res = await fetch('../backend/api.php?route=add_producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formObj)
+                    body: JSON.stringify(payload)
                 });
-                const json = await res.json();
-                if (json.success) {
+                const data = await res.json();
+                if (data.success) {
+                    alert('Producto registrado exitosamente');
                     bootstrap.Modal.getInstance(document.getElementById('addProductoModal')).hide();
                     e.target.reset();
                     document.getElementById('ingredientesList').innerHTML = '';
-                    loadProductos(activeCategory);
+                    await loadProductos(currentCategoria);
                 } else {
-                    alert('Error: ' + json.message);
+                    alert(data.message || 'Error al registrar el producto');
                 }
             } catch (err) {
-                alert('Error del servidor: ' + err.message);
+                console.error(err);
+                alert('Error de conexión con el servidor.');
             }
         });
 
-        // ---- Delete product ----
-        async function deleteProducto(id, nombre) {
-            if (!confirm(`¿Eliminar el producto "${nombre}"?\nTambién se eliminará su receta asignada.`)) return;
-            const fd = new FormData();
-            fd.append('id', id);
+        function openProducirModal(id, nombre) {
+            document.getElementById('producirProductoId').value = id;
+            document.getElementById('producirProductoNombre').textContent = nombre;
+            document.getElementById('producirCantidad').value = 10;
+            const modal = new bootstrap.Modal(document.getElementById('producirModal'));
+            modal.show();
+        }
+
+        document.getElementById('producirForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prodId = document.getElementById('producirProductoId').value;
+            const cant = document.getElementById('producirCantidad').value;
+
             try {
-                const res  = await fetch('../backend/api.php?route=delete_producto', { method: 'POST', body: fd });
-                const json = await res.json();
-                if (json.success) {
-                    loadProductos(activeCategory);
+                const res = await fetch('../backend/api.php?route=producir_producto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ producto_id: prodId, cantidad_producida: cant })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Producción realizada con éxito. Stock actualizado.');
+                    bootstrap.Modal.getInstance(document.getElementById('producirModal')).hide();
+                    await loadProductos(currentCategoria);
                 } else {
-                    alert('Error: ' + json.message);
+                    alert(data.message || 'Error al realizar producción');
                 }
             } catch (err) {
-                alert('Error del servidor.');
+                console.error(err);
+                alert('Error al procesar producción');
             }
-        }
+        });
 
-        // =====================================================================
-        // PRODUCCIÓN DE PRODUCTO
-        // =====================================================================
-
-        /** ID del producto actualmente seleccionado para producir */
-        let producirProductoId = null;
-
-        /**
-         * Abre el modal de producción y guarda el ID del producto.
-         * @param {number} id     - ID del producto
-         * @param {string} nombre - Nombre legible del producto
-         */
-        function abrirProducir(id, nombre) {
-            producirProductoId = id;
-            document.getElementById('producirNombreLabel').textContent = nombre;
-            document.getElementById('producirCantidad').value = '';
-            // Ocultar alerta previa
-            const alert = document.getElementById('producirAlert');
-            alert.classList.add('d-none');
-            alert.textContent = '';
-            // Habilitar botón de confirmación
-            document.getElementById('btnConfirmarProduccion').disabled = false;
-
-            new bootstrap.Modal(document.getElementById('producirModal')).show();
-        }
-
-        /**
-         * Envía la solicitud de producción a la API.
-         * Muestra el resultado directamente en el modal sin cerrar la ventana
-         * en caso de error, para que el usuario vea el detalle de insumos faltantes.
-         */
-        async function confirmarProduccion() {
-            const cantidad = parseFloat(document.getElementById('producirCantidad').value);
-            const alertEl  = document.getElementById('producirAlert');
-
-            // Validar cantidad
-            if (!cantidad || cantidad <= 0) {
-                mostrarAlertaProducir('warning', 'Ingresa una cantidad válida mayor a cero.');
+        async function deleteProduct(id, nombre) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('productos.eliminar')) {
+                alert('No dispone de permisos para eliminar productos.');
                 return;
             }
 
-            // Deshabilitar botón mientras espera respuesta
-            document.getElementById('btnConfirmarProduccion').disabled = true;
+            if (!confirm(`¿Está seguro de eliminar "${nombre}" del catálogo?`)) return;
 
             try {
-                const res  = await fetch('../backend/api.php?route=producir_producto', {
-                    method:  'POST',
+                const res = await fetch('../backend/api.php?route=delete_producto', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ producto_id: producirProductoId, cantidad })
+                    body: JSON.stringify({ id: id })
                 });
-                const json = await res.json();
-
-                if (json.success) {
-                    // Éxito: actualizar el catálogo y cerrar el modal con un pequeño retardo
-                    mostrarAlertaProducir('success', json.message);
-                    loadProductos(activeCategory);
-                    setTimeout(() => {
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('producirModal'));
-                        if (modal) modal.hide();
-                    }, 1800);
+                const data = await res.json();
+                if (data.success) {
+                    alert('Producto eliminado correctamente.');
+                    await loadProductos(currentCategoria);
                 } else {
-                    // Error: mostrar detalle sin cerrar el modal
-                    let msg = json.message;
-                    if (json.faltantes && json.faltantes.length > 0) {
-                        msg += '<ul class="mt-2 mb-0">';
-                        json.faltantes.forEach(f => { msg += `<li>${f}</li>`; });
-                        msg += '</ul>';
-                    }
-                    mostrarAlertaProducir('danger', msg, true);
-                    document.getElementById('btnConfirmarProduccion').disabled = false;
+                    alert(data.message || 'Error al eliminar el producto');
                 }
-            } catch (err) {
-                mostrarAlertaProducir('danger', 'Error de conexión: ' + err.message);
-                document.getElementById('btnConfirmarProduccion').disabled = false;
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión.');
             }
         }
 
-        /**
-         * Muestra una alerta Bootstrap dentro del modal de producción.
-         * @param {string}  tipo - 'success'|'danger'|'warning'
-         * @param {string}  html - Contenido HTML del mensaje
-         * @param {boolean} esHTML - Si true, usa innerHTML; si false, textContent
-         */
-        function mostrarAlertaProducir(tipo, html, esHTML = false) {
-            const el = document.getElementById('producirAlert');
-            el.className = `alert alert-${tipo}`;
-            if (esHTML) el.innerHTML = html;
-            else        el.textContent = html;
-        }
-
-        // =====================================================================
-
-        function logout() {
-            fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html');
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
     </script>
 </body>
-
 </html>

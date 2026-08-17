@@ -1,222 +1,229 @@
 <?php
+// frontend/produccion_manual.php
 session_start();
 require_once __DIR__ . '/includes/permisos.php';
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
     exit();
 }
+
 if (!tiene_permiso('produccion.ver')) {
     header("Location: index.php");
     exit();
 }
+
+require_once __DIR__ . '/../backend/Helpers/DateFilterHelper.php';
+$filter = $_GET['filter'] ?? 'all';
+$start_date = $_GET['start_date'] ?? '';
+$end_date = $_GET['end_date'] ?? '';
+
+$pageTitle = "Producción Manual";
+$pageHeader = "Registro de Producción Libre";
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Producción Manual - La Vicky</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <?php include 'includes/head.php'; ?>
     <style>
-        body { background-color: #f4f6f9; }
-        .sidebar { height: 100vh; background-color: #685569; padding-top: 20px; position: fixed; width: 16.666667%; overflow-y: auto; }
-        .sidebar a { padding: 15px 20px; text-decoration: none; font-size: 16px; color: #d1d8e0; display: block; transition: 0.3s; }
-        .sidebar a:hover, .sidebar a.active { color: #fff; background-color: #0d6efd; }
-        .main-content { padding: 30px; margin-left: 16.666667%; }
-        .top-navbar { background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; margin-left: 16.666667%; }
-        .form-card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.05); padding: 25px; margin-bottom: 20px;}
-        .table-card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.05); padding: 20px;}
-        .ingrediente-row { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e9ecef;}
+        .prod-form-card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+        .insumo-row-premium { background: var(--light); border-radius: var(--radius-sm); border: 1px solid #eee; padding: 12px; margin-bottom: 10px; transition: var(--transition); }
+        .insumo-row-premium:hover { border-color: var(--primary-light); background: var(--white); }
+        .history-card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; }
     </style>
 </head>
-
 <body>
-    <div class="container-fluid p-0">
-        <?php $active = 'produccion_manual'; $titulo = 'Producción Manual Libre'; include 'includes/sidebar.php'; ?>
+    <div class="wrapper">
+        <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Main Content -->
         <div class="main-content">
-            
-            <!-- RESULT ALERT -->
-            <div id="resultAlert" class="alert d-none"></div>
+            <?php include 'includes/navbar.php'; ?>
 
-            <div class="row">
-                <!-- FORMULARIO DE PRODUCCIÓN -->
-                <?php if (tiene_permiso('produccion.gestionar')): ?>
-                <div class="col-lg-5 mb-4">
-                    <div class="form-card">
-                        <h5 class="mb-4"><i class="fas fa-plus-circle text-primary me-2"></i>Registrar Nueva Producción</h5>
-                        
-                        <form id="produccionForm">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Producto Final Obtenido <span class="text-danger">*</span></label>
-                                <select id="selectProducto" class="form-select" required>
-                                    <option value="">Seleccione producto...</option>
-                                    <!-- Options via JS -->
-                                </select>
+            <div class="container-fluid p-4 animate-fade-in">
+                <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $start_date, $end_date, 'produccion_manual.php'); ?>
+                
+                <!-- Status Alert -->
+                <div id="resultAlert" class="alert d-none shadow-sm border-0 mb-4 animate-fade-in" role="alert"></div>
+
+                <div class="row g-4">
+                    <!-- Form Column -->
+                    <div class="col-12 col-lg-5">
+                        <div class="card prod-form-card border-top border-4 border-primary">
+                            <div class="card-header bg-white py-3">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-plus-circle me-2 text-primary"></i>Nueva Producción</h5>
+                                <p class="text-muted small mb-0 mt-1">Registre manualmente la fabricación de productos</p>
                             </div>
+                            <div class="card-body p-4">
+                                <form id="produccionForm">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small text-muted text-uppercase">Producto Final</label>
+                                        <select id="selectProducto" class="form-select py-2" required>
+                                            <option value="">Seleccione un producto...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold small text-muted text-uppercase">Unidades Producidas</label>
+                                        <input type="number" id="inputCantidadProd" class="form-control py-2 fw-bold h4 mb-0 text-primary" min="1" max="99999" step="1" required placeholder="0">
+                                    </div>
 
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Cantidad Producida (Unidades) <span class="text-danger">*</span></label>
-                                <input type="number" id="inputCantidadProd" class="form-control" min="1" step="1" required placeholder="Ej. 100">
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label fw-bold small text-muted text-uppercase mb-0">Insumos Utilizados</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addInsumoRow()">
+                                                <i class="fas fa-plus me-1"></i> Añadir Insumo
+                                            </button>
+                                        </div>
+                                        <div id="insumosContainer"></div>
+                                    </div>
+
+                                    <?php if (tiene_permiso('produccion.gestionar')): ?>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm">
+                                                <i class="fas fa-industry me-2"></i> Registrar Producción
+                                            </button>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-warning p-2 small mb-0">
+                                            <i class="fas fa-lock me-1"></i> No dispone del permiso para registrar producción.
+                                        </div>
+                                    <?php endif; ?>
+                                </form>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="fw-bold m-0 text-secondary">Insumos Utilizados</h6>
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addInsumoRow()">
-                                    <i class="fas fa-plus"></i> Añadir Insumo
+                    <!-- History Column -->
+                    <div class="col-12 col-lg-7">
+                        <div class="card history-card">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-secondary"></i>Historial de Producción</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadHistory()">
+                                    <i class="fas fa-sync-alt me-1"></i> Actualizar
                                 </button>
                             </div>
-                            
-                            <!-- CONTENEDOR DE INSUMOS -->
-                            <div id="insumosContainer" class="mb-4">
-                                <!-- Filas dinámicas aquí -->
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Producto</th>
+                                                <th class="text-center">Cant.</th>
+                                                <th>Insumos Usados</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="historialBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center py-5 text-muted">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div> Cargando...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-
-                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold" id="btnGuardar">
-                                <i class="fas fa-save me-2"></i>Guardar Producción
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <!-- HISTORIAL -->
-                <div class="col-lg-<?= tiene_permiso('produccion.gestionar') ? '7' : '12' ?>">
-                    <div class="table-card h-100">
-                        <h5 class="mb-4"><i class="fas fa-history text-secondary me-2"></i>Historial de Producción</h5>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Fecha y Hora</th>
-                                        <th>Producto</th>
-                                        <th class="text-center">Cant.</th>
-                                        <th>Insumos Descontados</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="historialBody">
-                                    <tr><td colspan='4' class='text-center text-muted'>Cargando historial...</td></tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/common.js"></script>
-    
+    <?php include 'includes/footer.php'; ?>
     <script>
-        let productosList = [];
-        let insumosList = [];
+        let allInsumos = [];
+        let allProducts = [];
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            loadHistorial();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadInsumos();
+            await loadProductos();
+            await loadHistory();
         });
 
-        // ── 1. Cargar Combos ──────────────────────────────────────────────
-        async function loadData() {
+        async function loadInsumos() {
             try {
-                // Productos
-                const resProd = await fetch('../backend/api.php?route=get_productos');
-                const jsonProd = await resProd.json();
-                if (jsonProd.success) {
-                    productosList = jsonProd.data;
-                    const sel = document.getElementById('selectProducto');
-                    productosList.forEach(p => {
-                        sel.innerHTML += `<option value="${p.id}">${p.nombre} - ${p.categoria}</option>`;
-                    });
-                }
-
-                // Insumos
-                const resIns = await fetch('../backend/api.php?route=get_insumos');
-                const jsonIns = await resIns.json();
-                if (jsonIns.success) {
-                    insumosList = jsonIns.data;
-                    // Añadir primera fila por defecto
-                    addInsumoRow();
-                }
-            } catch (err) {
-                console.error('Error cargando catálogos:', err);
-            }
+                const res = await fetch('../backend/api.php?route=get_insumos');
+                const data = await res.json();
+                if (data.success) allInsumos = data.data;
+            } catch (e) { console.error(e); }
         }
 
-        // ── 2. Fila Dinámica de Insumos ───────────────────────────────────
+        async function loadProductos() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_productos');
+                const data = await res.json();
+                const select = document.getElementById('selectProducto');
+                if (data.success && data.data) {
+                    allProducts = data.data;
+                    data.data.forEach(p => {
+                        select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
         function addInsumoRow() {
             const container = document.getElementById('insumosContainer');
-            
-            let optionsHTML = '<option value="">Seleccione insumo...</option>';
-            insumosList.forEach(ins => {
-                optionsHTML += `<option value="${ins.id}">${ins.nombre} (${ins.unidad_medida} | Disp: ${ins.stock_actual})</option>`;
+            const rowId = Date.now();
+            let options = '<option value="" disabled selected>Seleccione insumo...</option>';
+            allInsumos.forEach(i => {
+                options += `<option value="${i.id}" data-um="${i.unidad_medida}">${i.nombre} (Disponible: ${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida})</option>`;
             });
 
             const row = document.createElement('div');
-            row.className = 'row g-2 ingrediente-row align-items-center mb-2';
+            row.className = 'insumo-row-premium';
+            row.id = `row-${rowId}`;
             row.innerHTML = `
-                <div class="col-5">
-                    <select class="form-select form-select-sm insumo-select" required>
-                        ${optionsHTML}
-                    </select>
-                </div>
-                <div class="col-3">
-                    <input type="number" step="0.01" min="0.01" class="form-control form-control-sm insumo-cant" placeholder="Total Usado" required>
-                </div>
-                <div class="col-3">
-                    <select class="form-select form-select-sm insumo-unidad" required>
-                        <option value="Gramos">Gramos (g)</option>
-                        <option value="Kg">Kilogramos (Kg)</option>
-                        <option value="Libras">Libras (lb)</option>
-                        <option value="Onzas">Onzas (oz)</option>
-                        <option value="Mililitros">Mililitros (ml)</option>
-                        <option value="Litros">Litros (L)</option>
-                        <option value="Unidades">Unidades (Und)</option>
-                    </select>
-                </div>
-                <div class="col-1 text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.ingrediente-row').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="row g-2 align-items-center">
+                    <div class="col-6">
+                        <select name="insumo_id[]" class="form-select form-select-sm" required onchange="updateUm(this, '${rowId}')">
+                            ${options}
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.001" min="0.001" name="cantidad_usada[]" class="form-control" placeholder="Cant." required>
+                            <span class="input-group-text small" id="um-${rowId}">u</span>
+                        </div>
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="document.getElementById('row-${rowId}').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             container.appendChild(row);
         }
 
-        // ── 3. Guardar Producción ─────────────────────────────────────────
-        const produccionFormEl = document.getElementById('produccionForm');
-        if (produccionFormEl) produccionFormEl.addEventListener('submit', async (e) => {
+        function updateUm(select, rowId) {
+            const opt = select.options[select.selectedIndex];
+            document.getElementById(`um-${rowId}`).textContent = opt.getAttribute('data-um') || 'u';
+        }
+
+        document.getElementById('produccionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('btnGuardar');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            const alert = document.getElementById('resultAlert');
 
-            // Recolectar datos
-            const payload = {
-                producto_id: document.getElementById('selectProducto').value,
-                cantidad_producida: parseFloat(document.getElementById('inputCantidadProd').value),
-                insumos: []
-            };
+            const productoId = document.getElementById('selectProducto').value;
+            const cantidad = document.getElementById('inputCantidadProd').value;
 
-            document.querySelectorAll('.ingrediente-row').forEach(row => {
-                const iId = row.querySelector('.insumo-select').value;
-                const iCant = row.querySelector('.insumo-cant').value;
-                const iUnid = row.querySelector('.insumo-unidad').value;
-                if (iId && iCant) {
-                    payload.insumos.push({
-                        insumo_id: iId,
-                        cantidad_usada: parseFloat(iCant),
-                        unidad_usada: iUnid
-                    });
+            if (!productoId || !cantidad || parseInt(cantidad) <= 0) {
+                showAlert('Por favor complete todos los campos requeridos.', 'danger');
+                return;
+            }
+
+            const insumoIds = [...document.querySelectorAll('[name="insumo_id[]"]')].map(el => el.value);
+            const cantidades = [...document.querySelectorAll('[name="cantidad_usada[]"]')].map(el => el.value);
+
+            const insumos = [];
+            for (let i = 0; i < insumoIds.length; i++) {
+                if (insumoIds[i] && cantidades[i]) {
+                    insumos.push({ insumo_id: parseInt(insumoIds[i]), cantidad_usada: parseFloat(cantidades[i]) });
                 }
-            });
+            }
+
+            const payload = { producto_id: parseInt(productoId), cantidad_producida: parseInt(cantidad), insumos_usados: insumos };
 
             try {
                 const res = await fetch('../backend/api.php?route=add_produccion_manual', {
@@ -224,89 +231,60 @@ if (!tiene_permiso('produccion.ver')) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const json = await res.json();
+                const data = await res.json();
 
-                if (json.success) {
-                    mostrarAlerta('success', json.message);
+                if (data.success) {
+                    showAlert('✅ Producción registrada exitosamente. Stock actualizado.', 'success');
                     e.target.reset();
                     document.getElementById('insumosContainer').innerHTML = '';
-                    addInsumoRow();
-                    loadHistorial();
-                    
-                    // Recargar disp de insumos en fondo para actualizar "Disp: X"
-                    const resIns = await fetch('../backend/api.php?route=get_insumos');
-                    const jsonIns = await resIns.json();
-                    if(jsonIns.success) insumosList = jsonIns.data;
-
+                    await loadHistory();
+                } else if (data.insuficiente) {
+                    showAlert('⚠️ Stock insuficiente para: ' + data.insuficiente.join(', '), 'warning');
                 } else {
-                    mostrarAlerta('danger', json.message);
+                    showAlert('Error: ' + (data.message || 'Ocurrió un error inesperado.'), 'danger');
                 }
-            } catch (error) {
-                mostrarAlerta('danger', 'Error de conexión con el servidor.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-2"></i>Guardar Producción';
+            } catch (err) {
+                showAlert('Error de conexión con el servidor.', 'danger');
+                console.error(err);
             }
         });
 
-        // ── 4. Historial ──────────────────────────────────────────────────
-        async function loadHistorial() {
-            const tbody = document.getElementById('historialBody');
-            try {
-                const res = await fetch('../backend/api.php?route=get_produccion_historial');
-                const json = await res.json();
-                
-                if (json.success && json.data.length > 0) {
-                    tbody.innerHTML = '';
-                    json.data.forEach(item => {
-                        // Formatear detalle
-                        let detalleList = '';
-                        if (item.detalles_insumos) {
-                            const arr = item.detalles_insumos.split('|');
-                            detalleList = '<ul class="mb-0 ps-3 small text-muted">';
-                            arr.forEach(li => detalleList += `<li>${li.trim()}</li>`);
-                            detalleList += '</ul>';
-                        } else {
-                            detalleList = '<span class="text-muted small">Sin detalle</span>';
-                        }
-                        
-                        // Formato Fecha
-                        const f = new Date(item.fecha);
-                        const strFecha = f.toLocaleDateString() + ' ' + f.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        function showAlert(msg, type) {
+            const el = document.getElementById('resultAlert');
+            el.className = `alert alert-${type} shadow-sm border-0 mb-4 animate-fade-in`;
+            el.innerHTML = msg;
+        }
 
+        async function loadHistory() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const filter = urlParams.get('filter') || 'all';
+            const startDate = urlParams.get('start_date') || '';
+            const endDate = urlParams.get('end_date') || '';
+
+            try {
+                const res = await fetch(`../backend/api.php?route=get_produccion_historial&filter=${filter}&start_date=${startDate}&end_date=${endDate}`);
+                const data = await res.json();
+                const tbody = document.getElementById('historialBody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data && data.data.length > 0) {
+                    data.data.forEach(h => {
                         tbody.innerHTML += `
                             <tr>
-                                <td class="small">${strFecha}</td>
-                                <td class="fw-bold text-primary">${item.producto_nombre}</td>
-                                <td class="text-center fw-bold fs-5">${parseFloat(item.cantidad_producida)}</td>
-                                <td>${detalleList}</td>
+                                <td><small class="text-muted">${h.fecha}</small></td>
+                                <td class="fw-semibold text-dark">${h.producto_nombre}</td>
+                                <td class="text-center"><span class="badge bg-primary rounded-pill">${h.cantidad_producida}</span></td>
+                                <td><small class="text-muted">${h.detalles_insumos || '<em>N/A</em>'}</small></td>
                             </tr>
                         `;
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan='4' class='text-center py-4 text-muted'><i class="fas fa-info-circle mb-2 fa-2x"></i><br>No hay registros de producción manual aún.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
                 }
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan='4' class='text-center text-danger'>Error al cargar el historial.</td></tr>`;
+            } catch (e) {
+                console.error(e);
             }
-        }
-
-        // ── 5. Alertas Visuales ───────────────────────────────────────────
-        function mostrarAlerta(tipo, html) {
-            const el = document.getElementById('resultAlert');
-            el.className = `alert alert-${tipo} alert-dismissible fade show`;
-            el.innerHTML = html + '<button type="button" class="btn-close" onclick="this.parentElement.classList.add(\'d-none\')"></button>';
-            el.classList.remove('d-none');
-            // Auto hide
-            if (tipo === 'success') {
-                setTimeout(() => el.classList.add('d-none'), 5000);
-            }
-        }
-
-        function logout() {
-            fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html');
         }
     </script>
 </body>
-
 </html>
