@@ -1,107 +1,115 @@
 <?php
+// frontend/perfil.php
 session_start();
 require_once __DIR__ . '/includes/permisos.php';
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
     exit();
 }
+
 if (!tiene_permiso('perfil.gestionar')) {
     header("Location: index.php");
     exit();
 }
+
+$pageTitle = "Perfil de la Empresa";
+$pageHeader = "Datos del Negocio";
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil de la Panadería - La Vicky</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <style>
-        body { background-color: #f4f6f9; }
-        .sidebar { height: 100vh; background-color: #685569; padding-top: 20px; position: fixed; width: 16.666667%; overflow-y: auto; }
-        .sidebar a { padding: 15px 20px; text-decoration: none; font-size: 16px; color: #d1d8e0; display: block; transition: 0.3s; }
-        .sidebar a:hover, .sidebar a.active { color: #fff; background-color: #0d6efd; }
-        .main-content { padding: 30px; margin-left: 16.666667%; }
-        .top-navbar { background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; margin-left: 16.666667%; }
-        .table-card { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,.05); padding: 20px; }
-    </style>
+    <?php include 'includes/head.php'; ?>
 </head>
-
 <body>
-    <div class="container-fluid p-0">
-        <?php $active = 'perfil'; $titulo = 'Perfil de la Panadería'; include 'includes/sidebar.php'; ?>
+    <div class="wrapper">
+        <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Main Content -->
         <div class="main-content">
+            <?php include 'includes/navbar.php'; ?>
 
-            <!-- RESULT ALERT -->
-            <div id="resultAlert" class="alert d-none"></div>
+            <div class="container-fluid p-4 animate-fade-in">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-8">
+                        <div id="resultAlert" class="alert d-none mb-4"></div>
 
-            <div class="table-card">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="m-0"><i class="fas fa-store text-primary me-2"></i>Datos del Negocio</h5>
-                </div>
-                <div class="text-muted small mb-4">
-                    Estos datos se muestran en la cabecera de la factura y se usan para calcular los impuestos de las ventas.
-                </div>
-
-                <form id="perfilForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Nombre del Negocio <span class="text-danger">*</span></label>
-                            <input type="text" name="nombre" class="form-control" maxlength="100" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Moneda <span class="text-danger">*</span></label>
-                            <select name="moneda" class="form-select" required>
-                                <option value="USD">USD - Dólar ($)</option>
-                                <option value="NIO">NIO - Córdoba (C$)</option>
-                                <option value="MXN">MXN - Peso mexicano ($)</option>
-                                <option value="EUR">EUR - Euro (€)</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold">Descripción</label>
-                            <input type="text" name="descripcion" class="form-control" maxlength="255" placeholder="Ej. Panadería & Pastelería">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Dirección</label>
-                            <input type="text" name="direccion" class="form-control" maxlength="255">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Teléfono</label>
-                            <input type="text" name="telefono" class="form-control" maxlength="30">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">RUC/NIT</label>
-                            <input type="text" name="ruc" class="form-control" maxlength="30">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Tasa de Impuesto (%) <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="number" name="tasa_impuesto" class="form-control" min="0" max="100" step="0.01" required>
-                                <span class="input-group-text">%</span>
+                        <div class="card border-0 shadow-sm border-top border-4 border-primary">
+                            <div class="card-header bg-white py-3">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-store me-2 text-primary"></i>Perfil de la Panadería</h5>
+                                <p class="text-muted small mb-0">Información que se muestra en facturas y que rige los cálculos de impuestos.</p>
                             </div>
-                            <div class="form-text">Se aplica al subtotal de cada venta (ej. IVA 15%).</div>
+                            <div class="card-body p-4">
+                                <form id="perfilForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Nombre del Negocio <span class="text-danger">*</span></label>
+                                            <input type="text" name="nombre" class="form-control py-2" maxlength="100" required placeholder="Panadería La Vicky">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Moneda <span class="text-danger">*</span></label>
+                                            <select name="moneda" class="form-select py-2" required>
+                                                <option value="USD">USD - Dólar ($)</option>
+                                                <option value="NIO">NIO - Córdoba (C$)</option>
+                                                <option value="MXN">MXN - Peso mexicano ($)</option>
+                                                <option value="EUR">EUR - Euro (€)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Descripción</label>
+                                            <input type="text" name="descripcion" class="form-control py-2" maxlength="255" placeholder="Ej. Panadería &amp; Pastelería">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Dirección</label>
+                                            <input type="text" name="direccion" class="form-control py-2" maxlength="255" placeholder="Av. Principal calle 5">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Teléfono</label>
+                                            <input type="tel" name="telefono" class="form-control py-2" maxlength="30" placeholder="1234-5678">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">RUC / NIT</label>
+                                            <input type="text" name="ruc" class="form-control py-2" maxlength="30">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Tasa de Impuesto (%) <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" name="tasa_impuesto" class="form-control py-2" min="0" max="100" step="0.01" required placeholder="15">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <div class="form-text">Se aplica al subtotal de cada venta (ej. IVA 15%).</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-2 border-top">
+                                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
+                                            <i class="fas fa-save me-2"></i>Guardar Cambios
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Guardar cambios
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 
+    <?php include 'includes/footer.php'; ?>
     <script>
-        // ── 1. Carga del perfil ─────────────────────────────────────────────
+        function escapeHtml(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function mostrarAlerta(tipo, html) {
+            const el = document.getElementById('resultAlert');
+            el.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;
+            el.innerHTML = html + '<button type="button" class="btn-close" onclick="this.parentElement.classList.add(\'d-none\')"></button>';
+            el.classList.remove('d-none');
+            if (tipo === 'success') {
+                setTimeout(() => el.classList.add('d-none'), 5000);
+            }
+        }
+
         async function loadPerfil() {
             const form = document.getElementById('perfilForm');
             try {
@@ -124,7 +132,6 @@ if (!tiene_permiso('perfil.gestionar')) {
             }
         }
 
-        // ── 2. Guardado del perfil ──────────────────────────────────────────
         document.getElementById('perfilForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = e.target;
@@ -150,23 +157,7 @@ if (!tiene_permiso('perfil.gestionar')) {
             }
         });
 
-        // ── 3. Utilidades ──────────────────────────────────────────────────
-        function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
-        function mostrarAlerta(tipo, html) {
-            const el = document.getElementById('resultAlert');
-            el.className = `alert alert-${tipo} alert-dismissible fade show`;
-            el.innerHTML = html + '<button type="button" class="btn-close" onclick="this.parentElement.classList.add(\'d-none\')"></button>';
-            el.classList.remove('d-none');
-            if (tipo === 'success') {
-                setTimeout(() => el.classList.add('d-none'), 5000);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', loadPerfil);
     </script>
 </body>
-
 </html>

@@ -75,7 +75,7 @@ class PermisoModel {
 
     /** Cantidad de usuarios activos asignados a un rol. */
     public function getUserCountByRol($rol_id): int {
-        $query = "SELECT COUNT(*) FROM usuarios WHERE rol_id = :rol_id AND deleted_at IS NULL";
+        $query = "SELECT COUNT(*) FROM usuarios WHERE rol_id = :rol_id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':rol_id', $rol_id, PDO::PARAM_INT);
         $stmt->execute();

@@ -17,9 +17,14 @@ class VentaController {
         $this->audit = $audit;
     }
 
-    public function getAll() {
-        $ventas = $this->ventaModel->readAll();
-        echo json_encode(['success' => true, 'data' => $ventas]);
+    public function getAll(): void {
+        header('Content-Type: application/json');
+        $filter = $_GET['filter'] ?? 'all';
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+
+        $ventas = $this->ventaModel->readAll($filter, $startDate, $endDate);
+        echo json_encode(['success' => true, 'data' => $ventas], JSON_UNESCAPED_UNICODE);
     }
 
     public function createDirecta() {

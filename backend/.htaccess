@@ -1,0 +1,5 @@
+# Proteger logs y descripciones de API
+<FilesMatch "^error\.log|desc\.json$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

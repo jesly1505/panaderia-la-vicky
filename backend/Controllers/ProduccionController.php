@@ -17,9 +17,14 @@ class ProduccionController {
         $this->audit = $audit;
     }
 
-    public function getAll() {
-        $data = $this->model->getAll();
-        echo json_encode(['success' => true, 'data' => $data]);
+    public function getAll(): void {
+        header('Content-Type: application/json');
+        $filter = $_GET['filter'] ?? 'all';
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+
+        $data = $this->model->getAll($filter, $startDate, $endDate);
+        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
     public function create() {

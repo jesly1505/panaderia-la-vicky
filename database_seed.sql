@@ -47,19 +47,23 @@ CREATE TABLE `usuarios` (
   `reset_token` varchar(255) DEFAULT NULL,
   `reset_token_expira` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `rol_id` (`rol_id`),
+  KEY `idx_usuarios_elim` (`eliminado`),
+  KEY `idx_usuarios_email_elim` (`email`,`eliminado`),
   CONSTRAINT `usuarios_ibfk_1` FOREIGN KEY (`rol_id`) REFERENCES `roles` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Admin: admin@lavicky.com | Pass: admin123
 -- Cajero: cajero@lavicky.com | Pass: admin123
 -- Panadero (Prueba Dev): panadero.test@lavicky.com | Pass: admin123
-INSERT INTO `usuarios` (`id`, `rol_id`, `nombre`, `email`, `password_hash`, `estado`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_acceso`) VALUES
-(1, 1, 'Administrador General', 'admin@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP),
-(2, 2, 'Carlos Vendedor', 'cajero@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP),
-(3, 3, 'Panadero de Prueba (Dev)', 'panadero.test@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP);
+INSERT INTO `usuarios` (`id`, `rol_id`, `nombre`, `email`, `password_hash`, `estado`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_acceso`, `eliminado`, `deleted_at`) VALUES
+(1, 1, 'Administrador General', 'admin@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP, false, NULL),
+(2, 2, 'Carlos Vendedor', 'cajero@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP, false, NULL),
+(3, 3, 'Panadero de Prueba (Dev)', 'panadero.test@lavicky.com', '$2y$10$hqnOM7rn.Bq7a7Anhivbw.tyPXxkavVLx5hpth1zNbrAnipQj4P8C', 'activo', 0, NULL, CURRENT_TIMESTAMP, false, NULL);
 
 -- --------------------------------------------------------
 -- 3. Estructura de la tabla `empleados_rrhh`
@@ -90,13 +94,16 @@ CREATE TABLE `proveedores` (
   `contacto` varchar(100) DEFAULT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_proveedores_elim` (`eliminado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `proveedores` (`id`, `nombre`, `contacto`, `telefono`, `email`) VALUES
-(1, 'Distribuidora Molinos del Sur', 'Roberto Gómez', '555-0192', 'ventas@molinosdelsur.com'),
-(2, 'Lácteos y Harinas La Granja', 'Ana Martínez', '555-0384', 'contacto@lagranja.com'),
-(3, 'Empaques y Dulces Victoria', 'Luis Fernández', '555-0771', 'pedidos@empaquesvictoria.com');
+INSERT INTO `proveedores` (`id`, `nombre`, `contacto`, `telefono`, `email`, `eliminado`, `deleted_at`) VALUES
+(1, 'Distribuidora Molinos del Sur', 'Roberto Gómez', '555-0192', 'ventas@molinosdelsur.com', false, NULL),
+(2, 'Lácteos y Harinas La Granja', 'Ana Martínez', '555-0384', 'contacto@lagranja.com', false, NULL),
+(3, 'Empaques y Dulces Victoria', 'Luis Fernández', '555-0771', 'pedidos@empaquesvictoria.com', false, NULL);
 
 -- --------------------------------------------------------
 -- 5. Estructura de la tabla `insumos`
@@ -111,20 +118,23 @@ CREATE TABLE `insumos` (
   `stock_minimo` decimal(10,2) DEFAULT 0.00,
   `precio_costo` decimal(10,2) NOT NULL,
   `visible` tinyint(1) DEFAULT 1,
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `proveedor_id` (`proveedor_id`),
+  KEY `idx_insumos_elim` (`eliminado`),
   CONSTRAINT `insumos_ibfk_1` FOREIGN KEY (`proveedor_id`) REFERENCES `proveedores` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `insumos` (`id`, `proveedor_id`, `nombre`, `unidad_medida`, `stock_actual`, `stock_minimo`, `precio_costo`, `visible`) VALUES
-(1, 1, 'Harina de Trigo Integral', 'Kg', 150.00, 20.00, 1.20, 1),
-(2, 2, 'Mantequilla Sin Sal', 'Kg', 40.00, 5.00, 4.50, 1),
-(3, 2, 'Leche Entera', 'Litros', 80.00, 15.00, 0.90, 1),
-(4, 1, 'Azúcar Refinada', 'Kg', 100.00, 10.00, 1.10, 1),
-(5, 3, 'Cacao en Polvo Premium', 'Kg', 12.00, 5.00, 8.50, 1),
-(6, 2, 'Huevos Frescos', 'Unidades', 300.00, 50.00, 0.15, 1),
-(7, 3, 'Esencia de Vainilla', 'Litros', 2.00, 1.00, 12.00, 1),
-(8, 1, 'Levadura en Polvo', 'Kg', 3.00, 5.00, 3.20, 1);
+INSERT INTO `insumos` (`id`, `proveedor_id`, `nombre`, `unidad_medida`, `stock_actual`, `stock_minimo`, `precio_costo`, `visible`, `eliminado`, `deleted_at`) VALUES
+(1, 1, 'Harina de Trigo Integral', 'Kg', 150.00, 20.00, 1.20, 1, false, NULL),
+(2, 2, 'Mantequilla Sin Sal', 'Kg', 40.00, 5.00, 4.50, 1, false, NULL),
+(3, 2, 'Leche Entera', 'Litros', 80.00, 15.00, 0.90, 1, false, NULL),
+(4, 1, 'Azúcar Refinada', 'Kg', 100.00, 10.00, 1.10, 1, false, NULL),
+(5, 3, 'Cacao en Polvo Premium', 'Kg', 12.00, 5.00, 8.50, 1, false, NULL),
+(6, 2, 'Huevos Frescos', 'Unidades', 300.00, 50.00, 0.15, 1, false, NULL),
+(7, 3, 'Esencia de Vainilla', 'Litros', 2.00, 1.00, 12.00, 1, false, NULL),
+(8, 1, 'Levadura en Polvo', 'Kg', 3.00, 5.00, 3.20, 1, false, NULL);
 
 -- --------------------------------------------------------
 -- 6. Estructura de la tabla `compras_insumos`
@@ -164,15 +174,19 @@ CREATE TABLE `productos` (
   `stock_minimo` int(11) DEFAULT 0,
   `categoria` varchar(50) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_productos_elim` (`eliminado`),
+  KEY `idx_productos_cat_elim` (`categoria`,`eliminado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio_venta`, `costo_produccion`, `stock_actual`, `stock_minimo`, `categoria`) VALUES
-(1, 'Pastel Artesanal de Chocolate', 'Delicioso pastel esponjoso elaborado con cacao fino', 25.00, 8.75, 12, 5, 'Postres'),
-(2, 'Empanada Rellena de Pollo', 'Empanada crujiente dorada al horno con relleno artesanal', 3.50, 1.10, 45, 10, 'Bocadillos'),
-(3, 'Pan de Queso Especial', 'Pan suave con queso horneado al momento', 2.00, 0.65, 3, 10, 'Panadería'),
-(4, 'Galletas Caseras de Avena', 'Caja de 6 galletas saludables de avainillado y avena', 5.00, 1.80, 25, 5, 'Galletas'),
-(5, 'Tarta de Vainilla y Frutas', 'Tarta fría rellena de crema pastelera y esencia de vainilla', 18.00, 5.50, 8, 3, 'Postres');
+INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio_venta`, `costo_produccion`, `stock_actual`, `stock_minimo`, `categoria`, `eliminado`, `deleted_at`) VALUES
+(1, 'Pastel Artesanal de Chocolate', 'Delicioso pastel esponjoso elaborado con cacao fino', 25.00, 8.75, 12, 5, 'Postres', false, NULL),
+(2, 'Empanada Rellena de Pollo', 'Empanada crujiente dorada al horno con relleno artesanal', 3.50, 1.10, 45, 10, 'Bocadillos', false, NULL),
+(3, 'Pan de Queso Especial', 'Pan suave con queso horneado al momento', 2.00, 0.65, 3, 10, 'Panadería', false, NULL),
+(4, 'Galletas Caseras de Avena', 'Caja de 6 galletas saludables de avainillado y avena', 5.00, 1.80, 25, 5, 'Galletas', false, NULL),
+(5, 'Tarta de Vainilla y Frutas', 'Tarta fría rellena de crema pastelera y esencia de vainilla', 18.00, 5.50, 8, 3, 'Postres', false, NULL);
 
 -- --------------------------------------------------------
 -- 8. Estructura de la tabla `producto_receta`
@@ -264,15 +278,19 @@ CREATE TABLE `clientes` (
   `direccion` text DEFAULT NULL,
   `puntos_fidelidad` int(11) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_clientes_elim` (`eliminado`),
+  KEY `idx_clientes_email_elim` (`email`,`eliminado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `clientes` (`id`, `nombre`, `email`, `telefono`, `direccion`, `puntos_fidelidad`) VALUES
-(1, 'María Elena López', 'maria.lopez@example.com', '555-1029', 'Av. Central #45, San José', 120),
-(2, 'Juan Carlos Pérez', 'juan.perez@example.com', '555-8832', 'Calle Los Olivos #12', 45),
-(3, 'Sofía Ramírez', 'sofia.ramirez@example.com', '555-9921', 'Residencial Las Flores B-4', 200),
-(4, 'Cliente General POS', 'pos@lavicky.com', 'N/A', 'Venta en Mostrador', 0);
+INSERT INTO `clientes` (`id`, `nombre`, `email`, `telefono`, `direccion`, `puntos_fidelidad`, `eliminado`, `deleted_at`) VALUES
+(1, 'María Elena López', 'maria.lopez@example.com', '555-1029', 'Av. Central #45, San José', 120, false, NULL),
+(2, 'Juan Carlos Pérez', 'juan.perez@example.com', '555-8832', 'Calle Los Olivos #12', 45, false, NULL),
+(3, 'Sofía Ramírez', 'sofia.ramirez@example.com', '555-9921', 'Residencial Las Flores B-4', 200, false, NULL),
+(4, 'Cliente General POS', 'pos@lavicky.com', 'N/A', 'Venta en Mostrador', 0, false, NULL);
 
 -- --------------------------------------------------------
 -- 12. Estructura de la tabla `pedidos`
@@ -288,17 +306,20 @@ CREATE TABLE `pedidos` (
   `fecha_entrega` date DEFAULT NULL,
   `hora_entrega` time DEFAULT NULL,
   `hora_entrega_real` time DEFAULT NULL,
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
   KEY `usuario_id` (`usuario_id`),
+  KEY `idx_pedidos_elim` (`eliminado`),
   CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedidos_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `pedidos` (`id`, `cliente_id`, `usuario_id`, `estado`, `total`, `fecha_pedido`, `fecha_entrega`, `hora_entrega`, `hora_entrega_real`) VALUES
-(1, 1, 1, 'entregado', 50.00, DATE_SUB(NOW(), INTERVAL 4 DAY), CURDATE(), '10:00:00', '09:55:00'),
-(2, 2, 2, 'pendiente', 28.50, NOW(), CURDATE(), '16:00:00', NULL),
-(3, 3, 1, 'en_proceso', 60.00, NOW(), CURDATE(), '18:30:00', NULL);
+INSERT INTO `pedidos` (`id`, `cliente_id`, `usuario_id`, `estado`, `total`, `fecha_pedido`, `fecha_entrega`, `hora_entrega`, `hora_entrega_real`, `eliminado`, `deleted_at`) VALUES
+(1, 1, 1, 'entregado', 50.00, DATE_SUB(NOW(), INTERVAL 4 DAY), CURDATE(), '10:00:00', '09:55:00', false, NULL),
+(2, 2, 2, 'pendiente', 28.50, NOW(), CURDATE(), '16:00:00', NULL, false, NULL),
+(3, 3, 1, 'en_proceso', 60.00, NOW(), CURDATE(), '18:30:00', NULL, false, NULL);
 
 -- --------------------------------------------------------
 -- 13. Estructura de la tabla `detalle_pedido`
@@ -410,13 +431,16 @@ CREATE TABLE `gastos` (
   `descripcion` varchar(255) NOT NULL,
   `monto` decimal(10,2) NOT NULL,
   `fecha` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  `eliminado` boolean NOT NULL DEFAULT false,
+  `deleted_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_gastos_elim` (`eliminado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `gastos` (`id`, `descripcion`, `monto`, `fecha`) VALUES
-(1, 'Pago de servicio eléctrico local', 85.50, DATE_SUB(NOW(), INTERVAL 15 DAY)),
-(2, 'Mantenimiento preventivo de horno pastelero', 120.00, DATE_SUB(NOW(), INTERVAL 7 DAY)),
-(3, 'Compra de bolsas y empaques biodegradables', 45.00, NOW());
+INSERT INTO `gastos` (`id`, `descripcion`, `monto`, `fecha`, `eliminado`, `deleted_at`) VALUES
+(1, 'Pago de servicio eléctrico local', 85.50, DATE_SUB(NOW(), INTERVAL 15 DAY), false, NULL),
+(2, 'Mantenimiento preventivo de horno pastelero', 120.00, DATE_SUB(NOW(), INTERVAL 7 DAY), false, NULL),
+(3, 'Compra de bolsas y empaques biodegradables', 45.00, NOW(), false, NULL);
 
 -- --------------------------------------------------------
 -- 18. Estructura de la tabla `bitacora_sistema`

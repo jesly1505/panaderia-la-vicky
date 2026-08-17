@@ -82,7 +82,7 @@ class ProductoModel {
 
     public function readAll() {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE deleted_at IS NULL 
+                  WHERE eliminado = false 
                   ORDER BY categoria ASC, nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -91,7 +91,7 @@ class ProductoModel {
 
     public function getByCategoria($categoria) {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE categoria = :categoria AND deleted_at IS NULL 
+                  WHERE categoria = :categoria AND eliminado = false 
                   ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':categoria', $categoria);
@@ -100,7 +100,7 @@ class ProductoModel {
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND deleted_at IS NULL";
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
@@ -249,9 +249,8 @@ class ProductoModel {
 
     /**
      * Da de baja un producto (borrado lógico).
-     * Si el producto aparece en ventas o pedidos no se elimina:
-     * devuelve ['en_uso' => true] para preservar el histórico.
-     * La receta se conserva para permitir una futura restauración.
+     * Si el producto aparece en ventas o pedidos no se elimina físicamente:
+     * devuelve ['en_uso' => true] o marca eliminado = true para preservar el histórico.
      *
      * @return true|array
      */
@@ -269,7 +268,7 @@ class ProductoModel {
                 return ['en_uso' => true];
             }
 
-            $qP = "UPDATE " . $this->table_name . " SET deleted_at = NOW() WHERE id = :id AND deleted_at IS NULL";
+            $qP = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
             $sP = $this->conn->prepare($qP);
             $sP->bindParam(':id', $id);
             $ok = $sP->execute() && $sP->rowCount() > 0;
