@@ -1,19 +1,20 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+namespace App\Models;
+
+use PDO;
 
 class ClienteModel {
     private $conn;
     private $table_name = "clientes";
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     public function create($nombre, $email, $telefono, $direccion) {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (nombre, email, telefono, direccion) 
-                  VALUES (:nombre, :email, :telefono, :direccion)";
+                  (nombre, email, telefono, direccion, eliminado) 
+                  VALUES (:nombre, :email, :telefono, :direccion, false)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":email", $email);
@@ -23,10 +24,12 @@ class ClienteModel {
     }
 
     public function readAll() {
-        $query = "SELECT * FROM " . $this->table_name . " ORDER BY nombre ASC";
+        $query = "SELECT * FROM " . $this->table_name . " 
+                  WHERE eliminado = false 
+                  ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getPurchaseHistory($cliente_id) {
@@ -44,7 +47,7 @@ class ClienteModel {
     public function update($id, $nombre, $email, $telefono, $direccion) {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre, email = :email, telefono = :telefono, direccion = :direccion 
-                  WHERE id = :id";
+                  WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":email", $email);
@@ -55,10 +58,9 @@ class ClienteModel {
     }
 
     public function delete($id) {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+        $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+        return $stmt->execute() && $stmt->rowCount() > 0;
     }
 }
-?>

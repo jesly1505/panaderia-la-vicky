@@ -1,4 +1,5 @@
 <?php
+namespace App\Helpers;
 
 class UnitConverter {
     // Definimos las unidades base y sus multiplicadores hacia una unidad estándar interna.
@@ -51,11 +52,11 @@ class UnitConverter {
         $targetType = self::$unitTypeMapping[$targetUnit] ?? null;
 
         if (!$sourceType || !$targetType) {
-            throw new Exception("Unidad desconocida: '$sourceUnit' o '$targetUnit'.");
+            throw new \Exception("Unidad desconocida: '$sourceUnit' o '$targetUnit'.");
         }
 
         if ($sourceType !== $targetType) {
-            throw new Exception("Conversión incompatible entre '$sourceUnit' ($sourceType) y '$targetUnit' ($targetType).");
+            throw new \Exception("Conversión incompatible entre '$sourceUnit' ($sourceType) y '$targetUnit' ($targetType).");
         }
 
         // Conversión
@@ -75,7 +76,7 @@ class UnitConverter {
             return (float)$amount; // 'Unidades' a 'Unidades' siempre es lo mismo
         }
 
-        throw new Exception("Error interno de conversión.");
+        throw new \Exception("Error interno de conversión.");
     }
 
     private static function normalizeUnit($unit) {

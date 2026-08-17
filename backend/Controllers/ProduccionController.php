@@ -1,16 +1,30 @@
 <?php
-require_once __DIR__ . '/../Models/ProduccionModel.php';
+namespace App\Controllers;
+
+use App\Core\AuditService;
+use App\Core\Interfaces\InsumoRepositoryInterface;
+use App\Helpers\UnitConverter;
+use App\Models\ProduccionModel;
 
 class ProduccionController {
     private $model;
+    private $insumoModel;
+    private $audit;
 
-    public function __construct() {
-        $this->model = new ProduccionModel();
+    public function __construct(ProduccionModel $model, InsumoRepositoryInterface $insumoModel, AuditService $audit) {
+        $this->model = $model;
+        $this->insumoModel = $insumoModel;
+        $this->audit = $audit;
     }
 
-    public function getAll() {
-        $data = $this->model->getAll();
-        echo json_encode(['success' => true, 'data' => $data]);
+    public function getAll(): void {
+        header('Content-Type: application/json');
+        $filter = $_GET['filter'] ?? 'all';
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+
+        $data = $this->model->getAll($filter, $startDate, $endDate);
+        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
     public function create() {
@@ -38,9 +52,7 @@ class ProduccionController {
             return;
         }
 
-        require_once __DIR__ . '/../Helpers/UnitConverter.php';
-        require_once __DIR__ . '/../Models/InsumoModel.php';
-        $insumoModel = new InsumoModel();
+        $insumoModel = $this->insumoModel;
 
         // Sanitizar y convertir array de insumos (filtrar vacíos/viciosos)
         $insumos_validos = [];
@@ -78,6 +90,7 @@ class ProduccionController {
         $result = $this->model->create($producto_id, $cantidad_producida, $insumos_validos);
 
         if ($result === true) {
+            $this->audit->log('Producción', 'Producción manual', "Producción manual de {$cantidad_producida} unidades del producto ID {$producto_id}.");
             echo json_encode(['success' => true, 'message' => 'Producción manual registrada correctamente.']);
         } elseif (isset($result['insuficiente'])) {
             $msg = "No hay stock suficiente de: " . implode(", ", $result['insuficiente']);

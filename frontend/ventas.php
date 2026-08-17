@@ -1,226 +1,210 @@
 <?php
+// frontend/ventas.php
 session_start();
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+require_once __DIR__ . '/includes/permisos.php';
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
     exit();
 }
+
+if (!tiene_permiso('ventas.ver')) {
+    header("Location: index.php");
+    exit();
+}
+
+$pageTitle = "Ventas";
+$pageHeader = "Punto de Venta y Finanzas";
+
+require_once __DIR__ . '/../backend/Helpers/DateFilterHelper.php';
+$filter = $_GET['filter'] ?? 'all';
+$start_date = $_GET['start_date'] ?? '';
+$end_date = $_GET['end_date'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventas - La Vicky</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <?php include 'includes/head.php'; ?>
     <style>
-        body {
-            background-color: #f4f6f9;
-        }
-
-        .sidebar {
-            height: 100vh;
-            background-color: #685569;
-            padding-top: 20px;
-            position: fixed;
-            width: 16.666667%;
-            overflow-y: auto;
-        }
-
-        .sidebar a {
-            padding: 15px 20px;
-            text-decoration: none;
-            font-size: 16px;
-            color: #d1d8e0;
-            display: block;
-            transition: 0.3s;
-        }
-
-        .sidebar a:hover,
-        .sidebar a.active {
-            color: #fff;
-            background-color: #0d6efd;
-        }
-
-        .main-content {
-            padding: 30px;
-            margin-left: 16.666667%;
-        }
-
-        .top-navbar {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-left: 16.666667%;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
-            padding: 20px;
-        }
+        .stat-card-premium { border: none; border-radius: var(--radius-md); overflow: hidden; position: relative; color: white; transition: var(--transition); }
+        .stat-card-premium:hover { transform: translateY(-3px); }
+        .stat-card-premium .card-body { padding: 1.5rem; z-index: 1; position: relative; }
+        .stat-card-premium i { position: absolute; right: 1rem; bottom: 1rem; font-size: 3rem; opacity: 0.15; }
+        .bg-income { background: linear-gradient(135deg, #c0560f 0%, #e07a34 100%); }
+        .bg-profit { background: linear-gradient(135deg, #1d976c 0%, #38ef7d 100%); }
+        
+        .pos-card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+        .cart-list-container { max-height: 380px; overflow-y: auto; background: var(--light); border-radius: var(--radius-sm); }
+        .payment-pill { font-size: 0.75rem; font-weight: 600; padding: 0.4em 0.8em; border-radius: 4px; border: 1px solid transparent; }
     </style>
 </head>
-
 <body>
-    <div class="container-fluid p-0">
-        <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block">
-            <div class="text-center mb-4">
-                <h3 class="text-white">🥖 La Vicky</h3>
-            </div>
-            <a href="index.php"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="inventario.php"><i class="fas fa-box me-2"></i> Inventario</a>
-            <a href="productos.php"><i class="fas fa-bread-slice me-2"></i> Productos</a>
-            <a href="produccion_manual.php"><i class="fas fa-industry me-2"></i> Prod. Manual</a>
-            <a href="pedidos.php"><i class="fas fa-shopping-cart me-2"></i> Pedidos</a>
-            <a href="ventas.php" class="active"><i class="fas fa-chart-line me-2"></i> Ventas</a>
-            <a href="clientes.php"><i class="fas fa-users me-2"></i> Clientes</a>
-            <a href="reportes.php"><i class="fas fa-file-alt me-2"></i> Reportes</a>
-            <a href="configuracion.php"><i class="fas fa-cog me-2"></i> Configuración</a>
-        </div>
+    <div class="wrapper">
+        <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Top Navbar -->
-        <div class="top-navbar">
-            <div>
-                <h4 class="m-0">Ventas y Finanzas</h4>
-            </div>
-            <div>
-                <span class="me-3"><i class="fas fa-user-circle"></i> Administrador</span>
-                <a href="#" class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i>
-                    Salir</a>
-            </div>
-        </div>
-
-        <!-- Main Content -->
         <div class="main-content">
-            <div class="row">
-                <!-- Columna Izquierda: Punto de Venta (Cart) -->
-                <div class="col-md-5">
-                    <div class="card shadow-sm border-0 mb-4 bg-light">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="m-0"><i class="fas fa-cash-register"></i> Punto de Venta</h5>
-                        </d                        <div class="card-body">
-                            <label class="form-label fw-bold">Producto a vender</label>
-                            <div class="input-group mb-3">
-                                <select id="productoSelect" class="form-select">
-                                    <option value="" disabled selected>Cargando productos...</option>
-                                </select>
-                                <button class="btn btn-outline-secondary" type="button" onclick="addToCart()">Añadir</button>
-                            </div>
+            <?php include 'includes/navbar.php'; ?>
 
-                            <hr>
-                            <h6 class="fw-bold">Carrito de Compra:</h6>
-                            <ul class="list-group list-group-flush mb-3" id="cartList">
-                                <li class="list-group-item text-muted text-center small">El carrito está vacío</li>
-                            </ul>
-
-                            <!-- Subtotal, Descuentos e Impuestos -->
-                            <div class="bg-white p-3 rounded border mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Subtotal:</span>
-                                    <span id="subtotalDisplay">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-1 text-primary">
-                                    <span>Descuento Items:</span>
-                                    <span id="itemDiscountDisplay">-$0.00</span>
-                                </div>
-                                <div class="row mb-1 align-items-center">
-                                    <div class="col-7">Descuento Global ($):</div>
-                                    <div class="col-5">
-                                        <input type="number" id="globalDiscount" class="form-control form-control-sm text-end" value="0.00" oninput="renderCart()">
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>Impuestos (IVA 15%):</span>
-                                    <span id="taxDisplay">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between fw-bold mt-2 text-danger fs-5">
-                                    <span>TOTAL:</span>
-                                    <span id="cartTotal">$0.00</span>
-                                </div>
+            <div class="container-fluid p-4 animate-fade-in">
+                <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $start_date, $end_date, 'ventas.php'); ?>
+                
+                <!-- Stats Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-md-6">
+                        <div class="card stat-card-premium bg-income shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-uppercase small fw-bold opacity-75 mb-2">Ingresos del Periodo</h6>
+                                <h2 class="mb-0 fw-bold" id="totalRevenue">$0.00</h2>
+                                <i class="fas fa-hand-holding-usd"></i>
                             </div>
-
-                            <!-- Métodos de Pago Múltiples -->
-                            <hr>
-                            <h6 class="fw-bold">Pagos:</h6>
-                            <div id="paymentsList" class="mb-3">
-                                <!-- Filas de pago dinámicas -->
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="card stat-card-premium bg-profit shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-uppercase small fw-bold opacity-75 mb-2">Ganancias Estimadas</h6>
+                                <h2 class="mb-0 fw-bold" id="totalProfit">$0.00</h2>
+                                <i class="fas fa-chart-line"></i>
                             </div>
-                            <div class="row g-2 mb-4">
-                                <div class="col-6">
-                                    <select id="paymentMethod" class="form-select form-select-sm">
-                                        <option value="efectivo">Efectivo</option>
-                                        <option value="tarjeta">Tarjeta</option>
-                                        <option value="transferencia">Transferencia</option>
-                                        <option value="wallet">Billetera Digital</option>
-                                    </select>
-                                </div>
-                                <div class="col-4">
-                                    <input type="number" id="paymentAmount" class="form-control form-control-sm" placeholder="Monto">
-                                </div>
-                                <div class="col-2">
-                                    <button class="btn btn-primary btn-sm w-100" onclick="addPaymentRow()"><i class="fas fa-plus"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="d-flex justify-content-between fw-bold mb-3">
-                                <span>Restante por pagar:</span>
-                                <span id="balanceDisplay" class="text-danger">$0.00</span>
-                            </div>
-
-                            <button class="btn btn-success w-100 py-2 fs-5" id="btnProcesar" onclick="procesarVenta()" disabled><i class="fas fa-check-circle"></i> Efectuar Venta</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Columna Derecha: Historial y Stats -->
-                <div class="col-md-7">
-                    <div class="row mb-3">
-                        <div class="col-md-6 mb-3">
-                            <div class="stat-card">
-                                <h6>Total Ingresos Históricos</h6>
-                                <h2 id="totalRevenue">$0.00</h2>
+                <div class="row g-4">
+                    <!-- POS View -->
+                    <div class="col-12 col-lg-5">
+                        <div class="card pos-card border-0 shadow-sm">
+                            <div class="card-header bg-primary text-white border-0 py-3">
+                                <h5 class="mb-0 fw-bold"><i class="fas fa-cash-register me-2"></i>Nueva Venta Directa</h5>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                                <h6>Total Ganancias</h6>
-                                <h2 id="totalProfit">$0.00</h2>
+                            <div class="card-body p-4">
+                                <!-- Product Picker -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted">Añadir al Carrito</label>
+                                    <div class="input-group shadow-sm">
+                                        <select id="productoSelect" class="form-select py-2">
+                                            <option value="" disabled selected>Seleccione producto...</option>
+                                        </select>
+                                        <button class="btn btn-primary px-3" type="button" onclick="addToCart()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Cart List -->
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold small text-uppercase text-muted">Detalle de Compra</span>
+                                        <span class="badge bg-light text-dark border" id="itemCount">0 items</span>
+                                    </div>
+                                    <div class="cart-list-container">
+                                        <ul class="list-group list-group-flush border-0" id="cartList">
+                                            <li class="list-group-item bg-transparent text-muted text-center py-5 small italic">
+                                                No hay productos en el carrito
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Summary -->
+                                <div class="bg-light p-4 rounded mb-4">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="text-muted small">Subtotal:</span>
+                                        <span class="fw-bold" id="subtotalDisplay">$0.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2 text-primary">
+                                        <span class="small">Descuentos por Ítem:</span>
+                                        <span class="fw-bold" id="itemDiscountDisplay">-$0.00</span>
+                                    </div>
+                                    <div class="row mb-2 align-items-center">
+                                        <div class="col-7"><span class="text-muted small">Descuento Global ($):</span></div>
+                                        <div class="col-5">
+                                            <input type="number" id="globalDiscount" class="form-control form-control-sm text-end fw-bold" value="0.00" step="0.01" min="0" oninput="renderCart()">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span class="text-muted small" id="taxLabel">IVA (15%):</span>
+                                        <span class="fw-bold" id="taxDisplay">$0.00</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-3 border-top border-2 border-primary border-opacity-10">
+                                        <span class="fw-bold text-dark h5 mb-0">TOTAL:</span>
+                                        <h3 class="mb-0 fw-bold text-primary" id="cartTotal">$0.00</h3>
+                                    </div>
+                                </div>
+
+                                <!-- Payments -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold small text-uppercase text-muted d-block mb-2">Método de Pago</label>
+                                    <div id="paymentsList" class="mb-3"></div>
+                                    
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <select id="paymentMethod" class="form-select py-2">
+                                                <option value="efectivo">💵 Efectivo</option>
+                                                <option value="tarjeta">💳 Tarjeta</option>
+                                                <option value="transferencia">🏦 Transferencia</option>
+                                                <option value="otro">📱 Otro</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-4">
+                                            <input type="number" id="paymentAmount" class="form-control py-2" placeholder="0.00" step="0.01">
+                                        </div>
+                                        <div class="col-2">
+                                            <button class="btn btn-outline-primary w-100 py-2" onclick="addPaymentRow()">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div id="balanceContainer" class="p-3 bg-white border rounded mb-3" style="display: none;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="small fw-bold text-muted" id="balanceLabel">Cambio / Vuelto:</span>
+                                            <span class="fw-bold text-success fs-5" id="balanceDisplay">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Checkout Action -->
+                                <button class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm" id="btnCheckout" onclick="processCheckout()">
+                                    <i class="fas fa-check-circle me-2"></i> Cobrar y Emitir Factura
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Lista de Ventas -->
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header bg-white pt-3 pb-2">
-                            <h5 class="card-title m-0">Últimas Ventas</h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover m-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th># Venta</th>
-                                            <th>Fecha</th>
-                                            <th>Total</th>
-                                            <th>Estado</th>
-                                            <th>Vendedor</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ventasTableBody">
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted p-4">Cargando datos...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    <!-- History Table -->
+                    <div class="col-12 col-lg-7">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-secondary"></i>Historial de Ventas</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadSalesHistory()">
+                                    <i class="fas fa-sync-alt me-1"></i> Actualizar
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Fecha y Hora</th>
+                                                <th>Vendedor</th>
+                                                <th>Total</th>
+                                                <th>Ganancia</th>
+                                                <th>Estado</th>
+                                                <th class="text-end">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="salesTableBody">
+                                            <tr>
+                                                <td colspan="7" class="text-center py-5 text-muted">
+                                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                                    Cargando ventas...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -229,271 +213,386 @@ if (!isset($_SESSION['usuario'])) {
         </div>
     </div>
 
-    <!-- Modal Factura (Opcional, se abre en pestaña nueva por ahora) -->
+    <!-- Sale Details Modal -->
+    <div class="modal fade" id="saleDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="saleDetailsTitle">Detalles de Venta #</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block text-uppercase fw-bold">Fecha</small>
+                            <span id="dtFecha" class="fw-semibold text-dark">-</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block text-uppercase fw-bold">Vendedor</small>
+                            <span id="dtVendedor" class="fw-semibold text-dark">-</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block text-uppercase fw-bold">Tipo Venta</small>
+                            <span id="dtTipo" class="badge bg-light text-dark border">-</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block text-uppercase fw-bold">Estado</small>
+                            <span id="dtEstado" class="badge bg-success">-</span>
+                        </div>
+                    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../assets/js/common.js"></script>
+                    <h6 class="fw-bold mb-3 border-bottom pb-2">Artículos Vendidos</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">P. Unit</th>
+                                    <th class="text-end">Desc.</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dtProductsList"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <h6 class="fw-bold mb-2">Desglose de Pagos</h6>
+                            <ul class="list-group list-group-flush" id="dtPaymentsList"></ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Subtotal:</small>
+                                    <span id="dtSubtotal" class="fw-semibold">$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Descuento:</small>
+                                    <span id="dtDescuento" class="text-danger fw-semibold">-$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small class="text-muted">Impuestos:</small>
+                                    <span id="dtImpuestos" class="fw-semibold">$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between pt-2 border-top">
+                                    <strong class="text-dark">Total:</strong>
+                                    <strong id="dtTotal" class="text-primary fs-5">$0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <a href="#" id="btnPrintInvoice" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-print me-1"></i> Imprimir Factura
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <?php include 'includes/footer.php'; ?>
     <script>
         let availableProducts = [];
-        let curCart = [];
-        let curPayments = [];
-        let totals = {
-            subtotal: 0,
-            itemDiscount: 0,
-            globalDiscount: 0,
-            tax: 0,
-            total: 0,
-            paid: 0,
-            toPay: 0
-        };
+        let cart = [];
+        let payments = [];
+        let currentTaxRate = 0.15;
+        let currencySymbol = '$';
 
-        const TAX_RATE = 0.15; // 15% IVA
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCompanyInfo();
+            await loadProducts();
+            await loadSalesHistory();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProductos();
-            loadVentas();
+            // Deshabilitar botón de checkout si el usuario no tiene permisos de gestión
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+                const btnCheckout = document.getElementById('btnCheckout');
+                if (btnCheckout) {
+                    btnCheckout.disabled = true;
+                    btnCheckout.title = 'No dispone de permisos para registrar ventas.';
+                }
+            }
         });
 
-        async function loadProductos() {
+        async function fetchCompanyInfo() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_datos_empresa');
+                const data = await res.json();
+                if (data.success && data.data) {
+                    if (data.data.impuesto_porcentaje !== undefined) {
+                        currentTaxRate = parseFloat(data.data.impuesto_porcentaje) / 100;
+                        const taxLabel = document.getElementById('taxLabel');
+                        if (taxLabel) taxLabel.textContent = `IVA (${parseFloat(data.data.impuesto_porcentaje)}%):`;
+                    }
+                    if (data.data.moneda) {
+                        currencySymbol = data.data.moneda;
+                    }
+                }
+            } catch (e) {
+                console.log('Using default tax settings');
+            }
+        }
+
+        async function loadProducts() {
             try {
                 const res = await fetch('../backend/api.php?route=get_productos');
                 const data = await res.json();
-                if (data.success && data.data) {
+                if (data.success) {
                     availableProducts = data.data;
-                    const sel = document.getElementById('productoSelect');
-                    sel.innerHTML = '<option value="" disabled selected>Seleccione un producto</option>';
+                    const select = document.getElementById('productoSelect');
+                    select.innerHTML = '<option value="" disabled selected>Seleccione producto...</option>';
                     availableProducts.forEach(p => {
-                        let stock_text = p.stock_actual > 0 ? `(Stock: ${p.stock_actual})` : '(Sin stock)';
-                        sel.innerHTML += `<option value="${p.id}" data-precio="${p.precio_venta}">${p.nombre} - $${p.precio_venta} ${stock_text}</option>`;
+                        select.innerHTML += `<option value="${p.id}">${p.nombre} - ${currencySymbol}${parseFloat(p.precio_venta).toFixed(2)} (Stock: ${p.stock_actual})</option>`;
                     });
                 }
-            } catch (e) { }
-        }
-
-        async function loadVentas() {
-            try {
-                const response = await fetch('../backend/api.php?route=get_ventas');
-                const data = await response.json();
-                const tbody = document.getElementById('ventasTableBody');
-                let totalRev = 0;
-                let totalProfit = 0;
-                tbody.innerHTML = '';
-
-                if (data.success && data.data.length > 0) {
-                    data.data.forEach(v => {
-                        if (v.estado !== 'cancelado') {
-                            totalRev += parseFloat(v.total);
-                            totalProfit += parseFloat(v.ganancias || 0);
-                        }
-                        
-                        let badgeClass = v.estado === 'cancelado' ? 'bg-danger' : 'bg-success';
-                        let rowClass = v.estado === 'cancelado' ? 'table-danger opacity-75' : '';
-                        let fechaArr = v.fecha_venta.split(' ');
-
-                        tbody.innerHTML += `
-                            <tr class="${rowClass}">
-                                <td>#${v.id}</td>
-                                <td><small>${fechaArr[0]} ${fechaArr[1] || ''}</small></td>
-                                <td class="fw-bold">$${v.total}</td>
-                                <td><span class="badge ${badgeClass}">${v.estado.toUpperCase()}</span></td>
-                                <td><small class="text-muted text-uppercase">${v.vendedor || 'Sistema'}</small></td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary" onclick="printInvoice(${v.id})" title="Ver Factura"><i class="fas fa-file-invoice"></i></button>
-                                        ${v.estado === 'completado' ? `
-                                            <button class="btn btn-sm btn-outline-danger" onclick="cancelarVenta(${v.id})" title="Cancelar Venta"><i class="fas fa-times-circle"></i></button>
-                                        ` : ''}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    document.getElementById('totalRevenue').textContent = '$' + totalRev.toFixed(2);
-                    document.getElementById('totalProfit').textContent = '$' + totalProfit.toFixed(2);
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">No hay ventas registradas.</td></tr>';
-                }
-            } catch (err) { }
+            } catch (e) {
+                console.error('Error fetching products:', e);
+            }
         }
 
         function addToCart() {
-            const sel = document.getElementById('productoSelect');
-            if (!sel.value) return;
+            const select = document.getElementById('productoSelect');
+            const prodId = parseInt(select.value);
+            if (!prodId) return;
 
-            const prodText = sel.options[sel.selectedIndex].text;
-            const prodPrecio = parseFloat(sel.options[sel.selectedIndex].getAttribute('data-precio'));
+            const product = availableProducts.find(p => p.id == prodId);
+            if (!product) return;
 
-            const exist = curCart.find(item => item.producto_id == sel.value);
-            if (exist) {
-                exist.cantidad++;
+            if (product.stock_actual <= 0) {
+                alert('¡El producto seleccionado no tiene stock disponible!');
+                return;
+            }
+
+            const existing = cart.find(item => item.id == prodId);
+            if (existing) {
+                if (existing.cantidad + 1 > product.stock_actual) {
+                    alert('No hay suficiente stock para añadir más unidades.');
+                    return;
+                }
+                existing.cantidad++;
             } else {
-                curCart.push({
-                    producto_id: sel.value,
-                    nombre: prodText.split(' - ')[0],
-                    precio: prodPrecio,
+                cart.push({
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: parseFloat(product.precio_venta),
                     cantidad: 1,
-                    descuento: 0
+                    descuento: 0,
+                    stock_max: product.stock_actual
                 });
+            }
+
+            renderCart();
+        }
+
+        function updateCartQty(index, delta) {
+            const item = cart[index];
+            if (!item) return;
+
+            const newQty = item.cantidad + delta;
+            if (newQty <= 0) {
+                cart.splice(index, 1);
+            } else if (newQty > item.stock_max) {
+                alert('Stock máximo alcanzado para este producto.');
+                return;
+            } else {
+                item.cantidad = newQty;
             }
             renderCart();
         }
 
-        function updateItemQty(idx, qty) {
-            curCart[idx].cantidad = parseInt(qty) || 1;
+        function updateCartDiscount(index, discountVal) {
+            const item = cart[index];
+            if (!item) return;
+            item.descuento = Math.max(0, parseFloat(discountVal) || 0);
             renderCart();
         }
 
-        function updateItemDiscount(idx, desc) {
-            curCart[idx].descuento = parseFloat(desc) || 0;
+        function removeFromCart(index) {
+            cart.splice(index, 1);
             renderCart();
         }
 
         function renderCart() {
             const list = document.getElementById('cartList');
+            const itemCount = document.getElementById('itemCount');
             list.innerHTML = '';
 
-            if (curCart.length === 0) {
-                list.innerHTML = '<li class="list-group-item text-muted text-center small">El carrito está vacío</li>';
-                resetTotals();
-                return;
+            let subtotal = 0;
+            let totalItemDiscounts = 0;
+            let totalItems = 0;
+
+            if (cart.length === 0) {
+                list.innerHTML = `<li class="list-group-item bg-transparent text-muted text-center py-5 small italic">No hay productos en el carrito</li>`;
+                itemCount.textContent = '0 items';
+            } else {
+                cart.forEach((item, index) => {
+                    const itemSubtotal = (item.precio * item.cantidad) - item.descuento;
+                    subtotal += item.precio * item.cantidad;
+                    totalItemDiscounts += item.descuento;
+                    totalItems += item.cantidad;
+
+                    list.innerHTML += `
+                        <li class="list-group-item bg-white border-bottom p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold text-dark">${item.nombre}</span>
+                                <span class="fw-bold text-primary">${currencySymbol}${itemSubtotal.toFixed(2)}</span>
+                            </div>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-5">
+                                    <div class="input-group input-group-sm">
+                                        <button class="btn btn-outline-secondary" onclick="updateCartQty(${index}, -1)">-</button>
+                                        <input type="text" class="form-control text-center bg-light" value="${item.cantidad}" readonly>
+                                        <button class="btn btn-outline-secondary" onclick="updateCartQty(${index}, 1)">+</button>
+                                    </div>
+                                </div>
+                                <div class="col-5">
+                                    <input type="number" class="form-control form-control-sm" placeholder="Desc $" value="${item.descuento || ''}" onchange="updateCartDiscount(${index}, this.value)">
+                                </div>
+                                <div class="col-2 text-end">
+                                    <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromCart(${index})">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                });
+                itemCount.textContent = `${totalItems} item(s)`;
             }
 
-            let subtotal = 0;
-            let itemDiscount = 0;
+            const globalDiscount = Math.max(0, parseFloat(document.getElementById('globalDiscount').value) || 0);
+            const taxableSubtotal = Math.max(0, subtotal - totalItemDiscounts - globalDiscount);
+            const taxes = taxableSubtotal * currentTaxRate;
+            const total = taxableSubtotal + taxes;
 
-            curCart.forEach((item, index) => {
-                let brut = item.precio * item.cantidad;
-                subtotal += brut;
-                itemDiscount += item.descuento;
+            document.getElementById('subtotalDisplay').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+            document.getElementById('itemDiscountDisplay').textContent = `-${currencySymbol}${totalItemDiscounts.toFixed(2)}`;
+            document.getElementById('taxDisplay').textContent = `${currencySymbol}${taxes.toFixed(2)}`;
+            document.getElementById('cartTotal').textContent = `${currencySymbol}${total.toFixed(2)}`;
 
-                list.innerHTML += `
-                    <li class="list-group-item p-2">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span class="fw-bold">${item.nombre}</span>
-                            <span class="text-success fw-bold">$${brut.toFixed(2)}</span>
-                        </div>
-                        <div class="row g-2 align-items-center">
-                            <div class="col-4">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">Cant.</span>
-                                    <input type="number" class="form-control" value="${item.cantidad}" onchange="updateItemQty(${index}, this.value)">
-                                </div>
-                            </div>
-                            <div class="col-5">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">Desc.$</span>
-                                    <input type="number" class="form-control" value="${item.descuento}" onchange="updateItemDiscount(${index}, this.value)">
-                                </div>
-                            </div>
-                            <div class="col-3 text-end">
-                                <button class="btn btn-sm btn-outline-danger" onclick="remCart(${index})"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </li>
-                `;
-            });
-
-            totals.subtotal = subtotal;
-            totals.itemDiscount = itemDiscount;
-            totals.globalDiscount = parseFloat(document.getElementById('globalDiscount').value) || 0;
-            
-            // Cálculo de Impuestos y Total
-            let baseImponible = subtotal - itemDiscount - totals.globalDiscount;
-            if (baseImponible < 0) baseImponible = 0;
-            
-            totals.tax = baseImponible * TAX_RATE;
-            totals.total = baseImponible + totals.tax;
-
-            document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toFixed(2);
-            document.getElementById('itemDiscountDisplay').textContent = '-$' + itemDiscount.toFixed(2);
-            document.getElementById('taxDisplay').textContent = '$' + totals.tax.toFixed(2);
-            document.getElementById('cartTotal').textContent = '$' + totals.total.toFixed(2);
-
-            updatePaymentsUI();
-        }
-
-        function resetTotals() {
-            totals = { subtotal: 0, itemDiscount: 0, globalDiscount: 0, tax: 0, total: 0, paid: 0, toPay: 0 };
-            document.getElementById('subtotalDisplay').textContent = '$0.00';
-            document.getElementById('itemDiscountDisplay').textContent = '-$0.00';
-            document.getElementById('taxDisplay').textContent = '$0.00';
-            document.getElementById('cartTotal').textContent = '$0.00';
-            document.getElementById('globalDiscount').value = '0.00';
-            curPayments = [];
-            updatePaymentsUI();
-        }
-
-        function remCart(idx) {
-            curCart.splice(idx, 1);
-            renderCart();
+            updateBalance(total);
         }
 
         function addPaymentRow() {
-            const method = document.getElementById('paymentMethod').value;
-            const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            const ref = ""; // Placeholder para referencia si fuera necesariov
+            const methodSelect = document.getElementById('paymentMethod');
+            const amountInput = document.getElementById('paymentAmount');
+            const method = methodSelect.value;
+            const amount = parseFloat(amountInput.value);
 
-            if (amount <= 0) return;
+            if (!amount || amount <= 0) {
+                alert('Ingrese un monto válido');
+                return;
+            }
 
-            curPayments.push({
-                metodo: method,
-                monto: amount,
-                referencia: ref
-            });
-
-            document.getElementById('paymentAmount').value = '';
-            updatePaymentsUI();
+            payments.push({ metodo: method, monto: amount });
+            amountInput.value = '';
+            renderPayments();
         }
 
-        function removePaymentRow(idx) {
-            curPayments.splice(idx, 1);
-            updatePaymentsUI();
+        function removePayment(index) {
+            payments.splice(index, 1);
+            renderPayments();
         }
 
-        function updatePaymentsUI() {
+        function renderPayments() {
             const list = document.getElementById('paymentsList');
             list.innerHTML = '';
-            let paid = 0;
-
-            curPayments.forEach((p, index) => {
-                paid += p.monto;
+            payments.forEach((p, idx) => {
                 list.innerHTML += `
-                    <div class="d-flex justify-content-between align-items-center bg-light p-2 border-bottom small">
-                        <span><i class="fas fa-credit-card"></i> ${p.metodo.toUpperCase()}</span>
-                        <div>
-                            <span class="fw-bold">$${p.monto.toFixed(2)}</span>
-                            <i class="fas fa-times text-danger ms-2" style="cursor:pointer" onclick="removePaymentRow(${index})"></i>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center bg-white border p-2 rounded mb-2">
+                        <span class="payment-pill bg-light border text-uppercase">${p.metodo}</span>
+                        <span class="fw-bold">${currencySymbol}${p.monto.toFixed(2)}</span>
+                        <button class="btn btn-link text-danger p-0 ms-2" onclick="removePayment(${idx})">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                 `;
             });
 
-            totals.paid = paid;
-            totals.toPay = totals.total - paid;
-            
-            const bal = document.getElementById('balanceDisplay');
-            if (totals.toPay <= 0 && totals.total > 0) {
-                bal.textContent = 'PAGADO (Cambio: $' + Math.abs(totals.toPay).toFixed(2) + ')';
-                bal.className = 'text-success';
-                document.getElementById('btnProcesar').disabled = false;
+            const currentTotal = getCartTotal();
+            updateBalance(currentTotal);
+        }
+
+        function getCartTotal() {
+            const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+            const itemDiscounts = cart.reduce((acc, item) => acc + item.descuento, 0);
+            const globalDiscount = Math.max(0, parseFloat(document.getElementById('globalDiscount').value) || 0);
+            const taxableSubtotal = Math.max(0, subtotal - itemDiscounts - globalDiscount);
+            const taxes = taxableSubtotal * currentTaxRate;
+            return taxableSubtotal + taxes;
+        }
+
+        function updateBalance(total) {
+            const paidTotal = payments.reduce((acc, p) => acc + p.monto, 0);
+            const balanceContainer = document.getElementById('balanceContainer');
+            const balanceLabel = document.getElementById('balanceLabel');
+            const balanceDisplay = document.getElementById('balanceDisplay');
+
+            if (payments.length > 0) {
+                balanceContainer.style.display = 'block';
+                const diff = paidTotal - total;
+                if (diff >= 0) {
+                    balanceLabel.textContent = 'Cambio / Vuelto:';
+                    balanceLabel.className = 'small fw-bold text-success';
+                    balanceDisplay.textContent = `${currencySymbol}${diff.toFixed(2)}`;
+                    balanceDisplay.className = 'fw-bold text-success fs-5';
+                } else {
+                    balanceLabel.textContent = 'Pendiente de Pago:';
+                    balanceLabel.className = 'small fw-bold text-danger';
+                    balanceDisplay.textContent = `${currencySymbol}${Math.abs(diff).toFixed(2)}`;
+                    balanceDisplay.className = 'fw-bold text-danger fs-5';
+                }
             } else {
-                bal.textContent = '$' + (totals.toPay > 0 ? totals.toPay.toFixed(2) : '0.00');
-                bal.className = 'text-danger';
-                document.getElementById('btnProcesar').disabled = true;
+                balanceContainer.style.display = 'none';
             }
         }
 
-        async function procesarVenta() {
-            if (curCart.length === 0) return;
-            
+        async function processCheckout() {
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+                alert('No cuenta con el permiso requerido para registrar ventas.');
+                return;
+            }
+
+            if (cart.length === 0) {
+                alert('El carrito está vacío');
+                return;
+            }
+
+            const total = getCartTotal();
+            const totalPaid = payments.reduce((acc, p) => acc + p.monto, 0);
+
+            if (totalPaid < total) {
+                alert(`El monto pagado (${currencySymbol}${totalPaid.toFixed(2)}) es menor que el total de la venta (${currencySymbol}${total.toFixed(2)}).`);
+                return;
+            }
+
+            const subtotal = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+            const itemDiscounts = cart.reduce((acc, item) => acc + item.descuento, 0);
+            const globalDiscount = Math.max(0, parseFloat(document.getElementById('globalDiscount').value) || 0);
+            const taxes = (subtotal - itemDiscounts - globalDiscount) * currentTaxRate;
+
             const payload = {
-                subtotal: totals.subtotal,
-                impuestos: totals.tax,
-                descuento: totals.itemDiscount + totals.globalDiscount,
-                total: totals.total,
-                detalles: curCart,
-                pagos: curPayments
+                subtotal: subtotal,
+                descuento: itemDiscounts + globalDiscount,
+                impuestos: taxes,
+                total: total,
+                detalles: cart.map(item => ({
+                    producto_id: item.id,
+                    cantidad: item.cantidad,
+                    precio_unitario: item.precio,
+                    descuento: item.descuento,
+                    subtotal: (item.precio * item.cantidad) - item.descuento
+                })),
+                pagos: payments
             };
+
+            const btn = document.getElementById('btnCheckout');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
 
             try {
                 const res = await fetch('../backend/api.php?route=add_venta_directa', {
@@ -502,46 +601,178 @@ if (!isset($_SESSION['usuario'])) {
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
+
                 if (data.success) {
-                    alert(data.message);
-                    curCart = [];
-                    curPayments = [];
-                    resetTotals();
-                    loadVentas();
-                    loadProductos();
-                    if(data.venta_id) printInvoice(data.venta_id);
-                } else alert('Error: ' + data.message);
-            } catch (e) { alert('Error de conexión'); }
+                    alert('¡Venta realizada con éxito!');
+                    window.open(`factura.php?id=${data.venta_id}`, '_blank');
+                    cart = [];
+                    payments = [];
+                    document.getElementById('globalDiscount').value = '0.00';
+                    renderCart();
+                    renderPayments();
+                    await loadProducts();
+                    await loadSalesHistory();
+                } else {
+                    alert(data.message || 'Error procesando la venta.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i> Cobrar y Emitir Factura';
+            }
         }
 
-        async function cancelarVenta(id) {
-            if (!confirm('¿Está seguro de cancelar esta venta? El inventario será revertido.')) return;
+        async function loadSalesHistory() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const filter = urlParams.get('filter') || 'all';
+            const startDate = urlParams.get('start_date') || '';
+            const endDate = urlParams.get('end_date') || '';
+
+            let url = `../backend/api.php?route=get_ventas&filter=${encodeURIComponent(filter)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const tbody = document.getElementById('salesTableBody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data && data.data.length > 0) {
+                    let rev = 0;
+                    let prof = 0;
+
+                    data.data.forEach(v => {
+                        if (v.estado !== 'cancelado') {
+                            rev += parseFloat(v.total || 0);
+                            prof += parseFloat(v.ganancias || 0);
+                        }
+
+                        let statusBadge = '<span class="badge bg-success">Completada</span>';
+                        if (v.estado === 'cancelado') statusBadge = '<span class="badge bg-danger">Cancelada</span>';
+
+                        const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('ventas.gestionar') : true);
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td class="fw-bold">#${v.id}</td>
+                                <td><small>${v.fecha_venta}</small></td>
+                                <td>${v.vendedor || 'Sistema'}</td>
+                                <td class="fw-bold text-dark">${currencySymbol}${parseFloat(v.total).toFixed(2)}</td>
+                                <td class="text-success fw-bold">${currencySymbol}${parseFloat(v.ganancias).toFixed(2)}</td>
+                                <td>${statusBadge}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-info me-1" onclick="viewSaleDetails(${v.id})" title="Ver Detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="factura.php?id=${v.id}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Factura">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                    ${v.estado !== 'cancelado' && puedeGestionar ? `
+                                        <button class="btn btn-sm btn-outline-danger" onclick="cancelSale(${v.id})" title="Anular">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    ` : ''}
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById('totalRevenue').textContent = `${currencySymbol}${rev.toFixed(2)}`;
+                    document.getElementById('totalProfit').textContent = `${currencySymbol}${prof.toFixed(2)}`;
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No hay registros de ventas para el periodo seleccionado</td></tr>`;
+                    document.getElementById('totalRevenue').textContent = `${currencySymbol}0.00`;
+                    document.getElementById('totalProfit').textContent = `${currencySymbol}0.00`;
+                }
+            } catch (e) {
+                console.error('Error fetching sales history:', e);
+            }
+        }
+
+        async function viewSaleDetails(id) {
+            try {
+                const res = await fetch(`../backend/api.php?route=get_venta_detalles&id=${id}`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const v = data.data.venta;
+                    const details = data.data.detalles || [];
+                    const payments = data.data.pagos || [];
+
+                    document.getElementById('saleDetailsTitle').textContent = `Detalles de Venta #${v.id}`;
+                    document.getElementById('dtFecha').textContent = v.fecha_venta;
+                    document.getElementById('dtVendedor').textContent = v.vendedor || 'Sistema';
+                    document.getElementById('dtTipo').textContent = v.pedido_id ? `Pedido #${v.pedido_id}` : 'Venta Directa';
+                    document.getElementById('dtEstado').textContent = v.estado;
+                    document.getElementById('dtEstado').className = `badge ${v.estado === 'cancelado' ? 'bg-danger' : 'bg-success'}`;
+
+                    const prodBody = document.getElementById('dtProductsList');
+                    prodBody.innerHTML = '';
+                    details.forEach(d => {
+                        prodBody.innerHTML += `
+                            <tr>
+                                <td>${d.producto_nombre}</td>
+                                <td class="text-center">${d.cantidad}</td>
+                                <td class="text-end">${currencySymbol}${parseFloat(d.precio_unitario).toFixed(2)}</td>
+                                <td class="text-end">${currencySymbol}${parseFloat(d.descuento || 0).toFixed(2)}</td>
+                                <td class="text-end fw-bold">${currencySymbol}${parseFloat(d.subtotal).toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    const payList = document.getElementById('dtPaymentsList');
+                    payList.innerHTML = '';
+                    payments.forEach(p => {
+                        payList.innerHTML += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-0 bg-transparent">
+                                <span class="text-uppercase small">${p.metodo_pago}</span>
+                                <span class="fw-bold">${currencySymbol}${parseFloat(p.monto).toFixed(2)}</span>
+                            </li>
+                        `;
+                    });
+
+                    document.getElementById('dtSubtotal').textContent = `${currencySymbol}${parseFloat(v.subtotal).toFixed(2)}`;
+                    document.getElementById('dtDescuento').textContent = `-${currencySymbol}${parseFloat(v.descuento || 0).toFixed(2)}`;
+                    document.getElementById('dtImpuestos').textContent = `${currencySymbol}${parseFloat(v.impuestos || 0).toFixed(2)}`;
+                    document.getElementById('dtTotal').textContent = `${currencySymbol}${parseFloat(v.total).toFixed(2)}`;
+
+                    document.getElementById('btnPrintInvoice').href = `factura.php?id=${v.id}`;
+
+                    const modal = new bootstrap.Modal(document.getElementById('saleDetailsModal'));
+                    modal.show();
+                }
+            } catch (e) {
+                console.error('Error fetching sale details:', e);
+            }
+        }
+
+        async function cancelSale(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+                alert('No dispone de permisos para anular ventas.');
+                return;
+            }
+
+            if (!confirm(`¿Está seguro de anular la venta #${id}? Esta acción revertirá el stock de los productos.`)) return;
 
             try {
                 const res = await fetch('../backend/api.php?route=cancel_venta', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
+                    body: JSON.stringify({ venta_id: id })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(data.message);
-                    loadVentas();
-                    loadProductos();
-                } else alert('Error: ' + data.message);
-            } catch (e) { alert('Error al procesar solicitud'); }
+                    alert('Venta anulada exitosamente.');
+                    await loadProducts();
+                    await loadSalesHistory();
+                } else {
+                    alert(data.message || 'Error al anular la venta.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error de conexión.');
+            }
         }
-
-        function printInvoice(id) {
-            window.open(`factura.php?id=${id}`, '_blank', 'width=450,height=600');
-        }
-
-        function logout() { fetch('../backend/api.php?route=logout').then(() => window.location.href = 'login.html'); }
     </script>
 </body>
-
-</html>
-    </script>
-</body>
-
 </html>
