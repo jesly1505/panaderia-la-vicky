@@ -47,6 +47,8 @@ class ProductoController {
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($categoria, 'Categoría'),
+            Validator::length($categoria, 50, 'Categoría'),
             Validator::numeric($precio, 'Precio de venta'),
             Validator::greaterThan($precio, 0, 'Precio de venta'),
             Validator::numeric($cantidad, 'Cantidad'),
@@ -115,7 +117,7 @@ class ProductoController {
 
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        $id = $_POST['id'] ?? 0;
+        $id = Validator::input('id', 0);
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
             Validator::greaterThan($id, 0, 'ID'),

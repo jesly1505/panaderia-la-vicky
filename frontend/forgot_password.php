@@ -266,6 +266,11 @@
                 return;
             }
 
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast('Error', 'Por favor ingrese un correo válido.', 'bg-danger');
+                return;
+            }
+
             const loader = document.getElementById('loginLoader');
             const btnSubmit = document.getElementById('btnSubmit');
             

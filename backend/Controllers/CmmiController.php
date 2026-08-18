@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Database;
+use App\Core\Validator;
 use App\Models\CmmiModel;
 use App\Utils\Logger;
 use PDO;
@@ -37,8 +38,8 @@ class CmmiController {
             session_start();
         }
 
-        $modulo = trim($_POST['modulo'] ?? 'General');
-        $descripcion = trim($_POST['descripcion'] ?? '');
+        $modulo = trim(Validator::input('modulo', 'General'));
+        $descripcion = trim(Validator::input('descripcion'));
         $usuario_id = $_SESSION['user_id'] ?? ($_SESSION['usuario_id'] ?? null);
 
         if (empty($descripcion)) {
@@ -75,7 +76,7 @@ class CmmiController {
             session_start();
         }
 
-        $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+        $id = (int)(Validator::input('id', $_GET['id'] ?? 0));
         if ($id <= 0) {
             if (isset($_GET['action'])) {
                 header("Location: ../../frontend/incidencias.php?error=invalid_id");

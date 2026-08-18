@@ -48,8 +48,8 @@ class VentaController {
             $errors[] = Validator::greaterThan($pid, 0, "Producto #" . ($i + 1));
             $errors[] = Validator::numeric($d['cantidad'] ?? 0, "Cantidad del producto #" . ($i + 1));
             $errors[] = Validator::greaterThan($d['cantidad'] ?? 0, 0, "Cantidad del producto #" . ($i + 1));
-            $errors[] = Validator::numeric($d['precio'] ?? 0, "Precio del producto #" . ($i + 1));
-            $errors[] = Validator::min($d['precio'] ?? 0, 0, "Precio del producto #" . ($i + 1));
+            $errors[] = Validator::numeric($d['precio_unitario'] ?? $d['precio'] ?? 0, "Precio del producto #" . ($i + 1));
+            $errors[] = Validator::min($d['precio_unitario'] ?? $d['precio'] ?? 0, 0, "Precio del producto #" . ($i + 1));
         }
         foreach (($data['pagos'] ?? []) as $i => $p) {
             $errors[] = Validator::numeric($p['monto'] ?? 0, "Monto del pago #" . ($i + 1));

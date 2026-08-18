@@ -563,7 +563,12 @@ $end_date = $_GET['end_date'] ?? '';
             }
 
             const total = getCartTotal();
-            const totalPaid = payments.reduce((acc, p) => acc + p.monto, 0);
+            let totalPaid = payments.reduce((acc, p) => acc + p.monto, 0);
+
+            if (payments.length === 0) {
+                payments.push({ metodo: 'efectivo', monto: total });
+                totalPaid = total;
+            }
 
             if (totalPaid < total) {
                 alert(`El monto pagado (${currencySymbol}${totalPaid.toFixed(2)}) es menor que el total de la venta (${currencySymbol}${total.toFixed(2)}).`);

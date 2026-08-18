@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Core\AuditService;
+use App\Core\Validator;
 use App\Models\UserModel;
 
 class EmployeeController {
@@ -29,8 +30,28 @@ class EmployeeController {
             return;
         }
 
-        if ($this->userModel->create($data['nombre'], $data['email'], $data['password'], $data['rol_id'] ?? 2)) {
-            $this->audit->log('Empleados', 'Alta de empleado', "Empleado creado: {$data['email']} ({$data['nombre']})");
+        $nombre   = $data['nombre'];
+        $email    = $data['email'];
+        $password = $data['password'];
+        $rol_id   = $data['rol_id'] ?? 2;
+
+        $error = Validator::firstError([
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($email, 'Email'),
+            Validator::email($email, 'Email'),
+            Validator::required($password, 'Contraseña'),
+            Validator::length($password, 255, 'Contraseña', 6),
+            Validator::integer($rol_id, 'Rol'),
+            Validator::greaterThan($rol_id, 0, 'Rol'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        if ($this->userModel->create($nombre, $email, $password, $rol_id)) {
+            $this->audit->log('Empleados', 'Alta de empleado', "Empleado creado: {$email} ({$nombre})");
             echo json_encode(['success' => true, 'message' => 'Empleado creado exitosamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear empleado. El correo ya podría estar en uso.']);
@@ -44,8 +65,13 @@ class EmployeeController {
         $data = json_decode($json, true);
         $id = $data['id'] ?? null;
 
-        if (!$id) {
-            echo json_encode(['success' => false, 'message' => 'ID no proporcionado.']);
+        $error = Validator::firstError([
+            Validator::required($id, 'ID'),
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 

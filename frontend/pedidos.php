@@ -52,11 +52,11 @@ $pageHeader = "Gestión de Pedidos";
                                 <div class="row g-2 mb-3">
                                     <div class="col-6">
                                         <label class="form-label fw-semibold small text-uppercase text-muted">Fecha Entrega</label>
-                                        <input type="date" id="fechaEntrega" class="form-control py-2">
+                                        <input type="date" id="fechaEntrega" class="form-control py-2" required>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label fw-semibold small text-uppercase text-muted">Hora Entrega</label>
-                                        <input type="time" id="horaEntrega" class="form-control py-2">
+                                        <input type="time" id="horaEntrega" class="form-control py-2" required>
                                     </div>
                                 </div>
 

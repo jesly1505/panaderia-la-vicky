@@ -26,9 +26,9 @@ class GastoController {
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-        $descripcion = trim($_POST['descripcion'] ?? '');
-        $monto       = $_POST['monto'] ?? 0;
-        $fecha       = $_POST['fecha'] ?? date('Y-m-d');
+        $descripcion = trim(Validator::input('descripcion'));
+        $monto       = Validator::input('monto', 0);
+        $fecha       = Validator::input('fecha', date('Y-m-d'));
 
         $error = Validator::firstError([
             Validator::required($descripcion, 'Descripción'),
@@ -56,7 +56,7 @@ class GastoController {
     /** POST route=delete_gasto */
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        $id = $_POST['id'] ?? 0;
+        $id = Validator::input('id', 0);
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
             Validator::greaterThan($id, 0, 'ID'),
