@@ -23,12 +23,12 @@ class InsumoController {
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $proveedor_id = !empty($_POST['proveedor_id']) ? $_POST['proveedor_id'] : null;
-        $nombre = trim($_POST['nombre'] ?? '');
-        $unidad = trim($_POST['unidad_medida'] ?? '');
-        $inicial = !empty($_POST['stock_inicial']) ? $_POST['stock_inicial'] : 0;
-        $minimo = !empty($_POST['stock_minimo']) ? $_POST['stock_minimo'] : 0;
-        $precio = !empty($_POST['precio_costo']) ? $_POST['precio_costo'] : 0;
+        $proveedor_id = !empty(Validator::input('proveedor_id')) ? Validator::input('proveedor_id') : null;
+        $nombre = trim(Validator::input('nombre'));
+        $unidad = trim(Validator::input('unidad_medida'));
+        $inicial = !empty(Validator::input('stock_inicial')) ? Validator::input('stock_inicial') : 0;
+        $minimo = !empty(Validator::input('stock_minimo')) ? Validator::input('stock_minimo') : 0;
+        $precio = !empty(Validator::input('precio_costo')) ? Validator::input('precio_costo') : 0;
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
@@ -67,8 +67,8 @@ class InsumoController {
     public function adjustStock() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
-        $cantidad = $_POST['cantidad'] ?? 0; // puede ser negativo
+        $id = Validator::input('insumo_id', 0);
+        $cantidad = Validator::input('cantidad', 0); // puede ser negativo
 
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
@@ -93,7 +93,7 @@ class InsumoController {
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
+        $id = Validator::input('id', 0);
         
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de insumo no proporcionado.']);
@@ -111,8 +111,8 @@ class InsumoController {
     public function toggleVisibility() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
-        $visible = $_POST['visible'] ?? 1;
+        $id = Validator::input('id', 0);
+        $visible = Validator::input('visible', 1);
         
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de insumo no proporcionado.']);
@@ -135,10 +135,10 @@ class InsumoController {
     public function registrarCompra() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $insumo_id = $_POST['insumo_id'] ?? 0;
-        $proveedor_id = $_POST['proveedor_id'] ?? 0;
-        $cantidad = $_POST['cantidad'] ?? 0;
-        $precio = $_POST['precio_compra'] ?? 0;
+        $insumo_id = Validator::input('insumo_id', 0);
+        $proveedor_id = Validator::input('proveedor_id', 0);
+        $cantidad = Validator::input('cantidad', 0);
+        $precio = Validator::input('costo_unitario', 0);
 
         $error = Validator::firstError([
             Validator::integer($insumo_id, 'Insumo'),

@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Core\AuditService;
+use App\Core\Validator;
 use App\Models\ProveedorModel;
 
 class ProveedorController {
@@ -21,13 +22,20 @@ class ProveedorController {
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $nombre = trim($_POST['nombre'] ?? '');
-        $contacto = trim($_POST['contacto'] ?? '');
-        $telefono = trim($_POST['telefono'] ?? '');
-        $email = trim($_POST['email'] ?? '');
+        $nombre   = trim(Validator::input('nombre'));
+        $contacto = trim(Validator::input('contacto'));
+        $telefono = trim(Validator::input('telefono'));
+        $email    = trim(Validator::input('email'));
 
-        if (empty($nombre)) {
-            echo json_encode(['success' => false, 'message' => 'El nombre del proveedor es obligatorio.']);
+        $error = Validator::firstError([
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::email($email, 'Email'),
+            Validator::length($telefono, 30, 'Teléfono', 0),
+            Validator::length($contacto, 100, 'Contacto', 0),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
@@ -42,14 +50,23 @@ class ProveedorController {
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
-        $nombre = trim($_POST['nombre'] ?? '');
-        $contacto = trim($_POST['contacto'] ?? '');
-        $telefono = trim($_POST['telefono'] ?? '');
-        $email = trim($_POST['email'] ?? '');
+        $id       = Validator::input('id', 0);
+        $nombre   = trim(Validator::input('nombre'));
+        $contacto = trim(Validator::input('contacto'));
+        $telefono = trim(Validator::input('telefono'));
+        $email    = trim(Validator::input('email'));
 
-        if (empty($id) || empty($nombre)) {
-            echo json_encode(['success' => false, 'message' => 'ID y nombre son obligatorios.']);
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::email($email, 'Email'),
+            Validator::length($telefono, 30, 'Teléfono', 0),
+            Validator::length($contacto, 100, 'Contacto', 0),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
@@ -64,9 +81,13 @@ class ProveedorController {
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
-        if (empty($id)) {
-            echo json_encode(['success' => false, 'message' => 'ID no proporcionado.']);
+        $id = Validator::input('id', 0);
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 

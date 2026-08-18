@@ -40,7 +40,7 @@ class ProduccionController {
 
         $producto_id        = $data['producto_id'] ?? 0;
         $cantidad_producida = $data['cantidad_producida'] ?? 0;
-        $insumos            = $data['insumos'] ?? [];
+        $insumos            = $data['insumos_usados'] ?? $data['insumos'] ?? [];
 
         if (empty($producto_id) || $cantidad_producida <= 0) {
             echo json_encode(['success' => false, 'message' => 'Selecciona un producto y una cantidad mayor a 0.']);

@@ -217,7 +217,7 @@ $pageHeader = "Reportes y Estadísticas";
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-uppercase text-muted">Descripción</label>
-                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Detalle del gasto..."></textarea>
+                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Detalle del gasto..." required></textarea>
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-semibold small text-uppercase text-muted">Fecha</label>

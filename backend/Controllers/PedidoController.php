@@ -41,8 +41,8 @@ class PedidoController {
             Validator::date($data['fecha_entrega'] ?? null, 'Fecha de entrega'),
         ];
         foreach ($data['detalles'] as $i => $d) {
-            $errors[] = Validator::integer($d['id'] ?? 0, "Producto #" . ($i + 1));
-            $errors[] = Validator::greaterThan($d['id'] ?? 0, 0, "Producto #" . ($i + 1));
+            $errors[] = Validator::integer($d['producto_id'] ?? $d['id'] ?? 0, "Producto #" . ($i + 1));
+            $errors[] = Validator::greaterThan($d['producto_id'] ?? $d['id'] ?? 0, 0, "Producto #" . ($i + 1));
             $errors[] = Validator::numeric($d['cantidad'] ?? 0, "Cantidad del producto #" . ($i + 1));
             $errors[] = Validator::greaterThan($d['cantidad'] ?? 0, 0, "Cantidad del producto #" . ($i + 1));
         }
@@ -60,7 +60,7 @@ class PedidoController {
         $fecha_entrega = $data['fecha_entrega'] ?? null;
         $hora_entrega = $data['hora_entrega'] ?? null;
 
-        if ($this->pedidoModel->create($cliente_id, $usuario_id, $total, $detalles, $fecha_entrega, $hora_entrega)) {
+        if ($this->pedidoModel->create($cliente_id, $usuario_id, $fecha_entrega, $hora_entrega, $detalles, $total)) {
             $this->audit->log('Pedidos', 'Registro de pedido', "Pedido registrado por \$" . number_format($total, 2));
             echo json_encode(['success' => true, 'message' => 'Pedido registrado exitosamente.']);
         } else {

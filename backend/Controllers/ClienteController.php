@@ -22,16 +22,16 @@ class ClienteController {
     public function add() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $nombre = $_POST['nombre'] ?? '';
-        $email = $_POST['email'] ?? null;
-        $telefono = $_POST['telefono'] ?? '';
-        $direccion = $_POST['direccion'] ?? '';
+        $nombre = Validator::input('nombre');
+        $email = Validator::input('email', null);
+        $telefono = Validator::input('telefono');
+        $direccion = Validator::input('direccion');
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
-            Validator::length($telefono, 20, 'Teléfono', 0),
+            Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($direccion, 255, 'Dirección', 0),
         ]);
         if ($error) {
@@ -60,11 +60,11 @@ class ClienteController {
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
-        $id = $_POST['id'] ?? 0;
-        $nombre = $_POST['nombre'] ?? '';
-        $email = $_POST['email'] ?? null;
-        $telefono = $_POST['telefono'] ?? '';
-        $direccion = $_POST['direccion'] ?? '';
+        $id = Validator::input('id', 0);
+        $nombre = Validator::input('nombre');
+        $email = Validator::input('email', null);
+        $telefono = Validator::input('telefono');
+        $direccion = Validator::input('direccion');
 
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
@@ -72,7 +72,7 @@ class ClienteController {
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
-            Validator::length($telefono, 20, 'Teléfono', 0),
+            Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($direccion, 255, 'Dirección', 0),
         ]);
         if ($error) {
@@ -90,7 +90,7 @@ class ClienteController {
 
     public function delete() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        $id = $_POST['id'] ?? 0;
+        $id = Validator::input('id', 0);
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
             Validator::greaterThan($id, 0, 'ID'),

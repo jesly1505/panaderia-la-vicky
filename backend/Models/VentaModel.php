@@ -66,7 +66,7 @@ class VentaModel {
                 $qd = "INSERT INTO detalle_venta (venta_id, producto_id, cantidad, precio_unitario, descuento, subtotal)
                        VALUES (:venta_id, :prod_id, :cant, :precio, :desc, :subtotal)";
                 $stmtD = $this->conn->prepare($qd);
-                $d_precio = Money::round($detalle['precio']);
+                $d_precio = Money::round($detalle['precio_unitario'] ?? $detalle['precio'] ?? 0);
                 $d_desc = Money::round($detalle['descuento'] ?? 0);
                 $d_subtotal = Money::round($detalle['cantidad'] * $d_precio - $d_desc);
 
@@ -88,7 +88,7 @@ class VentaModel {
                 $stmtP->bindParam(":venta_id", $venta_id);
                 $stmtP->bindParam(":monto", $p_monto);
                 $stmtP->bindParam(":metodo", $pago['metodo']);
-                $stmtP->bindParam(":ref", $pago['referencia'] ?? null);
+                $stmtP->bindValue(":ref", $pago['referencia'] ?? null);
                 $stmtP->execute();
             }
 

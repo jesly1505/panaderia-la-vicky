@@ -312,7 +312,7 @@ $pageHeader = "Inventario y Proveedores";
                                 <td>${i.proveedor_nombre || '<span class="text-muted small">No asignado</span>'}</td>
                                 <td><span class="${stockClass}">${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida}</span> ${badge}</td>
                                 <td><span class="text-muted small">${parseFloat(i.stock_minimo).toFixed(2)} ${i.unidad_medida}</span></td>
-                                <td>$${parseFloat(i.costo_unitario).toFixed(2)}</td>
+                                <td>$${parseFloat(i.precio_costo).toFixed(2)}</td>
                                 <td class="text-end">
                                     ${puedeGestionar ? `
                                         <button class="btn btn-sm btn-outline-success me-1" onclick="openAdjustModal(${i.id}, '${escapeHtml(i.nombre)}')">

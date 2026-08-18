@@ -37,11 +37,13 @@ class PedidoModel {
             $stmtDetalle = $this->conn->prepare($queryDetalle);
 
             foreach ($productos as $prod) {
-                $subtotal = $prod['cantidad'] * $prod['precio'];
+                $subtotal = $prod['cantidad'] * ($prod['precio_unitario'] ?? $prod['precio'] ?? 0);
                 $stmtDetalle->bindParam(":pedido_id", $pedido_id);
-                $stmtDetalle->bindParam(":producto_id", $prod['id']);
+                $d_pid = $prod['producto_id'] ?? $prod['id'];
+                $d_precio = $prod['precio_unitario'] ?? $prod['precio'];
+                $stmtDetalle->bindParam(":producto_id", $d_pid);
                 $stmtDetalle->bindParam(":cantidad", $prod['cantidad']);
-                $stmtDetalle->bindParam(":precio_unitario", $prod['precio']);
+                $stmtDetalle->bindParam(":precio_unitario", $d_precio);
                 $stmtDetalle->bindParam(":subtotal", $subtotal);
                 $stmtDetalle->execute();
             }
