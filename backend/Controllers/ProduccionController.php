@@ -59,21 +59,23 @@ class ProduccionController {
         try {
             foreach ($insumos as $ins) {
                 if (!empty($ins['insumo_id']) && isset($ins['cantidad_usada']) && $ins['cantidad_usada'] > 0) {
-                    $unidad_usada = $ins['unidad_usada'] ?? 'Unidades';
-                    
-                    // Obtener info del insumo base para saber a qué convertir
                     $infoInsumo = $insumoModel->getById($ins['insumo_id']);
                     if (!$infoInsumo) {
                         throw new Exception("Insumo no encontrado en la base de datos.");
                     }
-                    
+
+                    $unidad_usada = $ins['unidad_usada'] ?? null;
                     $unidad_base = $infoInsumo['unidad_medida'];
-                    $cantidad_convertida = UnitConverter::convert($ins['cantidad_usada'], $unidad_usada, $unidad_base);
-                    
+
+                    if ($unidad_usada && $unidad_usada !== $unidad_base) {
+                        $cantidad_convertida = UnitConverter::convert($ins['cantidad_usada'], $unidad_usada, $unidad_base);
+                    } else {
+                        $cantidad_convertida = (float)$ins['cantidad_usada'];
+                    }
+
                     $insumos_validos[] = [
                         'insumo_id' => (int)$ins['insumo_id'],
                         'cantidad_usada' => $cantidad_convertida,
-                        // El ProduccionModel asume que lo que le llega ya es exactamente lo que debe restar de BD.
                     ];
                 }
             }

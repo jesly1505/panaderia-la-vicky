@@ -18,6 +18,11 @@ class UnitConverter {
         'Mililitros' => 1
     ];
 
+    private static $lengthUnits = [
+        'Metros' => 100,
+        'Centimetros' => 1
+    ];
+
     private static $unitTypeMapping = [
         'Kg' => 'mass',
         'Gramos' => 'mass',
@@ -25,6 +30,8 @@ class UnitConverter {
         'Onzas' => 'mass',
         'Litros' => 'volume',
         'Mililitros' => 'volume',
+        'Metros' => 'length',
+        'Centimetros' => 'length',
         'Unidades' => 'units'
     ];
 
@@ -72,6 +79,12 @@ class UnitConverter {
             return round($finalValue, 4);
         }
 
+        if ($sourceType === 'length') {
+            $valueInCm = $amount * self::$lengthUnits[$sourceUnit];
+            $finalValue = $valueInCm / self::$lengthUnits[$targetUnit];
+            return round($finalValue, 4);
+        }
+
         if ($sourceType === 'units') {
             return (float)$amount; // 'Unidades' a 'Unidades' siempre es lo mismo
         }
@@ -102,6 +115,12 @@ class UnitConverter {
             'ml' => 'Mililitros',
             'mililitro' => 'Mililitros',
             'mililitros' => 'Mililitros',
+            'metro' => 'Metros',
+            'metros' => 'Metros',
+            'm' => 'Metros',
+            'centimetro' => 'Centimetros',
+            'centimetros' => 'Centimetros',
+            'cm' => 'Centimetros',
             'und' => 'Unidades',
             'unidad' => 'Unidades',
             'unidades' => 'Unidades'
