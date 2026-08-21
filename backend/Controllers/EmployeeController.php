@@ -3,16 +3,20 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Validator;
+use App\Models\RoleModel;
 use App\Models\UserModel;
 
 class EmployeeController {
     private $userModel;
     private $audit;
+    private $roleModel;
 
-    public function __construct(UserModel $userModel, AuditService $audit) {
+    public function __construct(UserModel $userModel, AuditService $audit, RoleModel $roleModel) {
         $this->userModel = $userModel;
         $this->audit = $audit;
+        $this->roleModel = $roleModel;
     }
+        // Duplicate constructor code removed
 
     public function getAll() {
         $employees = $this->userModel->getAll();
@@ -25,7 +29,7 @@ class EmployeeController {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
         
-        if (!$data || empty($data['nombre']) || empty($data['email']) || empty($data['password'])) {
+        if (!$data || empty($data['nombre']) || empty($data['email']) || empty($data['password']) || empty($data['telefono'])) {
             echo json_encode(['success' => false, 'message' => 'Faltan campos obligatorios.']);
             return;
         }
@@ -34,17 +38,27 @@ class EmployeeController {
         $email    = $data['email'];
         $password = $data['password'];
         $rol_id   = $data['rol_id'] ?? 2;
+        $telefono = $data['telefono'] ?? null;
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::required($email, 'Email'),
             Validator::email($email, 'Email'),
+            // Teléfono obligatorio y validaciones
+            Validator::required($telefono, 'Teléfono'),
+            Validator::numeric($telefono, 'Teléfono'),
+            Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::required($password, 'Contraseña'),
             Validator::length($password, 255, 'Contraseña', 6),
             Validator::integer($rol_id, 'Rol'),
             Validator::greaterThan($rol_id, 0, 'Rol'),
         ]);
+        // Validate that the role exists and is allowed (prevent admin role)
+        if ($rol_id == 1 || !$this->roleModel->exists($rol_id)) {
+            echo json_encode(['success' => false, 'message' => 'Rol no válido o no autorizado.']);
+            return;
+        }
         if ($error) {
             echo json_encode(['success' => false, 'message' => $error]);
             return;

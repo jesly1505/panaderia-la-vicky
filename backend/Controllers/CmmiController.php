@@ -191,7 +191,7 @@ class CmmiController {
             echo $sql;
             exit();
         } catch (\Throwable $e) {
-            $this->audit->logAction('Error', 'Respaldo fallido', $e->getMessage());
+            Logger::error($e->getMessage());
             header("Location: ../../frontend/respaldo.php?error=dump_failed");
             exit();
         }

@@ -31,6 +31,7 @@ class ProveedorController {
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
+            Validator::numeric($telefono, 'Teléfono'),
             Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($contacto, 100, 'Contacto', 0),
         ]);
@@ -62,6 +63,7 @@ class ProveedorController {
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
+            Validator::numeric($telefono, 'Teléfono'),
             Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($contacto, 100, 'Contacto', 0),
         ]);

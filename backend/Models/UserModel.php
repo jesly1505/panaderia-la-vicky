@@ -11,6 +11,11 @@ class UserModel {
         $this->conn = $db;
     }
 
+    /** Returns the underlying PDO connection for internal use. */
+    public function getConnection(): PDO {
+        return $this->conn;
+    }
+
     public function findByEmail($email) {
         $query = "SELECT u.id, u.rol_id, u.nombre, u.email, u.password_hash, u.estado, u.intentos_fallidos, u.bloqueado_hasta, u.ultimo_acceso, r.nombre as rol_nombre 
                   FROM " . $this->table_name . " u 
