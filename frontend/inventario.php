@@ -73,6 +73,7 @@ $pageHeader = "Inventario y Proveedores";
                                     </tr>
                                 </tbody>
                             </table>
+        <div id="insumosPagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
                     </div>
                 </div>
@@ -281,9 +282,10 @@ $pageHeader = "Inventario y Proveedores";
             }
         }
 
-        async function loadInsumos() {
+        async function loadInsumos(page = 1) {
+            const limit = 10;
             try {
-                const res = await fetch('../backend/api.php?route=get_insumos');
+                const res = await fetch(`../backend/api.php?route=get_insumos&page=${page}&limit=${limit}`);
                 const data = await res.json();
                 const tbody = document.getElementById('insumosTableBody');
                 const selectCompra = document.getElementById('insumoSelectCompra');
@@ -328,12 +330,40 @@ $pageHeader = "Inventario y Proveedores";
                             </tr>
                         `;
                     });
+                    renderPagination(data.total, limit, page);
                 } else {
                     tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No hay insumos registrados.</td></tr>`;
                 }
             } catch (e) {
                 console.error('Error fetching insumos:', e);
             }
+        }
+
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const paginationContainer = document.getElementById('insumosPagination');
+            if (!paginationContainer) return;
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+            let html = `<nav aria-label="Paginación de insumos"><ul class="pagination justify-content-center">`;
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            for (let p = startPage; p <= endPage; p++) {
+                const active = p === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadInsumos(${p}); return false;">${p}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page + 1}); return false;">&raquo;</a></li>`;
+            html += `</ul></nav>`;
+            paginationContainer.innerHTML = html;
         }
 
         async function loadProveedores() {

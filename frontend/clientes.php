@@ -73,9 +73,9 @@ $pageHeader = "Gestión de Clientes";
                                 </tbody>
                             </table>
 
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center" id="clientPagination"></ul>
-</nav>
+<div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
+    
+
                         </div>
                     </div>
                 </div>
@@ -257,7 +257,7 @@ $pageHeader = "Gestión de Clientes";
                 `;
             });
             const totalPages = Math.ceil(data.total / itemsPerPage);
-            renderPagination(totalPages, page);
+            renderPagination(data.total, itemsPerPage, page);
         } else {
             tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron clientes registrados.</td></tr>`;
             document.getElementById('clientPagination').innerHTML = '';
@@ -267,32 +267,29 @@ $pageHeader = "Gestión de Clientes";
     }
 }
 
-function renderPagination(totalPages, currentPage) {
+function renderPagination(total, limit, page) {
+    const totalPages = Math.ceil(total / limit);
     const nav = document.getElementById('clientPagination');
     nav.innerHTML = '';
     if (totalPages <= 1) return;
-    // Prev button
-    nav.innerHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" onclick="loadClientes(${currentPage - 1}); return false;">Prev</a>
-    </li>`;
-    // Page numbers (max 5 visible)
+    let html = '<ul class="pagination justify-content-center">';
+    const prevDisabled = page <= 1 ? ' disabled' : '';
+    html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page - 1}); return false;">&laquo;</a></li>`;
     const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
     let end = Math.min(totalPages, start + maxVisible - 1);
     if (end - start < maxVisible - 1) {
         start = Math.max(1, end - maxVisible + 1);
     }
     for (let i = start; i <= end; i++) {
-        nav.innerHTML += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-            <a class="page-link" href="#" onclick="loadClientes(${i}); return false;">${i}</a>
-        </li>`;
+        const active = i === page ? ' active' : '';
+        html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadClientes(${i}); return false;">${i}</a></li>`;
     }
-    // Next button
-    nav.innerHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" onclick="loadClientes(${currentPage + 1}); return false;">Next</a>
-    </li>`;
+    const nextDisabled = page >= totalPages ? ' disabled' : '';
+    html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page + 1}); return false;">&raquo;</a></li>`;
+    html += '</ul>';
+    nav.innerHTML = html;
 }
-            // Duplicate pagination logic removed
 
         async function viewHistory(id) {
             try {

@@ -121,6 +121,7 @@ $pageHeader = "Registro de Producción Libre";
                                         </tbody>
                                     </table>
                                 </div>
+<div id="historialPagination" class="my-3 d-flex justify-content-center"></div>
                             </div>
                         </div>
                     </div>
@@ -129,6 +130,124 @@ $pageHeader = "Registro de Producción Libre";
         </div>
     </div>
 
+    <?php include 'includes/footer.php'; ?>
+    <script>
+        let allInsumos = [];
+        let allProducts = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadInsumos();
+            await loadProductos();
+            await loadHistory();
+        });
+
+        async function loadInsumos() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_insumos');
+                const data = await res.json();
+                if (data.success) allInsumos = data.data;
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadProductos() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_productos');
+                const data = await res.json();
+                const select = document.getElementById('selectProducto');
+                if (data.success && data.data) {
+                    allProducts = data.data;
+                    data.data.forEach(p => {
+                        select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function addInsumoRow() {
+            const container = document.getElementById('insumosContainer');
+            const rowId = Date.now();
+            let options = '<option value="" disabled selected>Seleccione insumo...</option>';
+            allInsumos.forEach(i => {
+                options += `<option value="${i.id}" data-um="${i.unidad_medida}">${i.nombre} (Disponible: ${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida})</option>`;
+            });
+
+            const row = document.createElement('div');
+            row.className = 'insumo-row-premium';
+            row.id = `row-${rowId}`;
+            row.innerHTML = `
+                <div class="row g-2 align-items-center">
+                    <div class="col-6">
+                        <select name="insumo_id[]" class="form-select form-select-sm" required onchange="updateUm(this, '${rowId}')">
+                            ${options}
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.001" min="0.001" name="cantidad_usada[]" class="form-control" placeholder="Cant." required>
+                            <span class="input-group-text small" id="um-${rowId}">u</span>
+                        </div>
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="document.getElementById('row-${rowId}').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function updateUm(select, rowId) {
+            const opt = select.options[select.selectedIndex];
+            document.getElementById(`um-${rowId}`).textContent = opt.getAttribute('data-um') || 'u';
+        }
+
+        document.getElementById('produccionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alert = document.getElementById('resultAlert');
+
+            const productoId = document.getElementById('selectProducto').value;
+            const cantidad = document.getElementById('inputCantidadProd').value;
+
+            if (!productoId || !cantidad || parseInt(cantidad) <= 0) {
+                showAlert('Por favor complete todos los campos requeridos.', 'danger');
+                return;
+            }
+
+            const insumoIds = [...document.querySelectorAll('[name="insumo_id[]"]')].map(el => el.value);
+            const cantidades = [...document.querySelectorAll('[name="cantidad_usada[]"]')].map(el => el.value);
+
+            const insumos = [];
+            for (let i = 0; i < insumoIds.length; i++) {
+                if (insumoIds[i] && cantidades[i]) {
+                    insumos.push({ insumo_id: parseInt(insumoIds[i]), cantidad_usada: parseFloat(cantidades[i]) });
+                }
+            }
+
+            const payload = { producto_id: parseInt(productoId), cantidad_producida: parseInt(cantidad), insumos_usados: insumos };
+
+            try {
+                const res = await fetch('../backend/api.php?route=add_produccion_manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showAlert('✅ Producción registrada exitosamente. Stock actualizado.', 'success');
+                    e.target.reset();
+                    document.getElementById('insumosContainer').innerHTML = '';
+                    await loadHistory();
+} else if (data.insuficiente) {
+    showAlert('⚠️ Stock insuficiente para: ' + data.insuficiente.join(', '), 'warning');
+} else {
+    showAlert('Error: ' + (data.message || 'Ocurrió un error inesperado.'), 'danger');
+}
+} catch (err) {
+    showAlert('Error de conexión con el servidor.', 'danger');
+    console.error(err);
+}
     <?php include 'includes/footer.php'; ?>
     <script>
         let allInsumos = [];
@@ -249,42 +368,65 @@ $pageHeader = "Registro de Producción Libre";
             }
         });
 
-        function showAlert(msg, type) {
-            const el = document.getElementById('resultAlert');
-            el.className = `alert alert-${type} shadow-sm border-0 mb-4 animate-fade-in`;
-            el.innerHTML = msg;
-        }
-
-        async function loadHistory() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const filter = urlParams.get('filter') || 'all';
-            const startDate = urlParams.get('start_date') || '';
-            const endDate = urlParams.get('end_date') || '';
-
-            try {
-                const res = await fetch(`../backend/api.php?route=get_produccion_historial&filter=${filter}&start_date=${startDate}&end_date=${endDate}`);
-                const data = await res.json();
-                const tbody = document.getElementById('historialBody');
-                tbody.innerHTML = '';
-
-                if (data.success && data.data && data.data.length > 0) {
-                    data.data.forEach(h => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><small class="text-muted">${h.fecha}</small></td>
-                                <td class="fw-semibold text-dark">${h.producto_nombre}</td>
-                                <td class="text-center"><span class="badge bg-primary rounded-pill">${h.cantidad_producida}</span></td>
-                                <td><small class="text-muted">${h.detalles_insumos || '<em>N/A</em>'}</small></td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
-                }
-            } catch (e) {
-                console.error(e);
+        async function loadHistory(page = 1, limit = 10) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filter = urlParams.get('filter') || 'all';
+    const startDate = urlParams.get('start_date') || '';
+    const endDate = urlParams.get('end_date') || '';
+    try {
+        const res = await fetch(`../backend/api.php?route=get_produccion_historial&filter=${filter}&start_date=${startDate}&end_date=${endDate}&page=${page}&limit=${limit}`);
+        const data = await res.json();
+        const tbody = document.getElementById('historialBody');
+        tbody.innerHTML = '';
+        if (data.success && data.data && data.data.length > 0) {
+            data.data.forEach(h => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><small class="text-muted">${h.fecha}</small></td>
+                        <td class="fw-semibold text-dark">${h.producto_nombre}</td>
+                        <td class="text-center"><span class="badge bg-primary rounded-pill">${h.cantidad_producida}</span></td>
+                        <td><small class="text-muted">${h.detalles_insumos || '<em>N/A</em>'}</small></td>
+                    </tr>
+                `;
+            });
+            const total = data.total !== undefined ? data.total : (data.totalCount !== undefined ? data.totalCount : 0);
+            if (total > 0) {
+                renderPaginationHistory(total, limit, page);
             }
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
         }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderPaginationHistory(total, limit, page) {
+    const totalPages = Math.ceil(total / limit);
+    const container = document.getElementById('historialPagination');
+    if (!container) return;
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    let html = `<nav aria-label="Paginación del historial"><ul class="pagination justify-content-center">`;
+    const prevDisabled = page <= 1 ? ' disabled' : '';
+    html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadHistory(${page - 1}, ${limit}); return false;">&laquo;</a></li>`;
+    const maxVisible = 5;
+    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    for (let p = startPage; p <= endPage; p++) {
+        const active = p === page ? ' active' : '';
+        html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadHistory(${p}, ${limit}); return false;">${p}</a></li>`;
+    }
+    const nextDisabled = page >= totalPages ? ' disabled' : '';
+    html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadHistory(${page + 1}, ${limit}); return false;">&raquo;</a></li>`;
+    html += `</ul></nav>`;
+    container.innerHTML = html;
+}
     </script>
 </body>
 </html>
