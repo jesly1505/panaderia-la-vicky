@@ -7,13 +7,16 @@ use App\Core\Money;
 use App\Core\Validator;
 use App\Helpers\UnitConverter;
 use App\Models\ProductoModel;
+use App\Utils\Logger;
 
-class ProductoController {
+class ProductoController
+{
     private $productoModel;
     private $insumoModel;
     private $audit;
 
-    public function __construct(ProductoModel $productoModel, InsumoRepositoryInterface $insumoModel, AuditService $audit) {
+    public function __construct(ProductoModel $productoModel, InsumoRepositoryInterface $insumoModel, AuditService $audit)
+    {
         $this->productoModel = $productoModel;
         $this->insumoModel = $insumoModel;
         $this->audit = $audit;
@@ -63,8 +66,8 @@ class ProductoController {
             return;
         }
 
-        $precio      = Money::round($precio);
-        $cantidad    = Money::round($cantidad);
+        $precio = Money::round($precio);
+        $cantidad = Money::round($cantidad);
         $stock_minimo = Money::round($stock_minimo);
 
         $insumoModel = $this->insumoModel;
@@ -73,21 +76,22 @@ class ProductoController {
         $ingredientes_procesados = [];
         try {
             foreach ($ingredientes as $ing) {
-                if (empty($ing['insumo_id']) || empty($ing['cantidad_requerida'])) continue;
-                
+                if (empty($ing['insumo_id']) || empty($ing['cantidad_requerida']))
+                    continue;
+
                 $unidad_usada = $ing['unidad_usada'] ?? 'Unidades';
-                
+
                 // Obtener unidad base del insumo
                 $infoInsumo = $insumoModel->getById($ing['insumo_id']);
                 if (!$infoInsumo) {
                     throw new \Exception("El insumo seleccionado no existe.");
                 }
-                
+
                 $unidad_base = $infoInsumo['unidad_medida'];
-                
+
                 // Convertir
                 $cantidad_convertida = UnitConverter::convert($ing['cantidad_requerida'], $unidad_usada, $unidad_base);
-                
+
                 $ingredientes_procesados[] = [
                     'insumo_id' => $ing['insumo_id'],
                     'cantidad_requerida' => $cantidad_convertida,
@@ -95,7 +99,8 @@ class ProductoController {
                 ];
             }
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error en conversión de unidades.']);
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al procesar la receta.']);
             return;
         }
 
@@ -187,67 +192,48 @@ class ProductoController {
         }
     }
 
+
     /**
      * POST JSON { "producto_id": N, "cantidad": N }
-     * Llama a ProductoModel::producir() y responde con JSON.
-     * En caso de insumos insuficientes devuelve el detalle de cada faltante.
+     * Llama a ProductoModel::producir() y responde con JSON
      */
     public function producir() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-        $data        = json_decode(file_get_contents('php://input'), true);
         $producto_id = $data['producto_id'] ?? 0;
-        $cantidad    = $data['cantidad']    ?? 0;
+        $cantidad = $data['cantidad'] ?? 0;
 
-        // ── Validación básica ──────────────────────────────────────────────
         $error = Validator::firstError([
-            Validator::integer($producto_id, 'Producto'),
-            Validator::greaterThan($producto_id, 0, 'Producto'),
+            Validator::integer($producto_id, 'ID de producto'),
             Validator::numeric($cantidad, 'Cantidad'),
             Validator::greaterThan($cantidad, 0, 'Cantidad'),
         ]);
+
         if ($error) {
-            echo json_encode([
-                'success' => false,
-                'message' => $error
-            ]);
+            // Normalizar mensaje de validación de cantidad
+            if (strpos($error, 'El campo Cantidad debe ser mayor que 0.') !== false) {
+                $error = 'El campo debe de ser mayor que 0.';
+            }
+            echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
-        // ── Delegar al modelo ──────────────────────────────────────────────
-        $resultado = $this->productoModel->producir((int)$producto_id, (float)$cantidad);
+        if (!$this->productoModel->getById($producto_id)) {
+            echo json_encode(['success' => false, 'message' => 'El producto especificado no existe.']);
+            return;
+        }
 
+        $resultado = $this->productoModel->producir($producto_id, $cantidad);
         if ($resultado === true) {
-            // Éxito: todo se procesó correctamente
-            $this->audit->log('Producción', 'Producción de lote', "Producto ID {$producto_id}: se produjeron {$cantidad} unidades.");
-            echo json_encode([
-                'success' => true,
-                'message' => "Producción registrada correctamente. Se agregaron {$cantidad} unidades al stock."
-            ]);
+            echo json_encode(['success' => true, 'message' => 'Producción completada con éxito.']);
         } elseif (isset($resultado['sin_receta'])) {
-            // El producto no tiene receta asignada
-            echo json_encode([
-                'success' => false,
-                'message' => $resultado['mensaje']
-            ]);
+            $msg = $resultado['mensaje'] ?? 'Este producto no tiene receta asignada.';
+            echo json_encode(['success' => false, 'message' => $msg]);
         } elseif (isset($resultado['error'])) {
-            // Error inesperado de base de datos
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error interno: ' . $resultado['error']
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Ha ocurrido un error interno. Por favor, contacte al administrador.']);
         } else {
-            // Array de insumos con stock insuficiente
-            $detalle = array_map(function($f) {
-                return "{$f['nombre']} (necesita {$f['necesita']} {$f['unidad']}, disponible: {$f['disponible']})";
-            }, $resultado);
-
-            echo json_encode([
-                'success'   => false,
-                'message'   => 'Stock insuficiente en los siguientes insumos:',
-                'faltantes' => $detalle
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Error en la producción: insumos insuficientes.', 'faltantes' => $resultado]);
         }
     }
 }

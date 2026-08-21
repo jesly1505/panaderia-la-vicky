@@ -7,6 +7,9 @@
  */
 require_once __DIR__ . '/../autoload.php';
 
+use App\Utils\ErrorHandler;
+ErrorHandler::register();
+
 use App\Core\Container;
 use App\Core\Database;
 use App\Core\Interfaces\InsumoRepositoryInterface;

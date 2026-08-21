@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Validator;
+use App\Utils\Logger;
 use App\Models\ClienteModel;
 
 class ClienteController {
@@ -14,10 +15,22 @@ class ClienteController {
         $this->audit = $audit;
     }
 
-    public function getAll() {
-        header('Content-Type: application/json');
-        $clientes = $this->clienteModel->readAll();
-        echo json_encode(['success' => true, 'data' => $clientes]);
+    public function getAll()
+    {
+        if (!isset($this->clienteModel) || !method_exists($this->clienteModel, 'readAll')) {
+            Logger::error('ClienteModel not initialized or missing readAll method.');
+            echo json_encode(['success' => false, 'message' => 'Error interno del servidor al cargar clientes.']);
+            return;
+        }
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100; // default limit
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+        try {
+            $clientes = $this->clienteModel->readAll($limit, $offset);
+            echo json_encode(['success' => true, 'data' => $clientes]);
+        } catch (\Throwable $e) {
+            Logger::error('Error fetching clientes: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error interno del servidor al cargar clientes.']);
+        }
     }
 
     public function add() {
@@ -28,24 +41,29 @@ class ClienteController {
         $email = Validator::input('email', null);
         $telefono = Validator::input('telefono');
         $direccion = Validator::input('direccion');
+        $dni = Validator::input('dni');
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
+            Validator::required($dni, 'DNI'),
+            Validator::length($dni, 20, 'DNI', 0),
             Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($direccion, 255, 'Dirección', 0),
         ]);
         if ($error) {
+            Logger::error('Validación falló al crear cliente: ' . $error);
             echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
-        if ($this->clienteModel->create($nombre, $email, $telefono, $direccion)) {
+        if ($this->clienteModel->create($nombre, $email, $telefono, $direccion, $dni)) {
             $this->audit->log('Clientes', 'Alta de cliente', "Cliente creado: {$nombre}");
             echo json_encode(['success' => true, 'message' => 'Cliente creado correctamente.']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al crear cliente.']);
+            Logger::error('Error al crear cliente en la base de datos.');
+                echo json_encode(['success' => false, 'message' => 'Error interno del servidor.']);
         }
     }
 
@@ -69,6 +87,7 @@ class ClienteController {
         $email = Validator::input('email', null);
         $telefono = Validator::input('telefono');
         $direccion = Validator::input('direccion');
+        $dni = Validator::input('dni');
 
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
@@ -76,19 +95,23 @@ class ClienteController {
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::email($email, 'Email'),
+            Validator::required($dni, 'DNI'),
+            Validator::length($dni, 20, 'DNI', 0),
             Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::length($direccion, 255, 'Dirección', 0),
         ]);
         if ($error) {
+            Logger::error('Validación falló al actualizar cliente: ' . $error);
             echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
 
-        if ($this->clienteModel->update($id, $nombre, $email, $telefono, $direccion)) {
+        if ($this->clienteModel->update($id, $nombre, $email, $telefono, $direccion, $dni)) {
             $this->audit->log('Clientes', 'Actualización de cliente', "Cliente ID {$id} actualizado.");
             echo json_encode(['success' => true, 'message' => 'Cliente actualizado correctamente.']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al actualizar cliente.']);
+            Logger::error('Error al actualizar cliente en la base de datos.');
+                echo json_encode(['success' => false, 'message' => 'Error interno del servidor.']);
         }
     }
 
@@ -101,14 +124,16 @@ class ClienteController {
             Validator::greaterThan($id, 0, 'ID'),
         ]);
         if ($error) {
-            echo json_encode(['success' => false, 'message' => $error]);
+            Logger::error('Validación falló al eliminar cliente.');
+                echo json_encode(['success' => false, 'message' => 'Error interno del servidor.']);
             return;
         }
         if ($this->clienteModel->delete($id)) {
             $this->audit->log('Clientes', 'Baja de cliente', "Cliente ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Cliente eliminado correctamente.']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al eliminar cliente (posiblemente tenga pedidos/ventas asociados).']);
+            Logger::error('Error al eliminar cliente: posible referencia en ventas/pedidos.');
+                echo json_encode(['success' => false, 'message' => 'Error interno del servidor.']);
         }
     }
 }

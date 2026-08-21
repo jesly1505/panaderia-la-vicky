@@ -5,6 +5,7 @@ use App\Core\AuditService;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Core\Money;
 use App\Core\Validator;
+use App\Utils\Logger;
 
 class InsumoController {
     private $insumoModel;
@@ -61,8 +62,10 @@ class InsumoController {
             } else {
                 echo json_encode(['success' => false, 'message' => 'No se pudo guardar el insumo en la base de datos. Verifique si el nombre ya existe.']);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
+            Logger::error($e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Error al crear el insumo.']);
+            return;
         }
     }
     

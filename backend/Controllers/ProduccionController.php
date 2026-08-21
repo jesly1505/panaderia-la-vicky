@@ -5,6 +5,7 @@ use App\Core\AuditService;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Helpers\UnitConverter;
 use App\Models\ProduccionModel;
+use App\Utils\Logger;
 
 class ProduccionController {
     private $model;
@@ -43,7 +44,7 @@ class ProduccionController {
         $insumos            = $data['insumos_usados'] ?? $data['insumos'] ?? [];
 
         if (empty($producto_id) || $cantidad_producida <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Selecciona un producto y una cantidad mayor a 0.']);
+            echo json_encode(['success' => false, 'message' => 'El campo Cantidad debe ser mayor que 0.']);
             return;
         }
 
@@ -79,8 +80,9 @@ class ProduccionController {
                     ];
                 }
             }
-        } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error de conversión de unidades.']);
+        } catch (Exception $e) {
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al procesar la conversión de unidades.']);
             return;
         }
 
