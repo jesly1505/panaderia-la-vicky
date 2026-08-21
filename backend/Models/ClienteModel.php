@@ -1,6 +1,6 @@
 <?php
 namespace App\Models;
-
+use PDO;
 use App\Utils\Logger;
 
 class ClienteModel
