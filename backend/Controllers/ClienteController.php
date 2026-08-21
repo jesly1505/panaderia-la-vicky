@@ -26,7 +26,8 @@ class ClienteController {
         $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
         try {
             $clientes = $this->clienteModel->readAll($limit, $offset);
-            echo json_encode(['success' => true, 'data' => $clientes]);
+            $total = $this->clienteModel->countAll();
+            echo json_encode(['success' => true, 'data' => $clientes, 'total' => $total]);
         } catch (\Throwable $e) {
             Logger::error('Error fetching clientes: ' . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Error interno del servidor al cargar clientes.']);
@@ -54,6 +55,21 @@ class ClienteController {
         if ($error) {
             Logger::error('Validación falló al crear cliente: ' . $error);
             echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        // Check for duplicate email
+        if (!empty($email) && $this->clienteModel->existsEmail($email)) {
+            $msg = 'Ya existe un cliente con el mismo email.';
+            Logger::error($msg);
+            echo json_encode(['success' => false, 'message' => $msg]);
+            return;
+        }
+        // Check for duplicate DNI
+        if (!empty($dni) && $this->clienteModel->existsDNI($dni)) {
+            $msg = 'Ya existe un cliente con el mismo DNI.';
+            Logger::error($msg);
+            echo json_encode(['success' => false, 'message' => $msg]);
             return;
         }
 
