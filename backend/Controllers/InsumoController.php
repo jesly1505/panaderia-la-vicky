@@ -17,9 +17,21 @@ class InsumoController {
     }
 
     public function getAll() {
-        header('Content-Type: application/json');
-        $insumos = $this->insumoModel->readAll();
-        echo json_encode(['success' => true, 'data' => $insumos]);
+        // Pagination parameters
+         header('Content-Type: application/json');
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+        $limit = 10; // rows per page as requested
+        $offset = ($page - 1) * $limit;
+        // Retrieve paginated data and total count
+        $insumos = $this->insumoModel->readAll($limit, $offset, true);
+        $total = $this->insumoModel->countAll(true);
+        echo json_encode([
+            'success' => true,
+            'data' => $insumos,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ]);
     }
 
     public function add() {
@@ -62,11 +74,15 @@ class InsumoController {
             } else {
                 echo json_encode(['success' => false, 'message' => 'No se pudo guardar el insumo en la base de datos. Verifique si el nombre ya existe.']);
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Logger::error($e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Error al crear el insumo.']);
             return;
         }
+
+        // Pagination container will be rendered after the table
+        // (HTML added in inventario.php)
+
     }
     
     public function update() {
