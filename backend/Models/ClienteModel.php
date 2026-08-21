@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 use PDO;
+use PDOException;
 use App\Utils\Logger;
 
 class ClienteModel
@@ -55,7 +56,7 @@ class ClienteModel
     }
 
     // Check if email already exists
-    private function existsEmail($email)
+    public function existsEmail($email)
     {
         try {
             $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE email = :email AND eliminado = false";
@@ -70,7 +71,7 @@ class ClienteModel
     }
 
     // Check if DNI already exists
-    private function existsDNI($dni)
+    public function existsDNI($dni)
     {
         try {
             $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE dni = :dni AND eliminado = false";
@@ -87,7 +88,7 @@ class ClienteModel
     public function readAll($limit = null, $offset = null)
     {
         try {
-            $query = "SELECT * FROM " . $this->table_name . " 
+            $query = "SELECT  id,nombre,dni,telefono,email,direccion FROM " . $this->table_name . " 
                   WHERE eliminado = false 
                   ORDER BY nombre ASC";
             if ($limit !== null && $offset !== null) {
@@ -103,6 +104,20 @@ class ClienteModel
         } catch (PDOException $e) {
             Logger::error("Error reading clientes: " . $e->getMessage());
             return [];
+        }
+    }
+
+    // Count total non‑deleted clients
+    public function countAll()
+    {
+        try {
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            Logger::error("Error counting clientes: " . $e->getMessage());
+            return 0;
         }
     }
 
