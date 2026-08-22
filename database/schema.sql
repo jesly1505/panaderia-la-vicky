@@ -1,4 +1,4 @@
-﻿-- =============================================================
+-- =============================================================
 -- Schema de "Panadería La Vicky"
 -- Generado con mysqldump (estructura sin datos).
 -- Importar antes que database/seed.sql
@@ -87,6 +87,7 @@ CREATE TABLE `clientes` (
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `telefono` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `direccion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `dni` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `puntos_fidelidad` int DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `eliminado` tinyint(1) NOT NULL DEFAULT '0',

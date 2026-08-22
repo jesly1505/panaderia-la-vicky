@@ -18,9 +18,11 @@ $pageHeader = "Gestión de Clientes";
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <?php include 'includes/head.php'; ?>
 </head>
+
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
@@ -31,13 +33,16 @@ $pageHeader = "Gestión de Clientes";
             <div class="container-fluid p-4 animate-fade-in">
                 <!-- Directory Card -->
                 <div class="card shadow-sm border-0 border-top border-4 border-primary">
-                    <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 gap-3">
+                    <div
+                        class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 gap-3">
                         <div>
-                            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-address-book me-2 text-primary"></i>Directorio de Clientes</h5>
+                            <h5 class="mb-0 fw-bold text-dark"><i
+                                    class="fas fa-address-book me-2 text-primary"></i>Directorio de Clientes</h5>
                             <p class="text-muted small mb-0">Base de datos de clientes y fidelidad</p>
                         </div>
                         <?php if (tiene_permiso('clientes.gestionar')): ?>
-                            <button class="btn btn-primary shadow-sm fw-bold px-4" data-bs-toggle="modal" data-bs-target="#addClienteModal">
+                            <button class="btn btn-primary shadow-sm fw-bold px-4" data-bs-toggle="modal"
+                                data-bs-target="#addClienteModal">
                                 <i class="fas fa-user-plus me-2"></i>NUEVO CLIENTE
                             </button>
                         <?php endif; ?>
@@ -49,20 +54,28 @@ $pageHeader = "Gestión de Clientes";
                                     <tr>
                                         <th class="ps-4">ID</th>
                                         <th>Cliente</th>
+                                        <th>DNI</th>
                                         <th>Contacto</th>
+                                        <th>Email</th>
                                         <th>Dirección</th>
-                                        <th>Fidelidad</th>
+
+
                                         <th class="text-end pe-4">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="clientesTableBody">
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
-                                            <div class="spinner-border spinner-border-sm text-primary me-2"></div> Cargando clientes...
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                                            Cargando clientes...
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
+
+                            <div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
+
+
                         </div>
                     </div>
                 </div>
@@ -112,25 +125,35 @@ $pageHeader = "Gestión de Clientes";
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted text-uppercase">Nombre Completo</label>
-                            <input type="text" name="nombre" class="form-control" required maxlength="100" placeholder="Ej. Juan Pérez">
+                            <input type="text" name="nombre" class="form-control" required maxlength="100"
+                                placeholder="Ej. Juan Pérez">
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Email</label>
-                                <input type="email" name="email" class="form-control" maxlength="100" placeholder="juan@ejemplo.com">
+                                <input type="email" name="email" class="form-control" maxlength="100"
+                                    placeholder="juan@ejemplo.com">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">DNI</label>
+                                <input type="text" name="dni" class="form-control" maxlength="20" placeholder="12345678"
+                                    required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Teléfono</label>
-                                <input type="tel" name="telefono" class="form-control" maxlength="30" placeholder="0000-0000">
+                                <input type="tel" name="telefono" class="form-control" maxlength="30"
+                                    placeholder="0000-0000">
                             </div>
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-bold small text-muted text-uppercase">Dirección</label>
-                            <textarea name="direccion" class="form-control" rows="2" maxlength="255" placeholder="Dirección domiciliar..."></textarea>
+                            <textarea name="direccion" class="form-control" rows="2" maxlength="255"
+                                placeholder="Dirección domiciliar..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-3 bg-light rounded-bottom">
-                        <button type="button" class="btn btn-link link-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-link link-secondary text-decoration-none"
+                            data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">GUARDAR CLIENTE</button>
                     </div>
                 </form>
@@ -151,26 +174,37 @@ $pageHeader = "Gestión de Clientes";
                         <input type="hidden" name="id" id="editClientId">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted text-uppercase">Nombre Completo</label>
-                            <input type="text" name="nombre" id="editClientNombre" class="form-control" required maxlength="100">
+                            <input type="text" name="nombre" id="editClientNombre" class="form-control" required
+                                maxlength="100">
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Email</label>
-                                <input type="email" name="email" id="editClientEmail" class="form-control" maxlength="100">
+                                <input type="email" name="email" id="editClientEmail" class="form-control"
+                                    maxlength="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">DNI</label>
+                                <input type="text" name="dni" id="editClientDni" class="form-control" maxlength="20"
+                                    placeholder="12345678" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Teléfono</label>
-                                <input type="tel" name="telefono" id="editClientTelefono" class="form-control" maxlength="30">
+                                <input type="tel" name="telefono" id="editClientTelefono" class="form-control"
+                                    maxlength="30">
                             </div>
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-bold small text-muted text-uppercase">Dirección</label>
-                            <textarea name="direccion" id="editClientDireccion" class="form-control" rows="2" maxlength="255"></textarea>
+                            <textarea name="direccion" id="editClientDireccion" class="form-control" rows="2"
+                                maxlength="255"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-3 bg-light rounded-bottom">
-                        <button type="button" class="btn btn-link link-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning text-dark px-4 fw-bold shadow-sm">ACTUALIZAR</button>
+                        <button type="button" class="btn btn-link link-secondary text-decoration-none"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit"
+                            class="btn btn-warning text-dark px-4 fw-bold shadow-sm">ACTUALIZAR</button>
                     </div>
                 </form>
             </div>
@@ -181,63 +215,80 @@ $pageHeader = "Gestión de Clientes";
     <?php include 'includes/footer.php'; ?>
     <script>
         let clientsData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadClientes();
+            loadClientes(1);
         });
 
-        async function loadClientes() {
+        async function loadClientes(page = 1) {
+            currentPage = page;
             try {
-                const res = await fetch('../backend/api.php?route=get_clientes');
+                const offset = (page - 1) * itemsPerPage;
+                const res = await fetch(`../backend/api.php?route=get_clientes&limit=${itemsPerPage}&offset=${offset}`);
                 const data = await res.json();
                 const tbody = document.getElementById('clientesTableBody');
                 tbody.innerHTML = '';
-
                 if (data.success && data.data && data.data.length > 0) {
                     clientsData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.gestionar') : true);
-
                     data.data.forEach(c => {
                         let badge = '<span class="badge bg-secondary">Casual</span>';
                         if (c.puntos_fidelidad > 50) badge = '<span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Oro</span>';
                         else if (c.puntos_fidelidad > 20) badge = '<span class="badge bg-info text-dark">Plata</span>';
                         else if (c.puntos_fidelidad > 0) badge = '<span class="badge bg-light text-dark border">Bronce</span>';
-
                         tbody.innerHTML += `
-                            <tr>
-                                <td class="ps-4 text-muted fw-bold">#${c.id}</td>
-                                <td>
-                                    <div class="fw-bold text-dark">${c.nombre}</div>
-                                    <small class="text-muted"><i class="fas fa-star text-warning me-1"></i>${c.puntos_fidelidad || 0} pts</small>
-                                </td>
-                                <td>
-                                    <div class="small">${c.telefono || '<span class="text-muted">N/A</span>'}</div>
-                                    <div class="small text-muted">${c.email || ''}</div>
-                                </td>
-                                <td class="small text-muted">${c.direccion || 'No registrada'}</td>
-                                <td>${badge}</td>
-                                <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-outline-info me-1" onclick="viewHistory(${c.id})" title="Historial">
-                                        <i class="fas fa-history"></i>
-                                    </button>
-                                    ${puedeGestionar ? `
-                                        <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditModal(${c.id})" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteClient(${c.id})" title="Eliminar">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        `;
+                    <tr>
+                        <td class="ps-4 text-muted fw-bold">#${c.id}</td>
+                        <td><div class="fw-bold text-dark">${c.nombre}</div></td>
+                        <td>${c.dni || ''}</td>
+                        <td class="small">${c.telefono || '<span class="text-muted">N/A</span>'}</td>
+                        <td class="small text-muted">${c.email || ''}</td>
+                        <td class="small text-muted">${c.direccion || 'No registrada'}</td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-info me-1" onclick="viewHistory(${c.id})" title="Historial"><i class="fas fa-history"></i></button>
+                            ${puedeGestionar ? `
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditModal(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteClient(${c.id})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
                     });
+                    const totalPages = Math.ceil(data.total / itemsPerPage);
+                    renderPagination(data.total, itemsPerPage, page);
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron clientes registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron clientes registrados.</td></tr>`;
+                    document.getElementById('clientPagination').innerHTML = '';
                 }
             } catch (e) {
                 console.error(e);
             }
+        }
+
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('clientPagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadClientes(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         async function viewHistory(id) {
@@ -348,4 +399,5 @@ $pageHeader = "Gestión de Clientes";
         }
     </script>
 </body>
+
 </html>

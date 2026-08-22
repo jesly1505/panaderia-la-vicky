@@ -5,6 +5,7 @@ use App\Core\AuditService;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Helpers\UnitConverter;
 use App\Models\ProduccionModel;
+use App\Utils\Logger;
 
 class ProduccionController {
     private $model;
@@ -23,9 +24,11 @@ class ProduccionController {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
 
-        $data = $this->model->getAll($filter, $startDate, $endDate);
-        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
-    }
+        $page = intval($_GET['page'] ?? 1);
+        $limit = intval($_GET['limit'] ?? 6);
+        $result = $this->model->getPaginated($filter, $startDate, $endDate, $page, $limit);
+        echo json_encode(['success' => true, 'data' => $result['data'], 'total' => $result['total']], JSON_UNESCAPED_UNICODE);
+        return;    }
 
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -43,7 +46,7 @@ class ProduccionController {
         $insumos            = $data['insumos_usados'] ?? $data['insumos'] ?? [];
 
         if (empty($producto_id) || $cantidad_producida <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Selecciona un producto y una cantidad mayor a 0.']);
+            echo json_encode(['success' => false, 'message' => 'El campo Cantidad debe ser mayor que 0.']);
             return;
         }
 
@@ -79,8 +82,9 @@ class ProduccionController {
                     ];
                 }
             }
-        } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error de conversión de unidades.']);
+        } catch (Exception $e) {
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al procesar la conversión de unidades.']);
             return;
         }
 

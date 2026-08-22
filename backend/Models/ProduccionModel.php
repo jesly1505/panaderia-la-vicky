@@ -92,13 +92,55 @@ class ProduccionModel {
     /**
      * Obtiene el historial de producciones.
      */
+    /**
+     * Obtiene el historial de producciones con paginación.
+     * Retorna un arreglo con 'data' (registros) y 'total' (conteo total).
+     */
+    public function getPaginated(string $filterType = 'all', string $startDate = '', string $endDate = '', int $page = 1, int $limit = 6) {
+        $offset = ($page - 1) * $limit;
+        $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('p.fecha', $filterType, $startDate, $endDate);
+        // Total count
+        $countQuery = "SELECT COUNT(*) FROM producciones p WHERE $dateCondition";
+        $stmtCnt = $this->conn->prepare($countQuery);
+        $stmtCnt->execute();
+        $total = (int)$stmtCnt->fetchColumn();
+        // Data query with limit
+        $query = "
+            SELECT 
+                p.id,
+                p.cantidad_producida,
+                p.fecha,
+                prod.nombre AS producto_nombre,
+                (
+                    SELECT GROUP_CONCAT(CONCAT(i.nombre, ': ', pd.cantidad_usada, ' ', i.unidad_medida) SEPARATOR '| ')
+                    FROM produccion_detalle pd
+                    JOIN insumos i ON pd.insumo_id = i.id
+                    WHERE pd.produccion_id = p.id
+                ) AS detalles_insumos
+            FROM producciones p
+            JOIN productos prod ON p.producto_id = prod.id
+            WHERE $dateCondition
+            ORDER BY p.fecha DESC
+            LIMIT :limit OFFSET :offset
+        ";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return ['data' => $data, 'total' => $total];
+    }
+
+    /**
+     * Obtiene el historial de producciones sin paginación (existing method).
+     */
     public function getAll(string $filterType = 'all', string $startDate = '', string $endDate = '') {
         $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('p.fecha', $filterType, $startDate, $endDate);
         $query = "
             SELECT 
-                p.id, 
-                p.cantidad_producida, 
-                p.fecha, 
+                p.id,
+                p.cantidad_producida,
+                p.fecha,
                 prod.nombre AS producto_nombre,
                 (
                     SELECT GROUP_CONCAT(CONCAT(i.nombre, ': ', pd.cantidad_usada, ' ', i.unidad_medida) SEPARATOR '| ')
