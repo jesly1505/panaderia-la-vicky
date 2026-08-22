@@ -63,6 +63,8 @@ $pageHeader = "Gestión de Proveedores";
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Pagination container -->
+                        <div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
                     </div>
                 </div>
             </div>
@@ -154,9 +156,10 @@ $pageHeader = "Gestión de Proveedores";
             loadProveedores();
         });
 
-        async function loadProveedores() {
+        async function loadProveedores(page = 1) {
             try {
-                const res = await fetch('../backend/api.php?route=get_proveedores');
+                const limit = 10;
+                const res = await fetch(`../backend/api.php?route=get_proveedores_paginated&page=${page}&limit=${limit}`);
                 const data = await res.json();
                 const tbody = document.getElementById('proveedoresTableBody');
                 tbody.innerHTML = '';
@@ -186,10 +189,39 @@ $pageHeader = "Gestión de Proveedores";
                             </tr>
                         `;
                     });
+
+                    // Render pagination using shared function
+                    renderPagination(data.total, data.limit, page);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No hay proveedores registrados.</td></tr>';
+                    document.getElementById('clientPagination').innerHTML = '';
                 }
             } catch (e) { console.error(e); }
+        }
+
+        // Render pagination (shared with clientes)
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('clientPagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadProveedores(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         document.getElementById('addProveedorForm').addEventListener('submit', async (e) => {

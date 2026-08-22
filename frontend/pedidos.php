@@ -29,80 +29,24 @@ $pageHeader = "Gestión de Pedidos";
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
-
-        <div class="main-content">
+          <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
 
             <div class="container-fluid p-4 animate-fade-in">
                 <div class="row g-4">
-                    <!-- POS View (New Order) -->
-                    <div class="col-12 col-lg-4">
-                        <div class="card shadow-sm border-0 sticky-top" style="top: 90px; z-index: 10;">
-                            <div class="card-header bg-primary text-white border-0 py-3">
-                                <h5 class="mb-0 fw-bold"><i class="fas fa-cart-plus me-2"></i>Nuevo Pedido Especial</h5>
-                            </div>
-                            <div class="card-body p-4">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted">Cliente</label>
-                                    <select id="clienteSelect" class="form-select py-2">
-                                        <option value="">Consumidor Final</option>
-                                    </select>
-                                </div>
-
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold small text-uppercase text-muted">Fecha Entrega</label>
-                                        <input type="date" id="fechaEntrega" class="form-control py-2" required>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold small text-uppercase text-muted">Hora Entrega</label>
-                                        <input type="time" id="horaEntrega" class="form-control py-2" required>
-                                    </div>
-                                </div>
-
-                                <hr class="my-4 opacity-10">
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted">Añadir Producto</label>
-                                    <div class="input-group">
-                                        <select id="productoSelect" class="form-select py-2">
-                                            <option value="" disabled selected>Cargando productos...</option>
-                                        </select>
-                                        <button class="btn btn-primary px-3" type="button" onclick="addToCart()">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted d-block mb-2">Carrito</label>
-                                    <div class="bg-light rounded p-2" style="max-height: 250px; overflow-y: auto;">
-                                        <ul class="list-group list-group-flush border-0" id="cartList">
-                                            <li class="list-group-item bg-transparent text-muted text-center py-4 small">El carrito está vacío</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-primary bg-opacity-10 rounded text-primary">
-                                    <span class="fw-bold text-uppercase small">Total a Pagar:</span>
-                                    <h3 class="mb-0 fw-bold" id="cartTotal">$0.00</h3>
-                                </div>
-
-                                <button class="btn btn-primary w-100 py-3 fw-bold shadow-sm" id="btnProcesarPedido" onclick="procesarPedido()">
-                                    <i class="fas fa-check-circle me-2"></i>FINALIZAR PEDIDO
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Orders History -->
-                    <div class="col-12 col-lg-8">
+                    <div class="col-12">
                         <div class="card shadow-sm border-0">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                                 <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos()">
-                                    <i class="fas fa-sync-alt"></i> Actualizar
-                                </button>
+                                <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos()">
+        <i class="fas fa-sync-alt"></i> Actualizar
+    </button>
+    <button class="btn btn-sm btn-primary" id="btnNuevoPedidoEspecial"><i class="fas fa-plus"></i> + Nuevo Pedido Especial</button>
+</div>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -111,7 +55,7 @@ $pageHeader = "Gestión de Pedidos";
                                             <tr>
                                                 <th>Ref / Fecha</th>
                                                 <th>Cliente</th>
-                                                <th>Productos</th>
+                                                
                                                 <th>Estado</th>
                                                 <th>Total</th>
                                                 <th class="text-end">Acciones</th>
@@ -136,6 +80,62 @@ $pageHeader = "Gestión de Pedidos";
     </div>
 
     <!-- Modals -->
+    <!-- New Order Modal -->
+    <div class="modal fade" id="nuevoPedidoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-cart-plus me-2"></i>Nuevo Pedido Especial</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Cliente</label>
+                        <select id="clienteSelect" class="form-select py-2">
+                            <option value="">Consumidor Final</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Fecha Entrega</label>
+                            <input type="date" id="fechaEntrega" class="form-control py-2" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Hora Entrega</label>
+                            <input type="time" id="horaEntrega" class="form-control py-2" required>
+                        </div>
+                    </div>
+                    <hr class="my-4 opacity-10">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Añadir Producto</label>
+                        <div class="input-group">
+                            <select id="productoSelect" class="form-select py-2">
+                                <option value="" disabled selected>Cargando productos...</option>
+                            </select>
+                            <button class="btn btn-primary px-3" type="button" onclick="addToCart()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted d-block mb-2">Carrito</label>
+                        <div class="bg-light rounded p-2" style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush border-0" id="cartList">
+                                <li class="list-group-item bg-transparent text-muted text-center py-4 small">El carrito está vacío</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-primary bg-opacity-10 rounded text-primary">
+                        <span class="fw-bold text-uppercase small">Total a Pagar:</span>
+                        <h3 class="mb-0 fw-bold" id="cartTotal">$0.00</h3>
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 fw-bold shadow-sm" id="btnProcesarPedido" onclick="procesarPedido()">
+                        <i class="fas fa-check-circle me-2"></i>FINALIZAR PEDIDO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="editPedidoModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -208,6 +208,18 @@ $pageHeader = "Gestión de Pedidos";
     <?php include 'includes/footer.php'; ?>
     <script>
         let availableProducts = [];
+        // Open new order modal handler
+        document.getElementById('btnNuevoPedidoEspecial')?.addEventListener('click', () => {
+            // Reset form fields and cart
+            document.getElementById('clienteSelect').value = '';
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('fechaEntrega').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('horaEntrega').value = '10:00';
+            cart = [];
+            renderCart();
+            new bootstrap.Modal(document.getElementById('nuevoPedidoModal')).show();
+        });
         let cart = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -413,7 +425,7 @@ $pageHeader = "Gestión de Pedidos";
                                     <small class="text-muted"><i class="far fa-clock me-1"></i>${p.fecha_entrega}</small>
                                 </td>
                                 <td>${p.cliente_nombre || '<span class="text-muted">Consumidor Final</span>'}</td>
-                                <td><small class="text-muted">${escapeHtml(p.productos_resumen || 'N/A')}</small></td>
+                                
                                 <td><span class="badge ${badge} badge-status">${estadoTexto}</span></td>
                                 <td class="fw-bold text-dark">${formatCurrency(p.total)}</td>
                                 <td class="text-end">
@@ -443,7 +455,7 @@ $pageHeader = "Gestión de Pedidos";
                         `;
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
                 }
             } catch (e) {
                 console.error('Error fetching orders:', e);

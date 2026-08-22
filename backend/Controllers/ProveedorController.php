@@ -22,8 +22,10 @@ class ProveedorController {
 
     public function add() {
         header('Content-Type: application/json');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
         $nombre   = trim(Validator::input('nombre'));
         $contacto = trim(Validator::input('contacto'));
         $telefono = trim(Validator::input('telefono'));
@@ -52,8 +54,11 @@ class ProveedorController {
 
     public function update() {
         header('Content-Type: application/json');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+
         $id       = Validator::input('id', 0);
         $nombre   = trim(Validator::input('nombre'));
         $contacto = trim(Validator::input('contacto'));
@@ -83,10 +88,35 @@ class ProveedorController {
         }
     }
 
+    public function getPaginated() {
+        header('Content-Type: application/json');
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        if ($page < 1) $page = 1;
+        if ($limit < 1) $limit = 10;
+        $offset = ($page - 1) * $limit;
+        try {
+            $total = $this->proveedorModel->countAll();
+            $proveedores = $this->proveedorModel->readPaginated($limit, $offset);
+            echo json_encode([
+                'success' => true,
+                'data' => $proveedores,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
+            ]);
+        } catch (\Throwable $e) {
+            error_log('getPaginated error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error interno al obtener proveedores.']);
+        }
+    }
+
     public function delete() {
         header('Content-Type: application/json');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
         $id = Validator::input('id', 0);
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
@@ -96,7 +126,6 @@ class ProveedorController {
             echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
-
         if ($this->proveedorModel->delete($id)) {
             $this->audit->log('Proveedores', 'Baja de proveedor', "Proveedor ID {$id} eliminado.");
             echo json_encode(['success' => true, 'message' => 'Proveedor eliminado.']);

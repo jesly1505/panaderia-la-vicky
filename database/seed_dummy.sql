@@ -30,7 +30,37 @@ INSERT INTO proveedores (id, nombre, contacto, telefono, email, eliminado) VALUE
 (17, 'Miel Pura Natural',     'Elena Rojas',       '0412-5551017', 'mielpuranatural@email.com',    0),
 (18, 'Vainilla Extract',      'Hugo Morales',      '0416-5551018', 'vainillaextract@email.com',    0),
 (19, 'Sal Fina Industrial',   'Lucía Campos',      '0424-5551019', 'salfinaindustrial@email.com',  0),
-(20, 'Conservantes Químicos', 'Raúl Paredes',      '0412-5551020', 'conservantesquim@email.com',    0)
+(20, 'Conservantes Químicos', 'Raúl Paredes',      '0412-5551020', 'conservantesquim@email.com',    0),
+(21, 'Distribuidora Azúcar', 'Gloria Ramirez', '0414-5551021', 'azucardist@email.com', 0),
+(22, 'Molinos del Norte', 'Jorge Santos', '0416-5551022', 'molinosnorte@email.com', 0),
+(23, 'Frutas del Trópico', 'Ana Lucía', '0412-5551023', 'frutastropico@email.com', 0),
+(24, 'Cacao del Valle', 'Pedro Aguilar', '0414-5551024', 'cacaodelvalle@email.com', 0),
+(25, 'Aceites del Sol', 'Laura Pérez', '0416-5551025', 'aceitesdelsol@email.com', 0),
+(26, 'Harinas Premium', 'Carlos Méndez', '0412-5551026', 'harinaspremium@email.com', 0),
+(27, 'Lácteos del Sur', 'María Torres', '0414-5551027', 'lacteossur@email.com', 0),
+(28, 'Especias del Mundo', 'Luis Fernández', '0416-5551028', 'especiasmundo@email.com', 0),
+(29, 'Legumbres y Más', 'Sofía Gómez', '0412-5551029', 'legumbresymas@email.com', 0),
+(30, 'Mieles Naturales', 'Diego Ortiz', '0414-5551030', 'mielesnaturales@email.com', 0),
+(31, 'Nueces y Frutos Secos', 'Patricia Castillo', '0416-5551031', 'nuecesfrutos@email.com', 0),
+(32, 'Cereales del Bosque', 'Fernando Ruiz', '0412-5551032', 'cerealesbosque@email.com', 0),
+(33, 'Panes Artesanales', 'Gabriela Silva', '0414-5551033', 'panesartesanales@email.com', 0),
+(34, 'Bebidas Refrescantes', 'Roberto Delgado', '0416-5551034', 'bebidasrefrescantes@email.com', 0),
+(35, 'Conservas del Mar', 'Estela Navarro', '0412-5551035', 'conservasmari@email.com', 0),
+(36, 'Chocolates Gourmet', 'Alberto Ramos', '0414-5551036', 'chocolatesgourmet@email.com', 0),
+(37, 'Frutos del Bosque', 'Claudia Fernández', '0416-5551037', 'frutosbosque@email.com', 0),
+(38, 'Vinos y Licores', 'Javier Morales', '0412-5551038', 'vinoslicores@email.com', 0),
+(39, 'Helados y Postres', 'Marta Ruiz', '0414-5551039', 'heladospostres@email.com', 0),
+(40, 'Café Premium', 'Andrés Herrera', '0416-5551040', 'cafepremium@email.com', 0),
+(41, 'Té & Infusiones', 'Luisa Vega', '0412-5551041', 'teinfusiones@email.com', 0),
+(42, 'Productos Orgánicos', 'José Castillo', '0414-5551042', 'productosorganicos@email.com', 0),
+(43, 'Salsas y Condimentos', 'Ana Belén', '0416-5551043', 'salsascondimentos@email.com', 0),
+(44, 'Harinas Sin Gluten', 'Ricardo Molina', '0412-5551044', 'harinasingluten@email.com', 0),
+(45, 'Semillas y Granos', 'Patricio Santos', '0414-5551045', 'semillasgranos@email.com', 0),
+(46, 'Mermeladas y Conservas', 'Celia Duarte', '0416-5551046', 'mermeladaconservas@email.com', 0),
+(47, 'Aceites Exóticos', 'Mario Hernández', '0412-5551047', 'aceitesexoticos@email.com', 0),
+(48, 'Pan Dulce Tradicional', 'Sonia Pérez', '0414-5551048', 'pandulcetrad@email.com', 0),
+(49, 'Bebidas Energéticas', 'Pedro León', '0416-5551049', 'bebidasenergeticas@email.com', 0),
+(50, 'Hierbas Medicinales', 'Olga Castillo', '0412-5551050', 'hierbasmedicinales@email.com', 0)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =============================================================
@@ -250,17 +280,17 @@ INSERT INTO gastos (id, descripcion, monto, fecha, categoria, eliminado) VALUES
 (7,  'Compra de uniformes personal',       120.00, '2026-08-04 09:00:00', 'personal',      0),
 (8,  'Servicio de internet mensual',        45.00, '2026-08-05 08:00:00', 'servicios',     0),
 (9,  'Compra de papelería y útiles',        22.00, '2026-08-05 14:00:00', 'papeleria',     0),
-(10, 'Mantenimiento extractor de aire',     80.00, '2026-08-06 09:00:00', 0),
-(11, 'Pago de teléfono fijo',               30.00, '2026-08-07 08:00:00', 0),
-(12, 'Compra de bombillas LED',             25.00, '2026-08-07 15:00:00', 0),
-(13, 'Servicio de seguridad mensual',      180.00, '2026-08-08 08:00:00', 0),
-(14, 'Reparación enfriador de bizcochos',  150.00, '2026-08-09 10:00:00', 0),
-(15, 'Compra de etiquetas y precios',       18.00, '2026-08-10 09:00:00', 0),
-(16, 'Pago de impuesto municipal',          65.00, '2026-08-11 08:00:00', 0),
-(17, 'Mantenimiento preventivo ovens',     100.00, '2026-08-12 09:00:00', 0),
-(18, 'Compra de extintores recarga',       40.00, '2026-08-13 10:00:00', 0),
-(19, 'Pago servicio de recolección',       55.00, '2026-08-14 08:00:00', 0),
-(20, 'Capital semillero',                    500.00, '2026-08-01 07:00:00', 0)
+(10, 'Mantenimiento extractor de aire',     80.00, '2026-08-06 09:00:00', 'mantenimiento', 0),
+(11, 'Pago de teléfono fijo',               30.00, '2026-08-07 08:00:00', 'servicios',     0),
+(12, 'Compra de bombillas LED',             25.00, '2026-08-07 15:00:00', 'mantenimiento', 0),
+(13, 'Servicio de seguridad mensual',      180.00, '2026-08-08 08:00:00', 'servicios',     0),
+(14, 'Reparación enfriador de bizcochos',  150.00, '2026-08-09 10:00:00', 'mantenimiento', 0),
+(15, 'Compra de etiquetas y precios',       18.00, '2026-08-10 09:00:00', 'personal',      0),
+(16, 'Pago de impuesto municipal',          65.00, '2026-08-11 08:00:00', 'servicios',     0),
+(17, 'Mantenimiento preventivo ovens',     100.00, '2026-08-12 09:00:00', 'mantenimiento', 0),
+(18, 'Compra de extintores recarga',       40.00, '2026-08-13 10:00:00', 'mantenimiento', 0),
+(19, 'Pago servicio de recolección',       55.00, '2026-08-14 08:00:00', 'servicios',     0),
+(20, 'Capital semillero',                    500.00, '2026-08-01 07:00:00', 'otros',         0)
 ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
 
 -- =============================================================
@@ -459,7 +489,7 @@ INSERT INTO ventas (id, pedido_id, subtotal, impuestos, descuento, total, monto_
 (20, 20, 21.57, 3.23, 0.00, 24.80, 24.80, 0.00, 'tarjeta',      13.64, 2, 'completado', '2026-08-10 09:00:00'),
 (21, 21, 15.22, 2.28, 0.00, 17.50, 17.50, 0.00, 'efectivo',      9.50, 1, 'completado', '2026-08-11 08:00:00'),
 (22, 22,  8.70, 1.30, 0.00, 10.00, 10.00, 0.00, 'transferencia', 5.60, 1, 'completado', '2026-08-12 09:00:00'),
-(23, 23, 18.52, 2.78, 0.00, 21.30, 21.30, 0.00, 'wallet',       12.78, 2, 'completado', '2026-08-13 07:00:00');
+(23, 23, 18.52, 2.78, 0.00, 21.30, 21.30, 0.00, 'wallet', 12.78, 2, 'completado', '2026-08-13 07:00:00') ON DUPLICATE KEY UPDATE id=id;
 
 -- =============================================================
 -- DETALLE_VENTA (espejo de detalle_pedido para ventas completadas)
@@ -529,7 +559,7 @@ INSERT INTO producciones (id, producto_id, cantidad_producida, fecha) VALUES
 (3,  2,  120.00, '2026-08-03 05:30:00'),
 (4, 12,   10.00, '2026-08-05 06:00:00'),
 (5,  7,   40.00, '2026-08-06 05:00:00'),
-(6, 10,   60.00, '2026-08-08 05:30:00');
+(6, 10,   60.00, '2026-08-08 05:30:00') ON DUPLICATE KEY UPDATE id=id;
 
 -- =============================================================
 -- PRODUCCION_DETALLE (ingredientes usados en cada producción)

@@ -94,6 +94,7 @@ $router->register('export_gastos_pdf', ReporteController::class, 'exportGastosPD
 
 // Proveedores
 $router->register('get_proveedores', ProveedorController::class, 'getAll', true, null, ['GET'], 'proveedores.ver');
+$router->register('get_proveedores_paginated', ProveedorController::class, 'getPaginated', true, null, ['GET'], 'proveedores.ver');
 $router->register('add_proveedor', ProveedorController::class, 'add', true, null, ['POST'], 'proveedores.gestionar');
 $router->register('update_proveedor', ProveedorController::class, 'update', true, null, ['POST'], 'proveedores.gestionar');
 $router->register('delete_proveedor', ProveedorController::class, 'delete', true, null, ['POST'], 'proveedores.gestionar');
