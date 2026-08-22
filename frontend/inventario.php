@@ -407,7 +407,7 @@ $pageHeader = "Inventario";
                     await loadInsumos();
                     await loadAlerts();
                 } else {
-                    alert(data.message || 'Error al guardar insumo');
+                    showAlert(data.message || 'Error al guardar insumo', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -432,7 +432,7 @@ $pageHeader = "Inventario";
                     await loadInsumos();
                     await loadAlerts();
                 } else {
-                    alert(data.message || 'Error al registrar la compra');
+                    showAlert(data.message || 'Error al registrar la compra', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -449,7 +449,7 @@ $pageHeader = "Inventario";
         function openEditInsumoModal(id) {
             const insumo = insumosData.find(x => parseInt(x.id) === parseInt(id));
             if (!insumo) {
-                alert('No se encontró el insumo seleccionado.');
+                showAlert('No se encontró el insumo seleccionado.', 'warning');
                 return;
             }
             const form = document.getElementById('editInsumoForm');
@@ -488,7 +488,7 @@ $pageHeader = "Inventario";
                     await loadInsumos();
                     await loadAlerts();
                 } else {
-                    alert(data.message || 'Error al actualizar el insumo');
+                    showAlert(data.message || 'Error al actualizar el insumo', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -513,7 +513,7 @@ $pageHeader = "Inventario";
                     await loadInsumos();
                     await loadAlerts();
                 } else {
-                    alert(data.message || 'Error al ajustar stock');
+                    showAlert(data.message || 'Error al ajustar stock', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -521,7 +521,7 @@ $pageHeader = "Inventario";
         });
 
         async function deleteInsumo(id) {
-            if (!confirm('¿Está seguro de eliminar este insumo?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este insumo?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_insumo', {
                     method: 'POST',
@@ -533,7 +533,7 @@ $pageHeader = "Inventario";
                     await loadInsumos();
                     await loadAlerts();
                 } else {
-                    alert(data.message || 'Error al eliminar insumo');
+                    showAlert(data.message || 'Error al eliminar insumo', 'error');
                 }
             } catch (e) {
                 console.error(e);

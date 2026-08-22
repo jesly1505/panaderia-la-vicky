@@ -347,12 +347,12 @@ $pageHeader = "Gestión de Pedidos";
 
         async function procesarPedido() {
             if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.gestionar')) {
-                alert('No dispone de permisos para registrar pedidos.');
+                showAlert('No dispone de permisos para registrar pedidos.', 'warning');
                 return;
             }
 
             if (cart.length === 0) {
-                alert('Debe añadir al menos un producto al carrito');
+                showAlert('Debe añadir al menos un producto al carrito', 'warning');
                 return;
             }
 
@@ -361,7 +361,7 @@ $pageHeader = "Gestión de Pedidos";
             const hora = document.getElementById('horaEntrega').value;
 
             if (!fecha || !hora) {
-                alert('Debe seleccionar fecha y hora de entrega');
+                showAlert('Debe seleccionar fecha y hora de entrega', 'warning');
                 return;
             }
 
@@ -387,16 +387,16 @@ $pageHeader = "Gestión de Pedidos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Pedido registrado exitosamente');
+                    showAlert('Pedido registrado exitosamente', 'success');
                     cart = [];
                     renderCart();
                     await loadPedidos();
                 } else {
-                    alert(data.message || 'Error al procesar el pedido');
+                    showAlert(data.message || 'Error al procesar el pedido', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión');
+                showAlert('Error de conexión', 'error');
             }
         }
 
@@ -502,7 +502,7 @@ $pageHeader = "Gestión de Pedidos";
                 if (data.success) {
                     await loadPedidos();
                 } else {
-                    alert(data.message || 'Error al actualizar el estado');
+                    showAlert(data.message || 'Error al actualizar el estado', 'error');
                 }
             } catch (e) {
                 console.error(e);
@@ -529,7 +529,7 @@ $pageHeader = "Gestión de Pedidos";
             const cliente_id = document.getElementById('editPedidoCliente').value;
             const fecha = document.getElementById('editPedidoFecha').value;
             const hora = document.getElementById('editPedidoHora').value;
-            if (!fecha || !hora) { alert('Complete fecha y hora de entrega'); return; }
+            if (!fecha || !hora) { showAlert('Complete fecha y hora de entrega', 'warning'); return; }
 
             try {
                 const res = await fetch('../backend/api.php?route=update_pedido', {
@@ -547,11 +547,11 @@ $pageHeader = "Gestión de Pedidos";
                     bootstrap.Modal.getInstance(document.getElementById('editPedidoModal')).hide();
                     await loadPedidos();
                 } else {
-                    alert(data.message || 'Error al actualizar pedido');
+                    showAlert(data.message || 'Error al actualizar pedido', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión');
+                showAlert('Error de conexión', 'error');
             }
         });
     </script>

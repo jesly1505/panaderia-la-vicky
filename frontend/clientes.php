@@ -350,7 +350,7 @@ $pageHeader = "Gestión de Clientes";
                     e.target.reset();
                     await loadClientes();
                 } else {
-                    alert(data.message || 'Error al guardar');
+                    showAlert(data.message || 'Error al guardar', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -373,7 +373,7 @@ $pageHeader = "Gestión de Clientes";
                     bootstrap.Modal.getInstance(document.getElementById('editClienteModal')).hide();
                     await loadClientes();
                 } else {
-                    alert(data.message || 'Error al actualizar');
+                    showAlert(data.message || 'Error al actualizar', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -381,7 +381,7 @@ $pageHeader = "Gestión de Clientes";
         });
 
         async function deleteClient(id) {
-            if (!confirm('¿Desea eliminar a este cliente?')) return;
+            if (!(await showConfirm('¿Desea eliminar a este cliente?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_cliente', {
                     method: 'POST',
@@ -392,7 +392,7 @@ $pageHeader = "Gestión de Clientes";
                 if (data.success) {
                     await loadClientes();
                 } else {
-                    alert(data.message || 'Error al eliminar');
+                    showAlert(data.message || 'Error al eliminar', 'error');
                 }
             } catch (err) {
                 console.error(err);

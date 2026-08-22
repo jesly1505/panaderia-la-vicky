@@ -509,17 +509,17 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Producto registrado exitosamente');
+                    showAlert('Producto registrado exitosamente', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('addProductoModal')).hide();
                     e.target.reset();
                     document.getElementById('ingredientesList').innerHTML = '';
                     await loadProductos(currentCategoria);
                 } else {
-                    alert(data.message || 'Error al registrar el producto');
+                    showAlert(data.message || 'Error al registrar el producto', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión con el servidor.');
+                showAlert('Error de conexión con el servidor.', 'error');
             }
         });
 
@@ -534,7 +534,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
         function openEditProductoModal(id) {
             const producto = allProductos.find(x => parseInt(x.id) === parseInt(id));
             if (!producto) {
-                alert('No se encontró el producto seleccionado.');
+                showAlert('No se encontró el producto seleccionado.', 'warning');
                 return;
             }
             const form = document.getElementById('editProductoForm');
@@ -567,15 +567,15 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Producto actualizado correctamente.');
+                    showAlert('Producto actualizado correctamente.', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('editProductoModal')).hide();
                     await loadProductos(currentCategoria);
                 } else {
-                    alert(data.message || 'Error al actualizar el producto');
+                    showAlert(data.message || 'Error al actualizar el producto', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión con el servidor.');
+                showAlert('Error de conexión con el servidor.', 'error');
             }
         });
 
@@ -592,25 +592,25 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Producción realizada con éxito. Stock actualizado.');
+                    showAlert('Producción realizada con éxito. Stock actualizado.', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('producirModal')).hide();
                     await loadProductos(currentCategoria);
                 } else {
-                    alert(data.message || 'Error al realizar producción');
+                    showAlert(data.message || 'Error al realizar producción', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error al procesar producción');
+                showAlert('Error al procesar producción', 'error');
             }
         });
 
         async function deleteProduct(id, nombre) {
             if (typeof tienePermiso === 'function' && !tienePermiso('productos.eliminar')) {
-                alert('No dispone de permisos para eliminar productos.');
+                showAlert('No dispone de permisos para eliminar productos.', 'warning');
                 return;
             }
 
-            if (!confirm(`¿Está seguro de eliminar "${nombre}" del catálogo?`)) return;
+            if (!(await showConfirm(`¿Está seguro de eliminar "${nombre}" del catálogo?`))) return;
 
             try {
                 const res = await fetch('../backend/api.php?route=delete_producto', {
@@ -620,14 +620,14 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Producto eliminado correctamente.');
+                    showAlert('Producto eliminado correctamente.', 'success');
                     await loadProductos(currentCategoria);
                 } else {
-                    alert(data.message || 'Error al eliminar el producto');
+                    showAlert(data.message || 'Error al eliminar el producto', 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error de conexión.');
+                showAlert('Error de conexión.', 'error');
             }
         }
 

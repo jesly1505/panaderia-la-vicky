@@ -361,14 +361,14 @@ $end_date = $_GET['end_date'] ?? '';
             if (!product) return;
 
             if (product.stock_actual <= 0) {
-                alert('¡El producto seleccionado no tiene stock disponible!');
+                showAlert('¡El producto seleccionado no tiene stock disponible!', 'warning');
                 return;
             }
 
             const existing = cart.find(item => item.id == prodId);
             if (existing) {
                 if (existing.cantidad + 1 > product.stock_actual) {
-                    alert('No hay suficiente stock para añadir más unidades.');
+                    showAlert('No hay suficiente stock para añadir más unidades.', 'warning');
                     return;
                 }
                 existing.cantidad++;
@@ -394,7 +394,7 @@ $end_date = $_GET['end_date'] ?? '';
             if (newQty <= 0) {
                 cart.splice(index, 1);
             } else if (newQty > item.stock_max) {
-                alert('Stock máximo alcanzado para este producto.');
+                showAlert('Stock máximo alcanzado para este producto.', 'warning');
                 return;
             } else {
                 item.cantidad = newQty;
@@ -482,7 +482,7 @@ $end_date = $_GET['end_date'] ?? '';
             const amount = parseFloat(amountInput.value);
 
             if (!amount || amount <= 0) {
-                alert('Ingrese un monto válido');
+                showAlert('Ingrese un monto válido', 'warning');
                 return;
             }
 
@@ -551,12 +551,12 @@ $end_date = $_GET['end_date'] ?? '';
 
         async function processCheckout() {
             if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
-                alert('No cuenta con el permiso requerido para registrar ventas.');
+                showAlert('No cuenta con el permiso requerido para registrar ventas.', 'warning');
                 return;
             }
 
             if (cart.length === 0) {
-                alert('El carrito está vacío');
+                showAlert('El carrito está vacío', 'warning');
                 return;
             }
 
@@ -569,7 +569,7 @@ $end_date = $_GET['end_date'] ?? '';
             }
 
             if (totalPaid < total) {
-                alert(`El monto pagado (${formatCurrency(totalPaid)}) es menor que el total de la venta (${formatCurrency(total)}).`);
+                showAlert(`El monto pagado (${formatCurrency(totalPaid)}) es menor que el total de la venta (${formatCurrency(total)}).`, 'warning');
                 return;
             }
 
@@ -606,7 +606,7 @@ $end_date = $_GET['end_date'] ?? '';
                 const data = await res.json();
 
                 if (data.success) {
-                    alert('¡Venta realizada con éxito!');
+                    showAlert('¡Venta realizada con éxito!', 'success');
                     window.open(`factura.php?id=${data.venta_id}`, '_blank');
                     cart = [];
                     payments = [];
@@ -616,11 +616,11 @@ $end_date = $_GET['end_date'] ?? '';
                     await loadProducts();
                     await loadSalesHistory();
                 } else {
-                    alert(data.message || 'Error procesando la venta.');
+                    showAlert(data.message || 'Error procesando la venta.', 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error de conexión.');
+                showAlert('Error de conexión.', 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-check-circle me-2"></i> Cobrar y Emitir Factura';
@@ -754,11 +754,11 @@ $end_date = $_GET['end_date'] ?? '';
 
         async function cancelSale(id) {
             if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
-                alert('No dispone de permisos para anular ventas.');
+                showAlert('No dispone de permisos para anular ventas.', 'warning');
                 return;
             }
 
-            if (!confirm(`¿Está seguro de anular la venta #${id}? Esta acción revertirá el stock de los productos.`)) return;
+            if (!(await showConfirm(`¿Está seguro de anular la venta #${id}? Esta acción revertirá el stock de los productos.`))) return;
 
             try {
                 const res = await fetch('../backend/api.php?route=cancel_venta', {
@@ -768,15 +768,15 @@ $end_date = $_GET['end_date'] ?? '';
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Venta anulada exitosamente.');
+                    showAlert('Venta anulada exitosamente.', 'success');
                     await loadProducts();
                     await loadSalesHistory();
                 } else {
-                    alert(data.message || 'Error al anular la venta.');
+                    showAlert(data.message || 'Error al anular la venta.', 'error');
                 }
             } catch (e) {
                 console.error(e);
-                alert('Error de conexión.');
+                showAlert('Error de conexión.', 'error');
             }
         }
     </script>

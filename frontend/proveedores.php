@@ -234,7 +234,7 @@ $pageHeader = "Gestión de Proveedores";
                 telefono: e.target.telefono.value.trim(),
                 email: e.target.email.value.trim()
             };
-            if (!payload.nombre) { alert('El nombre es obligatorio'); return; }
+            if (!payload.nombre) { showAlert('El nombre es obligatorio', 'warning'); return; }
             try {
                 const res = await fetch('../backend/api.php?route=add_proveedor', {
                     method: 'POST',
@@ -247,9 +247,9 @@ $pageHeader = "Gestión de Proveedores";
                     e.target.reset();
                     loadProveedores();
                 } else {
-                    alert(data.message || 'Error al guardar.');
+                    showAlert(data.message || 'Error al guardar.', 'error');
                 }
-            } catch (err) { alert('Error de red'); }
+            } catch (err) { showAlert('Error de red', 'error'); }
         });
 
         function openEditModal(id) {
@@ -272,7 +272,7 @@ $pageHeader = "Gestión de Proveedores";
                 telefono: e.target.telefono.value.trim(),
                 email: e.target.email.value.trim()
             };
-            if (!payload.nombre) { alert('El nombre es obligatorio'); return; }
+            if (!payload.nombre) { showAlert('El nombre es obligatorio', 'warning'); return; }
             try {
                 const res = await fetch('../backend/api.php?route=update_proveedor', {
                     method: 'POST',
@@ -284,13 +284,13 @@ $pageHeader = "Gestión de Proveedores";
                     bootstrap.Modal.getInstance(document.getElementById('editProveedorModal')).hide();
                     loadProveedores();
                 } else {
-                    alert(data.message || 'Error al actualizar.');
+                    showAlert(data.message || 'Error al actualizar.', 'error');
                 }
-            } catch (err) { alert('Error de red'); }
+            } catch (err) { showAlert('Error de red', 'error'); }
         });
 
         async function deleteProveedor(id) {
-            if (!confirm('¿Está seguro de eliminar este proveedor?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este proveedor?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_proveedor', {
                     method: 'POST',
@@ -299,7 +299,7 @@ $pageHeader = "Gestión de Proveedores";
                 });
                 const data = await res.json();
                 if (data.success) loadProveedores();
-                else alert(data.message || 'Error al eliminar.');
+                else showAlert(data.message || 'Error al eliminar.', 'error');
             } catch (e) { console.error(e); }
         }
     </script>

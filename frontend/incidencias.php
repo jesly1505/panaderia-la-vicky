@@ -155,7 +155,7 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
     <?php include 'includes/footer.php'; ?>
     <script src="../assets/js/app.js"></script>
     <script>
-    function registrarIncidencia(e) {
+    async function registrarIncidencia(e) {
         e.preventDefault();
         var form = document.getElementById('formIncidencia');
         var btn = document.getElementById('btnRegistrar');
@@ -163,7 +163,7 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
             modulo: form.modulo.value,
             descripcion: form.descripcion.value.trim()
         };
-        if (!data.descripcion) { alert('La descripción es obligatoria'); return; }
+        if (!data.descripcion) { showAlert('La descripción es obligatoria', 'info'); return; }
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Registrando...';
         fetch('../backend/api.php?route=registrar_incidencia', {
@@ -176,19 +176,19 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
             if (res.success) {
                 window.location.href = 'incidencias.php?success=1';
             } else {
-                alert(res.message || 'Error al registrar la incidencia');
+                showAlert(res.message || 'Error al registrar la incidencia', 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Registrar Incidencia';
             }
         })
         .catch(function() {
-            alert('Error de conexión');
+            showAlert('Error de conexión', 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Registrar Incidencia';
         });
     }
-    function resolverIncidencia(id) {
-        if (!confirm('¿Marcar esta incidencia como resuelta?')) return;
+    async function resolverIncidencia(id) {
+        if (!(await showConfirm('¿Marcar esta incidencia como resuelta?'))) return;
         fetch('../backend/api.php?route=resolver_incidencia', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -199,10 +199,10 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
             if (res.success) {
                 window.location.href = 'incidencias.php?success=resolved';
             } else {
-                alert(res.message || 'Error al resolver la incidencia');
+                showAlert(res.message || 'Error al resolver la incidencia', 'error');
             }
         })
-        .catch(function() { alert('Error de conexión'); });
+        .catch(function() { showAlert('Error de conexión', 'error'); });
     }
     </script>
 </body>
