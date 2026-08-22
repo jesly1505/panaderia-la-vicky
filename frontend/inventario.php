@@ -14,7 +14,7 @@ if (!tiene_permiso('inventario.ver')) {
 }
 
 $pageTitle = "Inventario";
-$pageHeader = "Inventario y Proveedores";
+$pageHeader = "Inventario";
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -36,11 +36,6 @@ $pageHeader = "Inventario y Proveedores";
                     <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 bg-white py-3">
                         <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-boxes me-2 text-primary"></i>Lista de Insumos y Materias Primas</h5>
                         <div class="d-flex flex-wrap gap-2">
-                            <?php if (tiene_permiso('proveedores.ver')): ?>
-                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#proveedoresModal" onclick="loadProveedoresTable()">
-                                    <i class="fas fa-truck me-1"></i> Proveedores
-                                </button>
-                            <?php endif; ?>
                             <?php if (tiene_permiso('inventario.gestionar')): ?>
                                 <button class="btn btn-sm btn-warning shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#registrarCompraModal">
                                     <i class="fas fa-shopping-basket me-1"></i> Registrar Compra
@@ -202,49 +197,55 @@ $pageHeader = "Inventario y Proveedores";
         </div>
     </div>
 
-    <!-- Modal Proveedores -->
-    <div class="modal fade" id="proveedoresModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+    <!-- Modal Editar Insumo -->
+    <div class="modal fade" id="editInsumoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-truck me-2"></i>Gestión de Proveedores</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <?php if (tiene_permiso('proveedores.gestionar')): ?>
-                        <form id="addProveedorForm" class="bg-light p-3 rounded mb-4">
-                            <h6 class="fw-bold mb-3"><i class="fas fa-plus-circle text-primary me-2"></i>Añadir Proveedor</h6>
-                            <div class="row g-2">
-                                <div class="col-md-4">
-                                    <input type="text" name="nombre" class="form-control form-control-sm" placeholder="Nombre" maxlength="100" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" name="contacto" class="form-control form-control-sm" placeholder="Contacto" maxlength="100">
-                                </div>
-                                <div class="col-md-3">
-                                    <input type="tel" name="telefono" class="form-control form-control-sm" placeholder="Teléfono" maxlength="30">
-                                </div>
-                                <div class="col-md-1">
-                                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fas fa-save"></i></button>
-                                </div>
-                            </div>
-                        </form>
-                    <?php endif; ?>
-
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Contacto</th>
-                                    <th>Teléfono</th>
-                                    <th class="text-end">Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody id="proveedoresTableBody"></tbody>
-                        </table>
+                <form id="editInsumoForm">
+                    <input type="hidden" name="id">
+                    <div class="modal-header bg-warning border-0">
+                        <h5 class="modal-title fw-bold text-dark"><i class="fas fa-pen me-2"></i>Editar Insumo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Nombre del Insumo</label>
+                            <input type="text" name="nombre" class="form-control py-2" required maxlength="100" placeholder="Ej. Harina de Trigo">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Unidad de Medida</label>
+                            <select name="unidad_medida" class="form-select py-2" required>
+                                <option value="Unidades">Unidades</option>
+                                <option value="Kg">Kg</option>
+                                <option value="Litros">Litros</option>
+                                <option value="Metros">Metros</option>
+                            </select>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Proveedor Predet.</label>
+                                <select name="proveedor_id" class="form-select py-2 provider-select">
+                                    <option value="">Seleccione...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Stock Mínimo</label>
+                                <input type="number" step="0.01" min="0" max="999999.99" name="stock_minimo" class="form-control py-2" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Precio Costo</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" min="0.01" max="999999.99" name="precio_costo" class="form-control py-2" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning text-dark fw-bold px-4 shadow-sm">Guardar Cambios</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -291,6 +292,7 @@ $pageHeader = "Inventario y Proveedores";
                 const selectCompra = document.getElementById('insumoSelectCompra');
                 tbody.innerHTML = '';
                 if (selectCompra) selectCompra.innerHTML = '<option value="" disabled selected>Seleccione...</option>';
+                insumosData = (data.success && data.data) ? data.data : [];
 
                 if (data.success && data.data && data.data.length > 0) {
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('inventario.gestionar') : true);
@@ -314,11 +316,14 @@ $pageHeader = "Inventario y Proveedores";
                                 <td>${i.proveedor_nombre || '<span class="text-muted small">No asignado</span>'}</td>
                                 <td><span class="${stockClass}">${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida}</span> ${badge}</td>
                                 <td><span class="text-muted small">${parseFloat(i.stock_minimo).toFixed(2)} ${i.unidad_medida}</span></td>
-                                <td>$${parseFloat(i.precio_costo).toFixed(2)}</td>
+                                <td>${formatCurrency(i.precio_costo)}</td>
                                 <td class="text-end">
                                     ${puedeGestionar ? `
                                         <button class="btn btn-sm btn-outline-success me-1" onclick="openAdjustModal(${i.id}, '${escapeHtml(i.nombre)}')">
                                             <i class="fas fa-plus"></i> Ajustar
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInsumoModal(${i.id})">
+                                            <i class="fas fa-pen"></i>
                                         </button>
                                     ` : ''}
                                     ${puedeEliminar ? `
@@ -384,40 +389,6 @@ $pageHeader = "Inventario y Proveedores";
             }
         }
 
-        async function loadProveedoresTable() {
-            try {
-                const res = await fetch('../backend/api.php?route=get_proveedores');
-                const data = await res.json();
-                const tbody = document.getElementById('proveedoresTableBody');
-                tbody.innerHTML = '';
-
-                if (data.success && data.data && data.data.length > 0) {
-                    const puedeGestionarProv = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.gestionar') : true);
-
-                    data.data.forEach(p => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td class="fw-semibold">${p.nombre}</td>
-                                <td>${p.contacto || '-'}</td>
-                                <td>${p.telefono || '-'}</td>
-                                <td class="text-end">
-                                    ${puedeGestionarProv ? `
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteProveedor(${p.id})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    ` : '-'}
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">No hay proveedores registrados.</td></tr>`;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
         document.getElementById('addInsumoForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -475,6 +446,55 @@ $pageHeader = "Inventario y Proveedores";
             modal.show();
         }
 
+        function openEditInsumoModal(id) {
+            const insumo = insumosData.find(x => parseInt(x.id) === parseInt(id));
+            if (!insumo) {
+                alert('No se encontró el insumo seleccionado.');
+                return;
+            }
+            const form = document.getElementById('editInsumoForm');
+            form.elements['id'].value = insumo.id;
+            form.elements['nombre'].value = insumo.nombre;
+
+            const unidadSelect = form.elements['unidad_medida'];
+            if (![...unidadSelect.options].some(o => o.value === insumo.unidad_medida)) {
+                const opt = document.createElement('option');
+                opt.value = insumo.unidad_medida;
+                opt.textContent = insumo.unidad_medida;
+                unidadSelect.appendChild(opt);
+            }
+            unidadSelect.value = insumo.unidad_medida;
+
+            form.elements['proveedor_id'].value = insumo.proveedor_id || '';
+            form.elements['stock_minimo'].value = insumo.stock_minimo;
+            form.elements['precio_costo'].value = insumo.precio_costo;
+            new bootstrap.Modal(document.getElementById('editInsumoModal')).show();
+        }
+
+        document.getElementById('editInsumoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = Object.fromEntries(formData);
+
+            try {
+                const res = await fetch('../backend/api.php?route=update_insumo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editInsumoModal')).hide();
+                    await loadInsumos();
+                    await loadAlerts();
+                } else {
+                    alert(data.message || 'Error al actualizar el insumo');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
         document.getElementById('adjustStockForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('adjustInsumoId').value;
@@ -517,52 +537,6 @@ $pageHeader = "Inventario y Proveedores";
                 }
             } catch (e) {
                 console.error(e);
-            }
-        }
-
-        const addProvForm = document.getElementById('addProveedorForm');
-        if (addProvForm) {
-            addProvForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const payload = Object.fromEntries(formData);
-                try {
-                    const res = await fetch('../backend/api.php?route=add_proveedor', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        e.target.reset();
-                        await loadProveedoresTable();
-                        await loadProveedores();
-                    } else {
-                        alert(data.message || 'Error al añadir proveedor');
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-            });
-        }
-
-        async function deleteProveedor(id) {
-            if (!confirm('¿Eliminar este proveedor?')) return;
-            try {
-                const res = await fetch('../backend/api.php?route=delete_proveedor', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    await loadProveedoresTable();
-                    await loadProveedores();
-                } else {
-                    alert(data.message || 'Error al eliminar');
-                }
-            } catch (err) {
-                console.error(err);
             }
         }
 

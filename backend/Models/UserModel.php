@@ -95,6 +95,19 @@ class UserModel {
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
+    public function update($id, $nombre, $email, $rol_id) {
+        if ($id == 1) return false; // Prevent modifying main admin
+        $query = "UPDATE " . $this->table_name . "
+                  SET nombre = :nombre, email = :email, rol_id = :rol_id
+                  WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':rol_id', $rol_id);
+        return $stmt->execute() && $stmt->rowCount() > 0;
+    }
+
     public function getProfitsByUser() {
         $query = "SELECT u.nombre, SUM(v.ganancias) as total_ganado 
                   FROM ventas v 

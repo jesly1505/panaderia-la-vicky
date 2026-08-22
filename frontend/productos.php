@@ -252,10 +252,69 @@ $pageHeader = "Catálogo y Recetas de Productos";
         </div>
     </div>
 
+    <!-- Modal Editar Producto -->
+    <div class="modal fade" id="editProductoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form id="editProductoForm">
+                    <input type="hidden" name="id">
+                    <div class="modal-header bg-dark text-white border-0 p-4">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-pen me-2"></i>Editar Producto</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-7 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Nombre del
+                                    Producto</label>
+                                <input type="text" name="nombre" class="form-control py-2" required maxlength="100"
+                                    placeholder="Ej. Pan Francés Especial">
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Categoría</label>
+                                <select name="categoria" class="form-select py-2" required>
+                                    <option value="Pan Dulce">🍞 Pan Dulce</option>
+                                    <option value="Pan Salado">🥖 Pan Salado</option>
+                                    <option value="Pastelería">🎂 Pastelería</option>
+                                    <option value="Bebidas">☕ Bebidas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Descripción</label>
+                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255"
+                                placeholder="Breve descripción del producto..."></textarea>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Precio Venta
+                                    ($)</label>
+                                <input type="number" step="0.01" min="0.01" max="999999.99" name="precio_venta"
+                                    class="form-control py-2" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Stock
+                                    Mínimo</label>
+                                <input type="number" step="1" name="stock_minimo" class="form-control py-2" min="0"
+                                    max="99999" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <?php include 'includes/footer.php'; ?>
     <script>
         let allInsumos = [];
+        let allProductos = [];
         let currentCategoria = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -289,6 +348,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 container.innerHTML = '';
 
                 if (data.success && data.data && data.data.length > 0) {
+                    allProductos = data.data;
                     countBadge.textContent = `Mostrando ${data.data.length} producto(s)`;
 
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
@@ -327,7 +387,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
                                         <div class="bg-light p-2 rounded mb-3 mt-auto">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <small class="text-muted">Precio Venta:</small>
-                                                <span class="fw-bold text-primary fs-5">$${parseFloat(p.precio_venta).toFixed(2)}</span>
+                                                <span class="fw-bold text-primary fs-5">${formatCurrency(p.precio_venta)}</span>
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <small class="text-muted">Stock Disponible:</small>
@@ -339,6 +399,9 @@ $pageHeader = "Catálogo y Recetas de Productos";
                                             ${puedeGestionar ? `
                                                 <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')">
                                                     <i class="fas fa-industry me-1"></i> Producir
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="openEditProductoModal(${p.id})">
+                                                    <i class="fas fa-pen"></i>
                                                 </button>
                                             ` : ''}
                                             ${puedeEliminar ? `
@@ -467,6 +530,54 @@ $pageHeader = "Catálogo y Recetas de Productos";
             const modal = new bootstrap.Modal(document.getElementById('producirModal'));
             modal.show();
         }
+
+        function openEditProductoModal(id) {
+            const producto = allProductos.find(x => parseInt(x.id) === parseInt(id));
+            if (!producto) {
+                alert('No se encontró el producto seleccionado.');
+                return;
+            }
+            const form = document.getElementById('editProductoForm');
+            form.elements['id'].value = producto.id;
+            form.elements['nombre'].value = producto.nombre;
+            form.elements['descripcion'].value = producto.descripcion || '';
+            form.elements['precio_venta'].value = producto.precio_venta;
+            form.elements['categoria'].value = producto.categoria;
+            form.elements['stock_minimo'].value = producto.stock_minimo;
+            new bootstrap.Modal(document.getElementById('editProductoModal')).show();
+        }
+
+        document.getElementById('editProductoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = {
+                id: parseInt(formData.get('id')),
+                nombre: formData.get('nombre'),
+                descripcion: formData.get('descripcion'),
+                precio_venta: parseFloat(formData.get('precio_venta')),
+                categoria: formData.get('categoria'),
+                stock_minimo: parseInt(formData.get('stock_minimo') || 0)
+            };
+
+            try {
+                const res = await fetch('../backend/api.php?route=update_producto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Producto actualizado correctamente.');
+                    bootstrap.Modal.getInstance(document.getElementById('editProductoModal')).hide();
+                    await loadProductos(currentCategoria);
+                } else {
+                    alert(data.message || 'Error al actualizar el producto');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión con el servidor.');
+            }
+        });
 
         document.getElementById('producirForm').addEventListener('submit', async (e) => {
             e.preventDefault();

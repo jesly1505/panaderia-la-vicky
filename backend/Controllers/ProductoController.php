@@ -24,12 +24,14 @@ class ProductoController
 
     public function getAll()
     {
+        header('Content-Type: application/json');
         $productos = $this->productoModel->readAll();
         echo json_encode(['success' => true, 'data' => $productos]);
     }
 
     public function add()
     {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             return;
 
@@ -85,7 +87,7 @@ class ProductoController
                 // Obtener unidad base del insumo
                 $infoInsumo = $insumoModel->getById($ing['insumo_id']);
                 if (!$infoInsumo) {
-                    throw new Exception("El insumo seleccionado no existe.");
+                    throw new \Exception("El insumo seleccionado no existe.");
                 }
 
                 $unidad_base = $infoInsumo['unidad_medida'];
@@ -113,8 +115,57 @@ class ProductoController
         }
     }
 
+    public function update()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if (!$data) {
+            echo json_encode(['success' => false, 'message' => 'Faltan datos de producto.']);
+            return;
+        }
+
+        $id = $data['id'] ?? 0;
+        $nombre = $data['nombre'] ?? '';
+        $descripcion = $data['descripcion'] ?? '';
+        $precio = $data['precio_venta'] ?? 0;
+        $categoria = $data['categoria'] ?? '';
+        $stock_minimo = $data['stock_minimo'] ?? 0;
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($categoria, 'Categoría'),
+            Validator::length($categoria, 50, 'Categoría'),
+            Validator::numeric($precio, 'Precio de venta'),
+            Validator::greaterThan($precio, 0, 'Precio de venta'),
+            Validator::numeric($stock_minimo, 'Stock mínimo'),
+            Validator::min($stock_minimo, 0, 'Stock mínimo'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $precio = Money::round($precio);
+        $stock_minimo = Money::round($stock_minimo);
+
+        if ($this->productoModel->update($id, $nombre, $descripcion, $precio, $categoria, $stock_minimo)) {
+            $this->audit->log('Productos', 'Edición de producto', "Producto ID {$id} actualizado: {$nombre}");
+            echo json_encode(['success' => true, 'message' => 'Producto actualizado correctamente.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el producto.']);
+        }
+    }
+
     public function getByCategoria()
     {
+        header('Content-Type: application/json');
         $categoria = $_GET['categoria'] ?? '';
         if (empty($categoria)) {
             $this->getAll();
@@ -126,6 +177,7 @@ class ProductoController
 
     public function delete()
     {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             return;
         $id = Validator::input('id', 0);
@@ -155,11 +207,9 @@ class ProductoController
      */
     public function producir()
     {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             return;
-
-        $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
 
         $producto_id = $data['producto_id'] ?? 0;
         $cantidad = $data['cantidad'] ?? 0;

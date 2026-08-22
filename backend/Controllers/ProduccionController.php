@@ -64,7 +64,7 @@ class ProduccionController {
                 if (!empty($ins['insumo_id']) && isset($ins['cantidad_usada']) && $ins['cantidad_usada'] > 0) {
                     $infoInsumo = $insumoModel->getById($ins['insumo_id']);
                     if (!$infoInsumo) {
-                        throw new Exception("Insumo no encontrado en la base de datos.");
+                        throw new \Exception("Insumo no encontrado.");
                     }
 
                     $unidad_usada = $ins['unidad_usada'] ?? null;
@@ -102,7 +102,7 @@ class ProduccionController {
             $msg = "No hay stock suficiente de: " . implode(", ", $result['insuficiente']);
             echo json_encode(['success' => false, 'message' => $msg]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al registrar: ' . ($result['error'] ?? 'Desconocido')]);
+            echo json_encode(['success' => false, 'message' => 'Error al registrar la producción.']);
         }
     }
 }

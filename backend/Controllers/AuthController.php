@@ -133,8 +133,7 @@ class AuthController {
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Si el correo está registrado, se han generado las instrucciones de recuperación.',
-                'dev_token' => $token
+                'message' => 'Si el correo está registrado, se han generado las instrucciones de recuperación.'
             ], JSON_UNESCAPED_UNICODE);
         } else {
             echo json_encode([

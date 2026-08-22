@@ -35,6 +35,7 @@ class ClienteController {
     }
 
     public function add() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $nombre = Validator::input('nombre');
@@ -83,6 +84,7 @@ class ClienteController {
     }
 
     public function getHistory() {
+        header('Content-Type: application/json');
         $id = $_GET['id'] ?? null;
         if (!$id) {
             echo json_encode(['success' => false, 'message' => 'ID de cliente requerido.']);
@@ -93,6 +95,7 @@ class ClienteController {
     }
 
     public function update() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id = Validator::input('id', 0);
@@ -129,6 +132,7 @@ class ClienteController {
     }
 
     public function delete() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         $id = Validator::input('id', 0);
         $error = Validator::firstError([

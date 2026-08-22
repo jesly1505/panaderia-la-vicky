@@ -18,7 +18,7 @@
                 <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
                     <i class="fas fa-user-circle fs-5"></i>
                 </div>
-                <span class="d-none d-md-inline fw-medium user-name-display"><?php echo $_SESSION['usuario']; ?></span>
+                <span class="d-none d-md-inline fw-medium user-name-display"><?php echo htmlspecialchars($_SESSION['usuario'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                 <li><a class="dropdown-item" href="perfil.php"><i class="fas fa-store me-2 text-muted"></i> Mi Perfil</a></li>
