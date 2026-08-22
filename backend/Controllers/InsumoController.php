@@ -18,7 +18,7 @@ class InsumoController {
 
     public function getAll() {
         // Pagination parameters
-         header('Content-Type: application/json');
+        header('Content-Type: application/json');
         $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
         $limit = 10; // rows per page as requested
         $offset = ($page - 1) * $limit;

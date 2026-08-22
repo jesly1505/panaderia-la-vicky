@@ -73,8 +73,8 @@ $pageHeader = "Gestión de Clientes";
                                 </tbody>
                             </table>
 
-<div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
-    
+                            <div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
+
 
                         </div>
                     </div>
@@ -223,22 +223,22 @@ $pageHeader = "Gestión de Clientes";
         });
 
         async function loadClientes(page = 1) {
-    currentPage = page;
-    try {
-        const offset = (page - 1) * itemsPerPage;
-        const res = await fetch(`../backend/api.php?route=get_clientes&limit=${itemsPerPage}&offset=${offset}`);
-        const data = await res.json();
-        const tbody = document.getElementById('clientesTableBody');
-        tbody.innerHTML = '';
-        if (data.success && data.data && data.data.length > 0) {
-            clientsData = data.data;
-            const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.gestionar') : true);
-            data.data.forEach(c => {
-                let badge = '<span class="badge bg-secondary">Casual</span>';
-                if (c.puntos_fidelidad > 50) badge = '<span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Oro</span>';
-                else if (c.puntos_fidelidad > 20) badge = '<span class="badge bg-info text-dark">Plata</span>';
-                else if (c.puntos_fidelidad > 0) badge = '<span class="badge bg-light text-dark border">Bronce</span>';
-                tbody.innerHTML += `
+            currentPage = page;
+            try {
+                const offset = (page - 1) * itemsPerPage;
+                const res = await fetch(`../backend/api.php?route=get_clientes&limit=${itemsPerPage}&offset=${offset}`);
+                const data = await res.json();
+                const tbody = document.getElementById('clientesTableBody');
+                tbody.innerHTML = '';
+                if (data.success && data.data && data.data.length > 0) {
+                    clientsData = data.data;
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.gestionar') : true);
+                    data.data.forEach(c => {
+                        let badge = '<span class="badge bg-secondary">Casual</span>';
+                        if (c.puntos_fidelidad > 50) badge = '<span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Oro</span>';
+                        else if (c.puntos_fidelidad > 20) badge = '<span class="badge bg-info text-dark">Plata</span>';
+                        else if (c.puntos_fidelidad > 0) badge = '<span class="badge bg-light text-dark border">Bronce</span>';
+                        tbody.innerHTML += `
                     <tr>
                         <td class="ps-4 text-muted fw-bold">#${c.id}</td>
                         <td><div class="fw-bold text-dark">${c.nombre}</div></td>
@@ -255,41 +255,41 @@ $pageHeader = "Gestión de Clientes";
                         </td>
                     </tr>
                 `;
-            });
-            const totalPages = Math.ceil(data.total / itemsPerPage);
-            renderPagination(data.total, itemsPerPage, page);
-        } else {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron clientes registrados.</td></tr>`;
-            document.getElementById('clientPagination').innerHTML = '';
+                    });
+                    const totalPages = Math.ceil(data.total / itemsPerPage);
+                    renderPagination(data.total, itemsPerPage, page);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No se encontraron clientes registrados.</td></tr>`;
+                    document.getElementById('clientPagination').innerHTML = '';
+                }
+            } catch (e) {
+                console.error(e);
+            }
         }
-    } catch (e) {
-        console.error(e);
-    }
-}
 
-function renderPagination(total, limit, page) {
-    const totalPages = Math.ceil(total / limit);
-    const nav = document.getElementById('clientPagination');
-    nav.innerHTML = '';
-    if (totalPages <= 1) return;
-    let html = '<ul class="pagination justify-content-center">';
-    const prevDisabled = page <= 1 ? ' disabled' : '';
-    html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page - 1}); return false;">&laquo;</a></li>`;
-    const maxVisible = 5;
-    let start = Math.max(1, page - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-    if (end - start < maxVisible - 1) {
-        start = Math.max(1, end - maxVisible + 1);
-    }
-    for (let i = start; i <= end; i++) {
-        const active = i === page ? ' active' : '';
-        html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadClientes(${i}); return false;">${i}</a></li>`;
-    }
-    const nextDisabled = page >= totalPages ? ' disabled' : '';
-    html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page + 1}); return false;">&raquo;</a></li>`;
-    html += '</ul>';
-    nav.innerHTML = html;
-}
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('clientPagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadClientes(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadClientes(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
+        }
 
         async function viewHistory(id) {
             try {

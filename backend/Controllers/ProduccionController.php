@@ -24,9 +24,11 @@ class ProduccionController {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
 
-        $data = $this->model->getAll($filter, $startDate, $endDate);
-        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
-    }
+        $page = intval($_GET['page'] ?? 1);
+        $limit = intval($_GET['limit'] ?? 6);
+        $result = $this->model->getPaginated($filter, $startDate, $endDate, $page, $limit);
+        echo json_encode(['success' => true, 'data' => $result['data'], 'total' => $result['total']], JSON_UNESCAPED_UNICODE);
+        return;    }
 
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
