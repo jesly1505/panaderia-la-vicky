@@ -11,11 +11,13 @@ class AuditController {
     }
 
     public function getBitacora() {
+        header('Content-Type: application/json');
         $limit = min((int)($_GET['limit'] ?? 100), 500);
         echo json_encode(['success' => true, 'data' => $this->auditModel->getBitacora($limit)]);
     }
 
     public function getDenied() {
+        header('Content-Type: application/json');
         $limit = min((int)($_GET['limit'] ?? 100), 500);
         echo json_encode(['success' => true, 'data' => $this->auditModel->getDeniedAccess($limit)]);
     }

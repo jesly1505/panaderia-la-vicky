@@ -24,8 +24,13 @@ class Database implements DatabaseInterface {
             $this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
         } catch(\PDOException $exception) {
-            die("Error de conexión a la base de datos: " . $exception->getMessage());
+            throw new \RuntimeException("Error de conexión a la base de datos", 0, $exception);
         }
         return $this->conn;
     }
+
+    public function getHost(): string { return $this->host; }
+    public function getDbName(): string { return $this->db_name; }
+    public function getUsername(): string { return $this->username; }
+    public function getPassword(): string { return $this->password; }
 }

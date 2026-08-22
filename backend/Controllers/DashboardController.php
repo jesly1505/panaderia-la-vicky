@@ -26,7 +26,7 @@ class DashboardController {
         } catch (Throwable $e) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Error al obtener resumen: ' . $e->getMessage()
+                'message' => 'Error al obtener resumen del dashboard.'
             ], JSON_UNESCAPED_UNICODE);
         }
     }

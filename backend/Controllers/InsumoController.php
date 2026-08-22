@@ -16,11 +16,13 @@ class InsumoController {
     }
 
     public function getAll() {
+        header('Content-Type: application/json');
         $insumos = $this->insumoModel->readAll();
         echo json_encode(['success' => true, 'data' => $insumos]);
     }
 
     public function add() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $proveedor_id = !empty(Validator::input('proveedor_id')) ? Validator::input('proveedor_id') : null;
@@ -59,12 +61,57 @@ class InsumoController {
             } else {
                 echo json_encode(['success' => false, 'message' => 'No se pudo guardar el insumo en la base de datos. Verifique si el nombre ya existe.']);
             }
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error al crear el insumo.']);
         }
     }
     
+    public function update() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+
+        $id = Validator::input('id', 0);
+        $proveedor_id = !empty(Validator::input('proveedor_id')) ? Validator::input('proveedor_id') : null;
+        $nombre = trim(Validator::input('nombre'));
+        $unidad = trim(Validator::input('unidad_medida'));
+        $minimo = !empty(Validator::input('stock_minimo')) ? Validator::input('stock_minimo') : 0;
+        $precio = !empty(Validator::input('precio_costo')) ? Validator::input('precio_costo') : 0;
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($unidad, 'Unidad de medida'),
+            Validator::length($unidad, 30, 'Unidad de medida'),
+            Validator::numeric($minimo, 'Stock mínimo'),
+            Validator::min($minimo, 0, 'Stock mínimo'),
+            Validator::numeric($precio, 'Precio de costo'),
+            Validator::greaterThan($precio, 0, 'Precio de costo'),
+        ]);
+
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $minimo = Money::round($minimo);
+        $precio = Money::round($precio);
+
+        try {
+            if ($this->insumoModel->update($id, $proveedor_id, $nombre, $unidad, $minimo, $precio)) {
+                $this->audit->log('Inventario', 'Edición de insumo', "Insumo ID {$id} actualizado: {$nombre} ({$unidad})");
+                echo json_encode(['success' => true, 'message' => 'Insumo actualizado correctamente.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el insumo en la base de datos. Verifique si el nombre ya existe.']);
+            }
+        } catch (\Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el insumo.']);
+        }
+    }
+
     public function adjustStock() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id = Validator::input('insumo_id', 0);
@@ -91,6 +138,7 @@ class InsumoController {
     }
 
     public function delete() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id = Validator::input('id', 0);
@@ -109,6 +157,7 @@ class InsumoController {
     }
 
     public function toggleVisibility() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id = Validator::input('id', 0);
@@ -128,11 +177,13 @@ class InsumoController {
     }
 
     public function getLowStock() {
+        header('Content-Type: application/json');
         $insumos = $this->insumoModel->getLowStock();
         echo json_encode(['success' => true, 'data' => $insumos]);
     }
 
     public function registrarCompra() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $insumo_id = Validator::input('insumo_id', 0);

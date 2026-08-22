@@ -57,7 +57,11 @@ class PedidoModel {
     }
 
     public function readAll() {
-        $query = "SELECT p.*, c.nombre as cliente_nombre, u.nombre as vendedor 
+        $query = "SELECT p.*, c.nombre as cliente_nombre, u.nombre as vendedor,
+                    (SELECT GROUP_CONCAT(CONCAT(pr.nombre, ' x', dp.cantidad) SEPARATOR ', ')
+                     FROM detalle_pedido dp
+                     JOIN productos pr ON dp.producto_id = pr.id
+                     WHERE dp.pedido_id = p.id) as productos_resumen
                   FROM pedidos p 
                   LEFT JOIN clientes c ON p.cliente_id = c.id
                   LEFT JOIN usuarios u ON p.usuario_id = u.id
@@ -103,6 +107,16 @@ class PedidoModel {
         $query = "UPDATE pedidos SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
+        return $stmt->execute() && $stmt->rowCount() > 0;
+    }
+
+    public function update($id, $cliente_id, $fecha_entrega, $hora_entrega) {
+        $query = "UPDATE {$this->table_name} SET cliente_id = :cliente_id, fecha_entrega = :fecha_entrega, hora_entrega = :hora_entrega WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $id);
+        $stmt->bindParam(":cliente_id", $cliente_id);
+        $stmt->bindParam(":fecha_entrega", $fecha_entrega);
+        $stmt->bindParam(":hora_entrega", $hora_entrega);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 

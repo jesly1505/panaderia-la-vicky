@@ -1,8 +1,15 @@
 <?php
 // frontend/configuracion.php
 session_start();
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+require_once __DIR__ . '/includes/permisos.php';
+
+if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
+    header("Location: login.php");
+    exit();
+}
+
+if (!tiene_permiso('empleados.ver')) {
+    header("Location: index.php");
     exit();
 }
 
@@ -47,12 +54,13 @@ $pageHeader = "Ajustes del Sistema";
                                         <thead class="bg-light">
                                             <tr>
                                                 <th class="ps-4">Nombre / Usuario</th>
+                                                <th>Email</th>
                                                 <th>Rol</th>
                                                 <th class="text-end pe-4">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="employeeTableBody">
-                                            <tr><td colspan="3" class="text-center py-4 text-muted small">Cargando personal...</td></tr>
+                                            <tr><td colspan="4" class="text-center py-4 text-muted small">Cargando personal...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -119,12 +127,56 @@ $pageHeader = "Ajustes del Sistema";
         </div>
     </div>
 
+    <!-- Modal Editar Empleado -->
+    <div class="modal fade" id="editEmployeeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form id="editEmployeeForm">
+                    <input type="hidden" name="id">
+                    <div class="modal-header bg-primary text-white border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>Editar Empleado</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Nombre Completo</label>
+                            <input type="text" name="nombre" class="form-control" required maxlength="100" placeholder="Ej. Ricardo Mendoza">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Email (Usuario)</label>
+                            <input type="email" name="email" class="form-control" required placeholder="usuario@lavicky.com">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Rol</label>
+                            <select name="rol_id" class="form-select">
+                                <option value="2">Cajero / Vendedor</option>
+                                <option value="1">Administrador</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light rounded-bottom">
+                        <button type="button" class="btn btn-link link-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">GUARDAR CAMBIOS</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <?php include 'includes/footer.php'; ?>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             loadEmployees();
             loadEmployeeStats();
         });
+
+        function escJs(value) {
+            return String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/\r?\n/g, ' ');
+        }
 
         async function loadEmployees() {
             try {
@@ -139,8 +191,8 @@ $pageHeader = "Ajustes del Sistema";
                             <tr class="animate-fade-in">
                                 <td class="ps-4">
                                     <div class="fw-bold text-dark">${emp.nombre}</div>
-                                    <div class="x-small text-muted italic">${emp.email}</div>
                                 </td>
+                                <td><small class="text-muted">${emp.email}</small></td>
                                 <td>
                                     <span class="badge ${emp.rol_nombre === 'Administrador' ? 'bg-primary bg-opacity-10 text-primary border-primary' : 'bg-info bg-opacity-10 text-info border-info'} border small px-2 py-1">
                                         ${emp.rol_nombre.toUpperCase()}
@@ -148,6 +200,9 @@ $pageHeader = "Ajustes del Sistema";
                                 </td>
                                 <td class="text-end pe-4">
                                     ${!isMainAdmin ? `
+                                        <button class="btn btn-sm btn-outline-primary border-0 me-1" onclick="openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})" title="Editar">
+                                            <i class="fas fa-pencil-alt"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteEmployee(${emp.id})" title="Dar de baja">
                                             <i class="fas fa-user-slash"></i>
                                         </button>
@@ -180,7 +235,7 @@ $pageHeader = "Ajustes del Sistema";
                                         <h6 class="fw-bold text-dark mb-0 text-truncate">${stat.nombre}</h6>
                                     </div>
                                     <div class="small text-muted text-uppercase fw-bold fs-xs opacity-75 mb-1">Ventas Generadas</div>
-                                    <h4 class="fw-bold text-primary mb-0">$${parseFloat(stat.total_ganado).toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                                    <h4 class="fw-bold text-primary mb-0">${formatCurrency(stat.total_ganado)}</h4>
                                 </div>
                             </div>
                         `;
@@ -237,6 +292,41 @@ $pageHeader = "Ajustes del Sistema";
                 console.error(e);
             }
         }
+
+        function openEditEmployeeModal(id, nombre, email, rol_id) {
+            const form = document.getElementById('editEmployeeForm');
+            form.elements['id'].value = id;
+            form.elements['nombre'].value = nombre;
+            form.elements['email'].value = email;
+            form.elements['rol_id'].value = rol_id;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editEmployeeModal')).show();
+        }
+
+        document.getElementById('editEmployeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formObj = {
+                id: e.target.elements['id'].value,
+                nombre: e.target.nombre.value,
+                email: e.target.email.value,
+                rol_id: e.target.rol_id.value
+            };
+            try {
+                const res = await fetch('../backend/api.php?route=update_employee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formObj)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
+                    loadEmployees();
+                    loadEmployeeStats();
+                } else alert(data.message);
+            } catch (e) {
+                alert('Error de red');
+                console.error(e);
+            }
+        });
     </script>
 </body>
 </html>

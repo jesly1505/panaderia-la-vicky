@@ -16,12 +16,14 @@ class EmpresaController {
 
     /** Perfil del negocio. */
     public function getPerfil() {
+        header('Content-Type: application/json');
         $perfil = $this->empresaModel->getPerfil();
         echo json_encode(['success' => true, 'data' => $perfil]);
     }
 
     /** Actualiza el perfil del negocio (POST JSON). */
     public function updatePerfil() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
