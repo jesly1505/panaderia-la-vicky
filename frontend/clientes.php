@@ -253,8 +253,8 @@ $pageHeader = "Gestión de Clientes";
                             <tr>
                                 <td class="ps-4">${h.fecha_venta}</td>
                                 <td class="fw-bold text-primary">#${h.id}</td>
-                                <td class="fw-bold">$${parseFloat(h.total).toFixed(2)}</td>
-                                <td class="text-end pe-4 text-success fw-bold">$${parseFloat(h.ganancias).toFixed(2)}</td>
+                                <td class="fw-bold">${formatCurrency(h.total)}</td>
+                                <td class="text-end pe-4 text-success fw-bold">${formatCurrency(h.ganancias)}</td>
                             </tr>
                         `;
                     });

@@ -13,6 +13,7 @@ use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Core\Router;
 use App\Controllers\AuditController;
 use App\Controllers\AuthController;
+use App\Controllers\CatalogoController;
 use App\Controllers\ClienteController;
 use App\Controllers\CmmiController;
 use App\Controllers\DashboardController;
@@ -60,6 +61,7 @@ $router->register('reset_password', AuthController::class, 'resetPassword', true
 // Inventario (Insumos)
 $router->register('get_insumos', InsumoController::class, 'getAll', true, null, ['GET'], 'inventario.ver');
 $router->register('add_insumo', InsumoController::class, 'add', true, null, ['POST'], 'inventario.gestionar');
+$router->register('update_insumo', InsumoController::class, 'update', true, null, ['POST'], 'inventario.gestionar');
 $router->register('adjust_stock', InsumoController::class, 'adjustStock', true, null, ['POST'], 'inventario.gestionar');
 $router->register('delete_insumo', InsumoController::class, 'delete', true, null, ['POST'], 'inventario.eliminar');
 $router->register('toggle_insumo_visibility', InsumoController::class, 'toggleVisibility', true, null, ['POST'], 'inventario.gestionar');
@@ -70,6 +72,7 @@ $router->register('registrar_compra_insumo', InsumoController::class, 'registrar
 $router->register('get_gastos_by_date', GastoController::class, 'getByDate', true, null, ['GET'], 'gastos.ver');
 $router->register('add_gasto', GastoController::class, 'add', true, null, ['POST'], 'gastos.gestionar');
 $router->register('delete_gasto', GastoController::class, 'delete', true, null, ['POST'], 'gastos.gestionar');
+$router->register('update_gasto', GastoController::class, 'update', true, null, ['POST'], 'gastos.gestionar');
 
 // Reportes y Exportaciones CSV
 $router->register('get_ventas_semanales', ReporteController::class, 'getVentasSemanales', true, null, ['GET'], 'reportes.ver');
@@ -79,6 +82,12 @@ $router->register('export_ventas_csv', ReporteController::class, 'exportVentasCS
 $router->register('export_insumos_csv', ReporteController::class, 'exportInsumosCSV', false, null, ['GET'], 'reportes.ver');
 $router->register('export_productos_csv', ReporteController::class, 'exportProductosCSV', false, null, ['GET'], 'reportes.ver');
 $router->register('export_gastos_csv', ReporteController::class, 'exportGastosCSV', false, null, ['GET'], 'reportes.ver');
+
+// Reportes PDF
+$router->register('export_ventas_pdf', ReporteController::class, 'exportVentasPDF', false, null, ['GET'], 'reportes.ver');
+$router->register('export_insumos_pdf', ReporteController::class, 'exportInsumosPDF', false, null, ['GET'], 'reportes.ver');
+$router->register('export_productos_pdf', ReporteController::class, 'exportProductosPDF', false, null, ['GET'], 'reportes.ver');
+$router->register('export_gastos_pdf', ReporteController::class, 'exportGastosPDF', false, null, ['GET'], 'reportes.ver');
 
 // Proveedores
 $router->register('get_proveedores', ProveedorController::class, 'getAll', true, null, ['GET'], 'proveedores.ver');
@@ -90,6 +99,7 @@ $router->register('delete_proveedor', ProveedorController::class, 'delete', true
 $router->register('get_productos', ProductoController::class, 'getAll', true, null, ['GET'], 'productos.ver');
 $router->register('get_productos_by_categoria', ProductoController::class, 'getByCategoria', true, null, ['GET'], 'productos.ver');
 $router->register('add_producto', ProductoController::class, 'add', true, null, ['POST'], 'productos.gestionar');
+$router->register('update_producto', ProductoController::class, 'update', true, null, ['POST'], 'productos.gestionar');
 $router->register('delete_producto', ProductoController::class, 'delete', true, null, ['POST'], 'productos.eliminar');
 $router->register('producir_producto', ProductoController::class, 'producir', true, null, ['POST'], 'productos.gestionar');
 
@@ -110,6 +120,7 @@ $router->register('add_pedido', PedidoController::class, 'create', true, null, [
 $router->register('update_pedido_estado', PedidoController::class, 'updateEstado', true, null, ['POST'], 'pedidos.gestionar');
 $router->register('get_pedido_detalles', PedidoController::class, 'getDetalles', true, null, ['GET'], 'pedidos.ver');
 $router->register('delete_pedido', PedidoController::class, 'delete', true, null, ['POST'], 'pedidos.gestionar');
+$router->register('update_pedido', PedidoController::class, 'update', true, null, ['POST'], 'pedidos.gestionar');
 
 // Ventas
 $router->register('get_ventas', VentaController::class, 'getAll', true, null, ['GET'], 'ventas.ver');
@@ -126,6 +137,7 @@ $router->register('get_dashboard_resumen', DashboardController::class, 'getResum
 $router->register('get_employees', EmployeeController::class, 'getAll', true, null, ['GET'], 'empleados.ver');
 $router->register('add_employee', EmployeeController::class, 'create', true, null, ['POST'], 'empleados.gestionar');
 $router->register('delete_employee', EmployeeController::class, 'delete', true, null, ['POST'], 'empleados.gestionar');
+$router->register('update_employee', EmployeeController::class, 'update', true, null, ['POST'], 'empleados.gestionar');
 $router->register('get_employee_stats', EmployeeController::class, 'getStats', true, null, ['GET'], 'empleados.ver');
 
 // Perfil de la panadería (empresa)
@@ -149,5 +161,12 @@ $router->register('set_permisos_rol', PermisoController::class, 'setPermisosRol'
 $router->register('crear_rol', PermisoController::class, 'crearRol', true, null, ['POST'], 'permisos.gestionar');
 $router->register('editar_rol', PermisoController::class, 'editarRol', true, null, ['POST'], 'permisos.gestionar');
 $router->register('eliminar_rol', PermisoController::class, 'eliminarRol', true, null, ['POST'], 'permisos.gestionar');
+
+// Catálogos genéricos
+$router->register('get_catalogo', CatalogoController::class, 'getAll', true, null, ['GET'], 'perfil.gestionar');
+$router->register('get_catalogo_activos', CatalogoController::class, 'getActivos', true, null, ['GET']);
+$router->register('add_catalogo', CatalogoController::class, 'add', true, null, ['POST'], 'perfil.gestionar');
+$router->register('update_catalogo', CatalogoController::class, 'update', true, null, ['POST'], 'perfil.gestionar');
+$router->register('delete_catalogo', CatalogoController::class, 'delete', true, null, ['POST'], 'perfil.gestionar');
 
 return [$router, $container];

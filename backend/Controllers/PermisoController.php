@@ -16,18 +16,21 @@ class PermisoController {
 
     /** Catálogo de permisos (para la UI de configuración). */
     public function getPermisos() {
+        header('Content-Type: application/json');
         $permisos = $this->permisoModel->getAll();
         echo json_encode(['success' => true, 'data' => $permisos]);
     }
 
     /** Roles existentes. */
     public function getRoles() {
+        header('Content-Type: application/json');
         $roles = $this->permisoModel->getRoles();
         echo json_encode(['success' => true, 'data' => $roles]);
     }
 
     /** Permisos asignados a un rol (GET ?rol_id=N). */
     public function getPermisosRol() {
+        header('Content-Type: application/json');
         $rol_id = $_GET['rol_id'] ?? 0;
         $error = Validator::firstError([
             Validator::integer($rol_id, 'Rol'),
@@ -43,6 +46,7 @@ class PermisoController {
 
     /** Asigna permisos a un rol (POST JSON { rol_id, permisos: [codigos] }). */
     public function setPermisosRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
@@ -113,6 +117,7 @@ class PermisoController {
 
     /** Actualiza un rol (POST JSON { id, nombre, descripcion }). */
     public function editarRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
@@ -150,6 +155,7 @@ class PermisoController {
 
     /** Elimina un rol (POST JSON { id }). Protege Administrador y roles en uso. */
     public function eliminarRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);

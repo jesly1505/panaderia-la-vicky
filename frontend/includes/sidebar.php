@@ -10,6 +10,7 @@ $permisos = $_SESSION['permisos'] ?? [];
 $mainNav = [
     'index'             => ['index.php',              'fa-home',               'Dashboard',     ['dashboard.ver']],
     'inventario'        => ['inventario.php',         'fa-box',                'Inventario',    ['inventario.ver']],
+    'proveedores'       => ['proveedores.php',        'fa-truck',              'Proveedores',   ['proveedores.ver']],
     'productos'         => ['productos.php',          'fa-bread-slice',        'Productos',     ['productos.ver']],
     'produccion_manual' => ['produccion_manual.php',  'fa-industry',           'Prod. Manual',  ['produccion.ver']],
     'pedidos'           => ['pedidos.php',            'fa-shopping-cart',      'Pedidos',       ['pedidos.ver']],

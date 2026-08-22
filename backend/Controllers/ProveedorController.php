@@ -15,11 +15,13 @@ class ProveedorController {
     }
 
     public function getAll() {
+        header('Content-Type: application/json');
         $proveedores = $this->proveedorModel->readAll();
         echo json_encode(['success' => true, 'data' => $proveedores]);
     }
 
     public function add() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $nombre   = trim(Validator::input('nombre'));
@@ -48,6 +50,7 @@ class ProveedorController {
     }
 
     public function update() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id       = Validator::input('id', 0);
@@ -79,6 +82,7 @@ class ProveedorController {
     }
 
     public function delete() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $id = Validator::input('id', 0);
