@@ -63,7 +63,8 @@ async function fetchDashboardStats() {
             if (pedidosBody) {
                 pedidosBody.innerHTML = '';
                 if (data.data.ultimos_pedidos && data.data.ultimos_pedidos.length > 0) {
-                    data.data.ultimos_pedidos.forEach(p => {
+                    data.data.ultimos_pedidos.forEach((p, index) => {
+                        const rowNumber = index + 1;
                         let badgeClass = 'bg-secondary';
                         if (p.estado === 'en_proceso' || p.estado === 'pendiente') badgeClass = 'bg-warning text-dark';
                         if (p.estado === 'entregado' || p.estado === 'completado') badgeClass = 'bg-success';
@@ -71,7 +72,7 @@ async function fetchDashboardStats() {
 
                         pedidosBody.innerHTML += `
                             <tr>
-                                <td>#${p.id}</td>
+                                <td>${rowNumber}</td>
                                 <td>${escapeHtml(p.cliente_nombre || 'Consumidor Final')}</td>
                                 <td>${p.fecha_pedido ? p.fecha_pedido.split(' ')[0] : '-'}</td>
                                 <td><span class="badge ${badgeClass}">${p.estado}</span></td>

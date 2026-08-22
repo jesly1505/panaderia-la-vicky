@@ -165,7 +165,7 @@ $pageHeader = "Panel de Control";
                                     <table class="table table-hover align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th>ID</th>
+                                                <th>N.º</th>
                                                 <th>Cliente</th>
                                                 <th>Fecha</th>
                                                 <th>Estado</th>

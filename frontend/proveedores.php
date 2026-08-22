@@ -46,7 +46,7 @@ $pageHeader = "Gestión de Proveedores";
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-4">ID</th>
+                                        <th class="ps-4">N.º</th>
                                         <th>Nombre</th>
                                         <th>Contacto</th>
                                         <th>Teléfono</th>
@@ -167,11 +167,13 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success && data.data && data.data.length > 0) {
                     proveedoresData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.gestionar') : true);
+                    const offset = (page - 1) * limit;
 
-                    data.data.forEach(p => {
+                    data.data.forEach((p, index) => {
+                        const rowNumber = offset + index + 1;
                         tbody.innerHTML += `
                             <tr>
-                                <td class="ps-4 text-muted fw-bold">#${p.id}</td>
+                                <td class="ps-4 text-muted fw-bold">${rowNumber}</td>
                                 <td class="fw-bold text-dark">${escapeHtml(p.nombre)}</td>
                                 <td class="small">${escapeHtml(p.contacto || '<span class="text-muted">N/A</span>')}</td>
                                 <td class="small">${escapeHtml(p.telefono || '<span class="text-muted">N/A</span>')}</td>

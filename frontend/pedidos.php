@@ -53,7 +53,7 @@ $pageHeader = "Gestión de Pedidos";
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th>Ref / Fecha</th>
+                                                <th>N.º / Fecha</th>
                                                 <th>Cliente</th>
                                                 
                                                 <th>Estado</th>
@@ -410,7 +410,8 @@ $pageHeader = "Gestión de Pedidos";
                 if (data.success && data.data && data.data.length > 0) {
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.gestionar') : true);
 
-                    data.data.forEach(p => {
+                    data.data.forEach((p, index) => {
+                        const rowNumber = index + 1;
                         let badge = 'bg-secondary';
                         let estadoTexto = p.estado;
                         if (p.estado === 'pendiente') { badge = 'bg-warning text-dark'; estadoTexto = 'Pendiente'; }
@@ -421,7 +422,7 @@ $pageHeader = "Gestión de Pedidos";
                         tbody.innerHTML += `
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">#${p.id}</div>
+                                    <div class="fw-bold text-dark">${rowNumber}</div>
                                     <small class="text-muted"><i class="far fa-clock me-1"></i>${p.fecha_entrega}</small>
                                 </td>
                                 <td>${p.cliente_nombre || '<span class="text-muted">Consumidor Final</span>'}</td>

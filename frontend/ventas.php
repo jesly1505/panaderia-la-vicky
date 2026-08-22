@@ -186,7 +186,7 @@ $end_date = $_GET['end_date'] ?? '';
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th class="ps-4">ID</th>
+                                                <th class="ps-4">N.º</th>
                                                 <th>Fecha y Hora</th>
                                                 <th>Cliente</th>
                                                 <th>Vendedor</th>
@@ -645,7 +645,8 @@ $end_date = $_GET['end_date'] ?? '';
                     let rev = 0;
                     let prof = 0;
 
-                    data.data.forEach(v => {
+                    data.data.forEach((v, index) => {
+                        const rowNumber = index + 1;
                         if (v.estado !== 'cancelado') {
                             rev += parseFloat(v.total || 0);
                             prof += parseFloat(v.ganancias || 0);
@@ -658,7 +659,7 @@ $end_date = $_GET['end_date'] ?? '';
 
                         tbody.innerHTML += `
                             <tr>
-                                <td class="fw-bold">#${v.id}</td>
+                                <td class="fw-bold">${rowNumber}</td>
                                 <td><small>${v.fecha_venta}</small></td>
                                 <td><small>${escapeHtml(v.cliente_nombre || 'Consumidor Final')}</small></td>
                                 <td>${v.vendedor || 'Sistema'}</td>
