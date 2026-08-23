@@ -28,6 +28,7 @@ class VentaController {
     }
 
     public function createDirecta() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -75,6 +76,7 @@ class VentaController {
     }
 
     public function cancel() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -99,16 +101,19 @@ class VentaController {
     }
 
     public function getTopProducts() {
+        header('Content-Type: application/json');
         $data = $this->ventaModel->getTopProducts();
         echo json_encode(['success' => true, 'data' => $data]);
     }
 
     public function getRevenueChart() {
+        header('Content-Type: application/json');
         $data = $this->ventaModel->getRevenueChartData();
         echo json_encode(['success' => true, 'data' => $data]);
     }
 
     public function getDetalles() {
+        header('Content-Type: application/json');
         $id = $_GET['id'] ?? null;
         $error = Validator::firstError([
             Validator::integer($id, 'ID de venta'),

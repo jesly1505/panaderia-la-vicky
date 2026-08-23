@@ -11,6 +11,11 @@ class UserModel {
         $this->conn = $db;
     }
 
+    /** Returns the underlying PDO connection for internal use. */
+    public function getConnection(): PDO {
+        return $this->conn;
+    }
+
     public function findByEmail($email) {
         $query = "SELECT u.id, u.rol_id, u.nombre, u.email, u.password_hash, u.estado, u.intentos_fallidos, u.bloqueado_hasta, u.ultimo_acceso, r.nombre as rol_nombre 
                   FROM " . $this->table_name . " u 
@@ -87,6 +92,19 @@ class UserModel {
         $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
+        return $stmt->execute() && $stmt->rowCount() > 0;
+    }
+
+    public function update($id, $nombre, $email, $rol_id) {
+        if ($id == 1) return false; // Prevent modifying main admin
+        $query = "UPDATE " . $this->table_name . "
+                  SET nombre = :nombre, email = :email, rol_id = :rol_id
+                  WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':rol_id', $rol_id);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 

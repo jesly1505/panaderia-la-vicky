@@ -2,7 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\DashboardModel;
-use Throwable;
+use App\Utils\Logger;
 
 class DashboardController {
     private DashboardModel $model;
@@ -24,10 +24,8 @@ class DashboardController {
                 'data' => $data
             ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error al obtener resumen: ' . $e->getMessage()
-            ], JSON_UNESCAPED_UNICODE);
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al obtener el resumen.']);
         }
     }
 }

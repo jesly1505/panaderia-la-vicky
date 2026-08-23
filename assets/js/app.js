@@ -33,10 +33,10 @@ async function fetchDashboardStats() {
         if (data.success) {
             // Stats Cards
             if (document.getElementById('ventas-hoy')) {
-                document.getElementById('ventas-hoy').textContent = '$' + parseFloat(data.data.ventas_hoy || 0).toFixed(2);
+                document.getElementById('ventas-hoy').textContent = formatCurrency(data.data.ventas_hoy || 0);
             }
             if (document.getElementById('ganancias-hoy')) {
-                document.getElementById('ganancias-hoy').textContent = '$' + parseFloat(data.data.ganancias_hoy || 0).toFixed(2);
+                document.getElementById('ganancias-hoy').textContent = formatCurrency(data.data.ganancias_hoy || 0);
             }
             if (document.getElementById('pedidos-pendientes')) {
                 document.getElementById('pedidos-pendientes').textContent = data.data.pedidos_pendientes ?? 0;
@@ -75,7 +75,7 @@ async function fetchDashboardStats() {
                                 <td>${escapeHtml(p.cliente_nombre || 'Consumidor Final')}</td>
                                 <td>${p.fecha_pedido ? p.fecha_pedido.split(' ')[0] : '-'}</td>
                                 <td><span class="badge ${badgeClass}">${p.estado}</span></td>
-                                <td class="fw-bold">$${parseFloat(p.total || 0).toFixed(2)}</td>
+                                <td class="fw-bold">${formatCurrency(p.total || 0)}</td>
                             </tr>
                         `;
                     });

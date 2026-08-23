@@ -64,7 +64,7 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
                                 <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-plus-circle text-primary me-2"></i>Reportar Incidencia</h5>
                             </div>
                             <div class="card-body">
-                                <form action="../backend/Controllers/CmmiController.php?action=registrar_incidencia" method="POST">
+                                <form id="formIncidencia" onsubmit="registrarIncidencia(event)">
                                     <div class="mb-3">
                                         <label class="form-label text-muted small fw-semibold">Módulo Afectado</label>
                                         <select name="modulo" class="form-select" required>
@@ -79,7 +79,7 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
                                         <label class="form-label text-muted small fw-semibold">Descripción del Problema</label>
                                         <textarea name="descripcion" class="form-control" rows="4" maxlength="500" placeholder="Describa el inconveniente encontrado..." required></textarea>
                                     </div>
-                                    <button type="submit" class="btn btn-warning text-dark fw-bold w-100 shadow-sm">
+                                    <button type="submit" class="btn btn-warning text-dark fw-bold w-100 shadow-sm" id="btnRegistrar">
                                         <i class="fas fa-paper-plane me-1"></i> Registrar Incidencia
                                     </button>
                                 </form>
@@ -130,9 +130,9 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
                                                     <?php if($esAdmin): ?>
                                                     <td>
                                                         <?php if($inc['estado'] == 'abierta'): ?>
-                                                            <a href="../backend/Controllers/CmmiController.php?action=resolver_incidencia&id=<?= (int)$inc['id'] ?>" class="btn btn-sm btn-success shadow-sm">
+                                                            <button type="button" class="btn btn-sm btn-success shadow-sm" onclick="resolverIncidencia(<?= (int)$inc['id'] ?>)">
                                                                 <i class="fas fa-check me-1"></i> Resolver
-                                                            </a>
+                                                            </button>
                                                         <?php else: ?>
                                                             <small class="text-muted"><i class="fas fa-check-double text-success me-1"></i><?= $inc['fecha_resolucion'] ? date('d/m/Y', strtotime($inc['fecha_resolucion'])) : 'Listo' ?></small>
                                                         <?php endif; ?>
@@ -154,5 +154,56 @@ $pageHeader = "Trazabilidad CMMI e Incidencias";
     </div>
     <?php include 'includes/footer.php'; ?>
     <script src="../assets/js/app.js"></script>
+    <script>
+    function registrarIncidencia(e) {
+        e.preventDefault();
+        var form = document.getElementById('formIncidencia');
+        var btn = document.getElementById('btnRegistrar');
+        var data = {
+            modulo: form.modulo.value,
+            descripcion: form.descripcion.value.trim()
+        };
+        if (!data.descripcion) { alert('La descripción es obligatoria'); return; }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Registrando...';
+        fetch('../backend/api.php?route=registrar_incidencia', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.success) {
+                window.location.href = 'incidencias.php?success=1';
+            } else {
+                alert(res.message || 'Error al registrar la incidencia');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Registrar Incidencia';
+            }
+        })
+        .catch(function() {
+            alert('Error de conexión');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Registrar Incidencia';
+        });
+    }
+    function resolverIncidencia(id) {
+        if (!confirm('¿Marcar esta incidencia como resuelta?')) return;
+        fetch('../backend/api.php?route=resolver_incidencia', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id: id})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.success) {
+                window.location.href = 'incidencias.php?success=resolved';
+            } else {
+                alert(res.message || 'Error al resolver la incidencia');
+            }
+        })
+        .catch(function() { alert('Error de conexión'); });
+    }
+    </script>
 </body>
 </html>

@@ -18,28 +18,39 @@ class ReporteModel {
         return ProductoModel::COSTO_VENTA_SUBQUERY;
     }
 
-    /** Total de ventas + ganancias de la semana actual (ISO week) */
+    /** Ventas diarias de la semana actual (ISO week) — datos para el gráfico */
     public function getVentasSemanales() {
         $query = "SELECT 
-                    COALESCE(SUM(v.total), false) AS total_ventas,
-                    COALESCE(SUM(v.total - COALESCE(v.descuento, false) - COALESCE(" . self::costoVenta() . ", false)), false) AS total_ganancias
+                    DATE(v.fecha_venta) as dia,
+                    COALESCE(SUM(v.total), 0) AS total,
+                    COALESCE(SUM(v.total - COALESCE(v.descuento, 0) - COALESCE(" . self::costoVenta() . ", 0)), 0) AS ganancias
                   FROM ventas v
                   WHERE YEARWEEK(v.fecha_venta, 1) = YEARWEEK(CURDATE(), 1)
-                    AND v.estado != 'cancelado'";
+                    AND v.estado != 'cancelado'
+                  GROUP BY DATE(v.fecha_venta)
+                  ORDER BY dia ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return [
-            'total_ventas'    => round((float)$row['total_ventas'], 2),
-            'total_ganancias' => round((float)$row['total_ganancias'], 2),
-        ];
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        $result = [];
+        foreach ($rows as $row) {
+            $ts = strtotime($row['dia']);
+            $result[] = [
+                'dia' => $dias[date('w', $ts)] . ' ' . date('d', $ts),
+                'total' => round((float)$row['total'], 2),
+                'ganancias' => round((float)$row['ganancias'], 2),
+            ];
+        }
+        return $result;
     }
 
     /** Total de ventas + ganancias del mes actual */
     public function getVentasMensuales() {
         $query = "SELECT 
-                    COALESCE(SUM(v.total), false) AS total_ventas,
-                    COALESCE(SUM(v.total - COALESCE(v.descuento, false) - COALESCE(" . self::costoVenta() . ", false)), false) AS total_ganancias
+                    COALESCE(SUM(v.total), 0) AS total_ventas,
+                    COALESCE(SUM(v.total - COALESCE(v.descuento, 0) - COALESCE(" . self::costoVenta() . ", 0)), 0) AS total_ganancias
                   FROM ventas v
                   WHERE MONTH(v.fecha_venta) = MONTH(CURDATE())
                     AND YEAR(v.fecha_venta) = YEAR(CURDATE())

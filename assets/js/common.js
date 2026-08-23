@@ -1,28 +1,48 @@
 // assets/js/common.js
+const CURRENCY_SYMBOLS = { USD: '$', NIO: 'C$', MXN: 'Mex$', EUR: '\u20AC' };
+let _currencyCode = 'USD';
+
+function formatCurrency(value) {
+    const sym = CURRENCY_SYMBOLS[_currencyCode] || '$';
+    return sym + Number(value || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    // Si estamos en login o password reset, no validar sesión
     const path = window.location.pathname.toLowerCase();
     if (path.includes('login') || path.includes('forgot_password') || path.includes('reset_password')) {
         return;
     }
 
     try {
-        const res = await fetch('../backend/api.php?route=check_session');
-        const data = await res.json();
+        const [sessRes, empRes] = await Promise.all([
+            fetch('../backend/api.php?route=check_session'),
+            fetch('../backend/api.php?route=get_datos_empresa')
+        ]);
+        const sessData = await sessRes.json();
 
-        if (!data.logged_in) {
-            console.log('No session found, redirecting to login...');
+        if (!sessData.logged_in) {
             window.location.href = 'login.php';
             return;
         }
 
-        // Actualizar datos del usuario en la barra superior si existe el elemento
         const userNameEl = document.querySelector('.top-navbar .user-name-display');
-        if (userNameEl && data.user) {
-            userNameEl.textContent = data.user.nombre;
+        if (userNameEl && sessData.user) {
+            userNameEl.textContent = sessData.user.nombre;
+        }
+
+        const empData = await empRes.json();
+        if (empData.success && empData.data && empData.data.moneda) {
+            _currencyCode = empData.data.moneda;
         }
     } catch (e) {
-        console.error('Error checking session:', e);
+        console.error('Error initializing:', e);
     }
 });
 

@@ -35,22 +35,17 @@ $pageHeader = "Registro de Producción Libre";
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
-
         <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
-
             <div class="container-fluid p-4 animate-fade-in">
                 <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $start_date, $end_date, 'produccion_manual.php'); ?>
-                
-                <!-- Status Alert -->
                 <div id="resultAlert" class="alert d-none shadow-sm border-0 mb-4 animate-fade-in" role="alert"></div>
-
                 <div class="row g-4">
                     <!-- Form Column -->
                     <div class="col-12 col-lg-5">
                         <div class="card prod-form-card border-top border-4 border-primary">
                             <div class="card-header bg-white py-3">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-plus-circle me-2 text-primary"></i>Nueva Producción</h5>
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-plus-circle me-2 text-primary"></i> Nueva Producción</h5>
                                 <p class="text-muted small mb-0 mt-1">Registre manualmente la fabricación de productos</p>
                             </div>
                             <div class="card-body p-4">
@@ -65,7 +60,6 @@ $pageHeader = "Registro de Producción Libre";
                                         <label class="form-label fw-bold small text-muted text-uppercase">Unidades Producidas</label>
                                         <input type="number" id="inputCantidadProd" class="form-control py-2 fw-bold h4 mb-0 text-primary" min="1" max="99999" step="1" required placeholder="0">
                                     </div>
-
                                     <div class="mb-4">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <label class="form-label fw-bold small text-muted text-uppercase mb-0">Insumos Utilizados</label>
@@ -75,7 +69,6 @@ $pageHeader = "Registro de Producción Libre";
                                         </div>
                                         <div id="insumosContainer"></div>
                                     </div>
-
                                     <?php if (tiene_permiso('produccion.gestionar')): ?>
                                         <div class="d-grid">
                                             <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm">
@@ -91,12 +84,11 @@ $pageHeader = "Registro de Producción Libre";
                             </div>
                         </div>
                     </div>
-
                     <!-- History Column -->
                     <div class="col-12 col-lg-7">
                         <div class="card history-card">
                             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-secondary"></i>Historial de Producción</h5>
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-secondary"></i> Historial de Producción</h5>
                                 <button class="btn btn-sm btn-outline-secondary" onclick="loadHistory()">
                                     <i class="fas fa-sync-alt me-1"></i> Actualizar
                                 </button>
@@ -121,6 +113,7 @@ $pageHeader = "Registro de Producción Libre";
                                         </tbody>
                                     </table>
                                 </div>
+                    <div id="paginationControls" class="mt-3"></div>
                             </div>
                         </div>
                     </div>
@@ -128,7 +121,6 @@ $pageHeader = "Registro de Producción Libre";
             </div>
         </div>
     </div>
-
     <?php include 'includes/footer.php'; ?>
     <script>
         let allInsumos = [];
@@ -169,7 +161,6 @@ $pageHeader = "Registro de Producción Libre";
             allInsumos.forEach(i => {
                 options += `<option value="${i.id}" data-um="${i.unidad_medida}">${i.nombre} (Disponible: ${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida})</option>`;
             });
-
             const row = document.createElement('div');
             row.className = 'insumo-row-premium';
             row.id = `row-${rowId}`;
@@ -203,28 +194,21 @@ $pageHeader = "Registro de Producción Libre";
 
         document.getElementById('produccionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const alert = document.getElementById('resultAlert');
-
             const productoId = document.getElementById('selectProducto').value;
             const cantidad = document.getElementById('inputCantidadProd').value;
-
             if (!productoId || !cantidad || parseInt(cantidad) <= 0) {
                 showAlert('Por favor complete todos los campos requeridos.', 'danger');
                 return;
             }
-
             const insumoIds = [...document.querySelectorAll('[name="insumo_id[]"]')].map(el => el.value);
             const cantidades = [...document.querySelectorAll('[name="cantidad_usada[]"]')].map(el => el.value);
-
             const insumos = [];
             for (let i = 0; i < insumoIds.length; i++) {
                 if (insumoIds[i] && cantidades[i]) {
                     insumos.push({ insumo_id: parseInt(insumoIds[i]), cantidad_usada: parseFloat(cantidades[i]) });
                 }
             }
-
             const payload = { producto_id: parseInt(productoId), cantidad_producida: parseInt(cantidad), insumos_usados: insumos };
-
             try {
                 const res = await fetch('../backend/api.php?route=add_produccion_manual', {
                     method: 'POST',
@@ -232,7 +216,6 @@ $pageHeader = "Registro de Producción Libre";
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-
                 if (data.success) {
                     showAlert('✅ Producción registrada exitosamente. Stock actualizado.', 'success');
                     e.target.reset();
@@ -249,41 +232,74 @@ $pageHeader = "Registro de Producción Libre";
             }
         });
 
-        function showAlert(msg, type) {
-            const el = document.getElementById('resultAlert');
-            el.className = `alert alert-${type} shadow-sm border-0 mb-4 animate-fade-in`;
-            el.innerHTML = msg;
-        }
+    let currentPage = 1;
+    let totalPages = 1;
+    const pageLimit = 6;
 
-        async function loadHistory() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const filter = urlParams.get('filter') || 'all';
-            const startDate = urlParams.get('start_date') || '';
-            const endDate = urlParams.get('end_date') || '';
-
-            try {
-                const res = await fetch(`../backend/api.php?route=get_produccion_historial&filter=${filter}&start_date=${startDate}&end_date=${endDate}`);
-                const data = await res.json();
-                const tbody = document.getElementById('historialBody');
-                tbody.innerHTML = '';
-
-                if (data.success && data.data && data.data.length > 0) {
-                    data.data.forEach(h => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><small class="text-muted">${h.fecha}</small></td>
-                                <td class="fw-semibold text-dark">${h.producto_nombre}</td>
-                                <td class="text-center"><span class="badge bg-primary rounded-pill">${h.cantidad_producida}</span></td>
-                                <td><small class="text-muted">${h.detalles_insumos || '<em>N/A</em>'}</small></td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
-                }
-            } catch (e) {
-                console.error(e);
+    async function loadHistory(page = 1, limit = pageLimit) {
+        currentPage = page;
+        const urlParams = new URLSearchParams(window.location.search);
+        const filter = urlParams.get('filter') || 'all';
+        const startDate = urlParams.get('start_date') || '';
+        const endDate = urlParams.get('end_date') || '';
+        try {
+            const res = await fetch(`../backend/api.php?route=get_produccion_historial&filter=${filter}&start_date=${startDate}&end_date=${endDate}&page=${page}&limit=${limit}`);
+            const data = await res.json();
+            const tbody = document.getElementById('historialBody');
+            tbody.innerHTML = '';
+            if (data.success && data.data && data.data.length > 0) {
+                data.data.forEach(h => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><small class="text-muted">${h.fecha}</small></td>
+                            <td class="fw-semibold text-dark">${h.producto_nombre}</td>
+                            <td class="text-center"><span class="badge bg-primary rounded-pill">${h.cantidad_producida}</span></td>
+                            <td><small class="text-muted">${h.detalles_insumos || '<em>N/A</em>'}</small></td>
+                        </tr>
+                    `;
+                });
+                totalPages = Math.max(1, Math.ceil((data.total || 0) / limit));
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
+                totalPages = 1;
             }
+            renderPagination();
+        } catch (e) { console.error(e); }
+    }
+
+    function renderPagination() {
+        const container = document.getElementById('paginationControls');
+        if (!container) return;
+        let html = '<nav aria-label="Page navigation"><ul class="pagination justify-content-center">';
+        const disabledPrev = currentPage === 1;
+        const disabledNext = currentPage === totalPages;
+        html += `<li class="page-item ${disabledPrev ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage - 1})">Anterior</button></li>`;
+        const maxVisible = 5;
+        let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let end = Math.min(totalPages, start + maxVisible - 1);
+        if (end - start + 1 < maxVisible) {
+            start = Math.max(1, end - maxVisible + 1);
+        }
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" onclick="goToPage(${i})">${i}</button></li>`;
+        }
+        html += `<li class="page-item ${disabledNext ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage + 1})">Siguiente</button></li>`;
+        html += '</ul></nav>';
+        container.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        if (page < 1 || page > totalPages) return;
+        loadHistory(page, pageLimit);
+    }
+
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('resultAlert');
+            alert.className = `alert alert-${type} d-block shadow-sm border-0 mb-4 animate-fade-in`;
+            alert.textContent = message;
+            setTimeout(() => {
+                alert.classList.add('d-none');
+            }, 5000);
         }
     </script>
 </body>

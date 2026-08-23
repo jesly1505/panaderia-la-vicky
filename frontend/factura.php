@@ -149,22 +149,22 @@ $venta_id = intval($_GET['id'] ?? 0);
                     document.getElementById('vendedor').textContent = v.vendedor || 'Admin';
                     document.getElementById('cliente').textContent = v.cliente_nombre || 'Consumidor Final';
 
-                    document.getElementById('subtotalDisplay').textContent = parseFloat(v.subtotal || 0).toFixed(2);
-                    document.getElementById('impuestosDisplay').textContent = parseFloat(v.impuestos || 0).toFixed(2);
-                    document.getElementById('descuentoDisplay').textContent = parseFloat(v.descuento || 0).toFixed(2);
-                    document.getElementById('totalVenta').textContent = parseFloat(v.total || 0).toFixed(2);
+                    document.getElementById('subtotalDisplay').textContent = formatCurrency(v.subtotal || 0);
+                    document.getElementById('impuestosDisplay').textContent = formatCurrency(v.impuestos || 0);
+                    document.getElementById('descuentoDisplay').textContent = formatCurrency(v.descuento || 0);
+                    document.getElementById('totalVenta').textContent = formatCurrency(v.total || 0);
                     document.getElementById('estadoVenta').textContent = (v.estado || '').toUpperCase();
 
                     const body = document.getElementById('detallesBody');
                     (v.detalles || []).forEach(d => {
                         const descSuffix = Number(d.descuento) > 0
-                            ? `<br><small>Desc: -$${escapeHtml(d.descuento)}</small>`
+                            ? `<br><small>Desc: -${formatCurrency(d.descuento)}</small>`
                             : '';
                         body.innerHTML += `
                             <tr>
                                 <td>${escapeHtml(d.cantidad)}</td>
                                 <td>${escapeHtml(d.producto_nombre)}${descSuffix}</td>
-                                <td class="text-end">$${parseFloat(d.subtotal || 0).toFixed(2)}</td>
+                                <td class="text-end">${formatCurrency(d.subtotal || 0)}</td>
                             </tr>
                         `;
                     });
@@ -175,16 +175,16 @@ $venta_id = intval($_GET['id'] ?? 0);
                             pBody.innerHTML += `
                                 <div class="d-flex justify-content-between">
                                     <span>${escapeHtml((p.metodo_pago || '').toUpperCase())}</span>
-                                    <span>$${parseFloat(p.monto || 0).toFixed(2)}</span>
-                                </div>
-                            `;
-                        });
-                    } else {
-                        // Fallback for old sales
-                        pBody.innerHTML = `
-                            <div class="d-flex justify-content-between">
-                                <span>EFECTIVO</span>
-                                <span>$${parseFloat(v.total || 0).toFixed(2)}</span>
+                            <span>${formatCurrency(p.monto || 0)}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                // Fallback for old sales
+                pBody.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <span>EFECTIVO</span>
+                        <span>${formatCurrency(v.total || 0)}</span>
                             </div>
                         `;
                     }

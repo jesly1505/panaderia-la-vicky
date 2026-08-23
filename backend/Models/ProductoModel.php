@@ -277,5 +277,23 @@ class ProductoModel {
             return false;
         }
     }
+
+    public function update($id, $nombre, $descripcion, $precio_venta, $categoria, $stock_minimo) {
+        $query = "UPDATE " . $this->table_name . " 
+                  SET nombre = :nombre, 
+                      descripcion = :descripcion, 
+                      precio_venta = :precio_venta, 
+                      categoria = :categoria, 
+                      stock_minimo = :stock_minimo 
+                  WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":nombre", $nombre);
+        $stmt->bindParam(":descripcion", $descripcion);
+        $stmt->bindParam(":precio_venta", $precio_venta);
+        $stmt->bindParam(":categoria", $categoria);
+        $stmt->bindParam(":stock_minimo", $stock_minimo);
+        $stmt->bindParam(":id", $id);
+        return $stmt->execute();
+    }
 }
 ?>

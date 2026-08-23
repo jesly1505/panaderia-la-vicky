@@ -48,13 +48,15 @@ class VentaModel {
             $ganancias = Money::round($total - $costoTotal);
 
             // 1. Insertar Venta
-            $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, ganancias, estado, usuario_id) 
-                      VALUES (NULL, :subtotal, :impuestos, :descuento, :total, :ganancias, 'completado', :usuario_id)";
+            $tipo_pago = $pagos[0]['metodo'] ?? 'efectivo';
+            $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, tipo_pago, ganancias, estado, usuario_id) 
+                      VALUES (NULL, :subtotal, :impuestos, :descuento, :total, :tipo_pago, :ganancias, 'completado', :usuario_id)";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":subtotal", $subtotal);
             $stmt->bindParam(":impuestos", $impuestos);
             $stmt->bindParam(":descuento", $descuento);
             $stmt->bindParam(":total", $total);
+            $stmt->bindParam(":tipo_pago", $tipo_pago);
             $stmt->bindParam(":ganancias", $ganancias);
             $stmt->bindParam(":usuario_id", $usuario_id);
             $stmt->execute();
@@ -176,11 +178,13 @@ class VentaModel {
             $ganancias = Money::round($pedido_total - $costoTotal);
 
             // 3. Registrar Venta (simplificada para pedidos previa implementación total)
-            $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, ganancias, estado, usuario_id) 
-                      VALUES (:pedido_id, :total, 0, 0, :total, :ganancias, 'completado', :usuario_id)";
+            $tipo_pago = $data['tipo_pago'] ?? 'efectivo';
+            $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, tipo_pago, ganancias, estado, usuario_id) 
+                      VALUES (:pedido_id, :total, 0, 0, :total, :tipo_pago, :ganancias, 'completado', :usuario_id)";
             $stmtV = $this->conn->prepare($query);
             $stmtV->bindParam(":pedido_id", $pedido_id);
             $stmtV->bindParam(":total", $pedido_total);
+            $stmtV->bindParam(":tipo_pago", $tipo_pago);
             $stmtV->bindParam(":ganancias", $ganancias);
             $stmtV->bindParam(":usuario_id", $usuario_id);
             $stmtV->execute();

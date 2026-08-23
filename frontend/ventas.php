@@ -186,18 +186,20 @@ $end_date = $_GET['end_date'] ?? '';
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th>ID</th>
+                                                <th class="ps-4">ID</th>
                                                 <th>Fecha y Hora</th>
+                                                <th>Cliente</th>
                                                 <th>Vendedor</th>
+                                                <th>Tipo Pago</th>
                                                 <th>Total</th>
                                                 <th>Ganancia</th>
                                                 <th>Estado</th>
-                                                <th class="text-end">Acciones</th>
+                                                <th class="text-end pe-4">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="salesTableBody">
                                             <tr>
-                                                <td colspan="7" class="text-center py-5 text-muted">
+                                                <td colspan="9" class="text-center py-5 text-muted">
                                                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
                                                     Cargando ventas...
                                                 </td>
@@ -301,7 +303,6 @@ $end_date = $_GET['end_date'] ?? '';
         let cart = [];
         let payments = [];
         let currentTaxRate = 0.15;
-        let currencySymbol = '$';
 
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchCompanyInfo();
@@ -328,9 +329,6 @@ $end_date = $_GET['end_date'] ?? '';
                         const taxLabel = document.getElementById('taxLabel');
                         if (taxLabel) taxLabel.textContent = `IVA (${parseFloat(data.data.impuesto_porcentaje)}%):`;
                     }
-                    if (data.data.moneda) {
-                        currencySymbol = data.data.moneda;
-                    }
                 }
             } catch (e) {
                 console.log('Using default tax settings');
@@ -346,7 +344,7 @@ $end_date = $_GET['end_date'] ?? '';
                     const select = document.getElementById('productoSelect');
                     select.innerHTML = '<option value="" disabled selected>Seleccione producto...</option>';
                     availableProducts.forEach(p => {
-                        select.innerHTML += `<option value="${p.id}">${p.nombre} - ${currencySymbol}${parseFloat(p.precio_venta).toFixed(2)} (Stock: ${p.stock_actual})</option>`;
+                        select.innerHTML += `<option value="${p.id}">${p.nombre} - ${formatCurrency(p.precio_venta)} (Stock: ${p.stock_actual})</option>`;
                     });
                 }
             } catch (e) {
@@ -439,7 +437,7 @@ $end_date = $_GET['end_date'] ?? '';
                         <li class="list-group-item bg-white border-bottom p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="fw-semibold text-dark">${item.nombre}</span>
-                                <span class="fw-bold text-primary">${currencySymbol}${itemSubtotal.toFixed(2)}</span>
+                                <span class="fw-bold text-primary">${formatCurrency(itemSubtotal)}</span>
                             </div>
                             <div class="row g-2 align-items-center">
                                 <div class="col-5">
@@ -469,10 +467,10 @@ $end_date = $_GET['end_date'] ?? '';
             const taxes = taxableSubtotal * currentTaxRate;
             const total = taxableSubtotal + taxes;
 
-            document.getElementById('subtotalDisplay').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
-            document.getElementById('itemDiscountDisplay').textContent = `-${currencySymbol}${totalItemDiscounts.toFixed(2)}`;
-            document.getElementById('taxDisplay').textContent = `${currencySymbol}${taxes.toFixed(2)}`;
-            document.getElementById('cartTotal').textContent = `${currencySymbol}${total.toFixed(2)}`;
+            document.getElementById('subtotalDisplay').textContent = `formatCurrency(subtotal)`;
+            document.getElementById('itemDiscountDisplay').textContent = `-${formatCurrency(totalItemDiscounts)}`;
+            document.getElementById('taxDisplay').textContent = formatCurrency(taxes);
+            document.getElementById('cartTotal').textContent = formatCurrency(total);
 
             updateBalance(total);
         }
@@ -505,7 +503,7 @@ $end_date = $_GET['end_date'] ?? '';
                 list.innerHTML += `
                     <div class="d-flex justify-content-between align-items-center bg-white border p-2 rounded mb-2">
                         <span class="payment-pill bg-light border text-uppercase">${p.metodo}</span>
-                        <span class="fw-bold">${currencySymbol}${p.monto.toFixed(2)}</span>
+                        <span class="fw-bold">${formatCurrency(p.monto)}</span>
                         <button class="btn btn-link text-danger p-0 ms-2" onclick="removePayment(${idx})">
                             <i class="fas fa-times"></i>
                         </button>
@@ -538,12 +536,12 @@ $end_date = $_GET['end_date'] ?? '';
                 if (diff >= 0) {
                     balanceLabel.textContent = 'Cambio / Vuelto:';
                     balanceLabel.className = 'small fw-bold text-success';
-                    balanceDisplay.textContent = `${currencySymbol}${diff.toFixed(2)}`;
+                    balanceDisplay.textContent = formatCurrency(diff);
                     balanceDisplay.className = 'fw-bold text-success fs-5';
                 } else {
                     balanceLabel.textContent = 'Pendiente de Pago:';
                     balanceLabel.className = 'small fw-bold text-danger';
-                    balanceDisplay.textContent = `${currencySymbol}${Math.abs(diff).toFixed(2)}`;
+                    balanceDisplay.textContent = formatCurrency(Math.abs(diff));
                     balanceDisplay.className = 'fw-bold text-danger fs-5';
                 }
             } else {
@@ -571,7 +569,7 @@ $end_date = $_GET['end_date'] ?? '';
             }
 
             if (totalPaid < total) {
-                alert(`El monto pagado (${currencySymbol}${totalPaid.toFixed(2)}) es menor que el total de la venta (${currencySymbol}${total.toFixed(2)}).`);
+                alert(`El monto pagado (${formatCurrency(totalPaid)}) es menor que el total de la venta (${formatCurrency(total)}).`);
                 return;
             }
 
@@ -662,9 +660,11 @@ $end_date = $_GET['end_date'] ?? '';
                             <tr>
                                 <td class="fw-bold">#${v.id}</td>
                                 <td><small>${v.fecha_venta}</small></td>
+                                <td><small>${escapeHtml(v.cliente_nombre || 'Consumidor Final')}</small></td>
                                 <td>${v.vendedor || 'Sistema'}</td>
-                                <td class="fw-bold text-dark">${currencySymbol}${parseFloat(v.total).toFixed(2)}</td>
-                                <td class="text-success fw-bold">${currencySymbol}${parseFloat(v.ganancias).toFixed(2)}</td>
+                                <td><span class="badge bg-light text-dark border small">${escapeHtml(v.tipo_pago || 'N/A')}</span></td>
+                                <td class="fw-bold text-dark">${formatCurrency(v.total)}</td>
+                                <td class="text-success fw-bold">${formatCurrency(v.ganancias)}</td>
                                 <td>${statusBadge}</td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewSaleDetails(${v.id})" title="Ver Detalle">
@@ -683,12 +683,12 @@ $end_date = $_GET['end_date'] ?? '';
                         `;
                     });
 
-                    document.getElementById('totalRevenue').textContent = `${currencySymbol}${rev.toFixed(2)}`;
-                    document.getElementById('totalProfit').textContent = `${currencySymbol}${prof.toFixed(2)}`;
+                    document.getElementById('totalRevenue').textContent = formatCurrency(rev);
+                    document.getElementById('totalProfit').textContent = formatCurrency(prof);
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted">No hay registros de ventas para el periodo seleccionado</td></tr>`;
-                    document.getElementById('totalRevenue').textContent = `${currencySymbol}0.00`;
-                    document.getElementById('totalProfit').textContent = `${currencySymbol}0.00`;
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No hay registros de ventas para el periodo seleccionado</td></tr>`;
+                    document.getElementById('totalRevenue').textContent = formatCurrency(0);
+                    document.getElementById('totalProfit').textContent = formatCurrency(0);
                 }
             } catch (e) {
                 console.error('Error fetching sales history:', e);
@@ -718,9 +718,9 @@ $end_date = $_GET['end_date'] ?? '';
                             <tr>
                                 <td>${d.producto_nombre}</td>
                                 <td class="text-center">${d.cantidad}</td>
-                                <td class="text-end">${currencySymbol}${parseFloat(d.precio_unitario).toFixed(2)}</td>
-                                <td class="text-end">${currencySymbol}${parseFloat(d.descuento || 0).toFixed(2)}</td>
-                                <td class="text-end fw-bold">${currencySymbol}${parseFloat(d.subtotal).toFixed(2)}</td>
+                                <td class="text-end">${formatCurrency(d.precio_unitario)}</td>
+                                <td class="text-end">${formatCurrency(d.descuento || 0)}</td>
+                                <td class="text-end fw-bold">${formatCurrency(d.subtotal)}</td>
                             </tr>
                         `;
                     });
@@ -731,15 +731,15 @@ $end_date = $_GET['end_date'] ?? '';
                         payList.innerHTML += `
                             <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-0 bg-transparent">
                                 <span class="text-uppercase small">${p.metodo_pago}</span>
-                                <span class="fw-bold">${currencySymbol}${parseFloat(p.monto).toFixed(2)}</span>
+                                <span class="fw-bold">${formatCurrency(p.monto)}</span>
                             </li>
                         `;
                     });
 
-                    document.getElementById('dtSubtotal').textContent = `${currencySymbol}${parseFloat(v.subtotal).toFixed(2)}`;
-                    document.getElementById('dtDescuento').textContent = `-${currencySymbol}${parseFloat(v.descuento || 0).toFixed(2)}`;
-                    document.getElementById('dtImpuestos').textContent = `${currencySymbol}${parseFloat(v.impuestos || 0).toFixed(2)}`;
-                    document.getElementById('dtTotal').textContent = `${currencySymbol}${parseFloat(v.total).toFixed(2)}`;
+                    document.getElementById('dtSubtotal').textContent = formatCurrency(v.subtotal);
+                    document.getElementById('dtDescuento').textContent = '-' + formatCurrency(v.descuento || 0);
+                    document.getElementById('dtImpuestos').textContent = formatCurrency(v.impuestos || 0);
+                    document.getElementById('dtTotal').textContent = formatCurrency(v.total);
 
                     document.getElementById('btnPrintInvoice').href = `factura.php?id=${v.id}`;
 
