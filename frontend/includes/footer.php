@@ -19,7 +19,7 @@
     </div>
 
     <!-- Contenedor de Toasts (Notificaciones) -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 10000;" id="sysToastContainer">
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 10000;" id="sysToastContainer">
     </div>
 
     <!-- Loader global para peticiones API -->
