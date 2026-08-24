@@ -42,7 +42,7 @@ $pageHeader = "Gestión de Pedidos";
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                                 <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
                                 <div class="d-flex gap-2">
-    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos()">
+    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos(currentPage)">
         <i class="fas fa-sync-alt"></i> Actualizar
     </button>
     <button class="btn btn-sm btn-primary" id="btnNuevoPedidoEspecial"><i class="fas fa-plus"></i> + Nuevo Pedido Especial</button>
@@ -72,6 +72,7 @@ $pageHeader = "Gestión de Pedidos";
                                     </table>
                                 </div>
                             </div>
+                            <div id="pedidoPagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
                     </div>
                 </div>
@@ -221,6 +222,8 @@ $pageHeader = "Gestión de Pedidos";
             new bootstrap.Modal(document.getElementById('nuevoPedidoModal')).show();
         });
         let cart = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadClientes();
@@ -395,7 +398,7 @@ $pageHeader = "Gestión de Pedidos";
                     showAlert('Pedido registrado exitosamente', 'success');
                     cart = [];
                     renderCart();
-                    await loadPedidos();
+                    await loadPedidos(1);
                 } else {
                     showAlert(data.message || 'Error al procesar el pedido', 'error');
                 }
@@ -405,9 +408,11 @@ $pageHeader = "Gestión de Pedidos";
             }
         }
 
-        async function loadPedidos() {
+        async function loadPedidos(page = 1) {
+            currentPage = page;
             try {
-                const res = await fetch('../backend/api.php?route=get_pedidos');
+                const offset = (page - 1) * itemsPerPage;
+                const res = await fetch(`../backend/api.php?route=get_pedidos&page=${page}&limit=${itemsPerPage}`);
                 const data = await res.json();
                 const tbody = document.getElementById('pedidosTableBody');
                 tbody.innerHTML = '';
@@ -416,7 +421,7 @@ $pageHeader = "Gestión de Pedidos";
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.gestionar') : true);
 
                     data.data.forEach((p, index) => {
-                        const rowNumber = index + 1;
+                        const rowNumber = offset + index + 1;
                         let badge = 'bg-secondary';
                         let estadoTexto = p.estado;
                         if (p.estado === 'pendiente') { badge = 'bg-warning text-dark'; estadoTexto = 'Pendiente'; }
@@ -460,12 +465,38 @@ $pageHeader = "Gestión de Pedidos";
                             </tr>
                         `;
                     });
+                    renderPagination(data.total, itemsPerPage, page);
                 } else {
                     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
+                    document.getElementById('pedidoPagination').innerHTML = '';
                 }
             } catch (e) {
                 console.error('Error fetching orders:', e);
             }
+        }
+
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('pedidoPagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadPedidos(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         async function viewDetails(pedidoId, total) {
@@ -505,7 +536,7 @@ $pageHeader = "Gestión de Pedidos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    await loadPedidos();
+                    await loadPedidos(currentPage);
                     showAlert('Estado del pedido actualizado', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar el estado', 'error');
@@ -552,7 +583,7 @@ $pageHeader = "Gestión de Pedidos";
                 const data = await res.json();
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editPedidoModal')).hide();
-                    await loadPedidos();
+                    await loadPedidos(currentPage);
                     showAlert('Pedido actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar pedido', 'error');

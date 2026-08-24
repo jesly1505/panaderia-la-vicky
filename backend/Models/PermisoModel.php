@@ -82,6 +82,14 @@ class PermisoModel {
         return (int)$stmt->fetchColumn();
     }
 
+    /** Indica si el rol con el ID dado existe. */
+    public function rolExists(int $rolId): bool {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM roles WHERE id = :id");
+        $stmt->bindParam(':id', $rolId, PDO::PARAM_INT);
+        $stmt->execute();
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     /** Indica si ya existe un rol con ese nombre (opcionalmente excluyendo uno). */
     public function rolNombreExiste($nombre, $excludeId = null): bool {
         if ($excludeId !== null) {

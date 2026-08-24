@@ -3,25 +3,36 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Validator;
-use App\Models\RoleModel;
+use App\Models\PermisoModel;
 use App\Models\UserModel;
 
 class EmployeeController {
     private $userModel;
     private $audit;
-    private $roleModel;
+    private $permisoModel;
 
-    public function __construct(UserModel $userModel, AuditService $audit, RoleModel $roleModel) {
+    public function __construct(UserModel $userModel, AuditService $audit, PermisoModel $permisoModel) {
         $this->userModel = $userModel;
         $this->audit = $audit;
-        $this->roleModel = $roleModel;
+        $this->permisoModel = $permisoModel;
     }
-        // Duplicate constructor code removed
 
     public function getAll() {
         header('Content-Type: application/json');
-        $employees = $this->userModel->getAll();
-        echo json_encode(['success' => true, 'data' => $employees]);
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+
+        $employees = $this->userModel->getAll($limit, $offset);
+        $total = $this->userModel->countAll();
+
+        echo json_encode([
+            'success' => true,
+            'data' => $employees,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ]);
     }
 
     public function create() {
@@ -57,7 +68,7 @@ class EmployeeController {
             Validator::greaterThan($rol_id, 0, 'Rol'),
         ]);
         // Validate that the role exists and is allowed (prevent admin role)
-        if ($rol_id == 1 || !$this->roleModel->exists($rol_id)) {
+        if ($rol_id == 1 || !$this->permisoModel->rolExists($rol_id)) {
             echo json_encode(['success' => false, 'message' => 'Rol no válido o no autorizado.']);
             return;
         }
