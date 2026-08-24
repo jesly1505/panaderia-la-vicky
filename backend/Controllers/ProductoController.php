@@ -211,6 +211,8 @@ class ProductoController
         if ($_SERVER['REQUEST_METHOD'] !== 'POST')
             return;
 
+        $data = json_decode(file_get_contents('php://input'), true);
+
         $producto_id = $data['producto_id'] ?? 0;
         $cantidad = $data['cantidad'] ?? 0;
 

@@ -91,8 +91,8 @@ $pageHeader = "Gestión de Pedidos";
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label fw-semibold small text-uppercase text-muted">Cliente</label>
-                        <select id="clienteSelect" class="form-select py-2">
-                            <option value="">Consumidor Final</option>
+                        <select id="clienteSelect" class="form-select py-2" required>
+                            <option value="" disabled selected>Seleccione un cliente</option>
                         </select>
                     </div>
                     <div class="row g-2 mb-3">
@@ -148,8 +148,8 @@ $pageHeader = "Gestión de Pedidos";
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">Cliente</label>
-                            <select id="editPedidoCliente" class="form-select py-2">
-                                <option value="">Consumidor Final</option>
+                            <select id="editPedidoCliente" class="form-select py-2" required>
+                                <option value="" disabled selected>Seleccione un cliente</option>
                             </select>
                         </div>
                         <div class="row g-3">
@@ -360,6 +360,11 @@ $pageHeader = "Gestión de Pedidos";
             const fecha = document.getElementById('fechaEntrega').value;
             const hora = document.getElementById('horaEntrega').value;
 
+            if (!clienteId) {
+                showAlert('Debe seleccionar un cliente para el pedido', 'warning');
+                return;
+            }
+
             if (!fecha || !hora) {
                 showAlert('Debe seleccionar fecha y hora de entrega', 'warning');
                 return;
@@ -368,7 +373,7 @@ $pageHeader = "Gestión de Pedidos";
             const total = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
             const payload = {
-                cliente_id: clienteId ? parseInt(clienteId) : null,
+                cliente_id: parseInt(clienteId),
                 fecha_entrega: `${fecha} ${hora}:00`,
                 total: total,
                 detalles: cart.map(i => ({
@@ -529,6 +534,7 @@ $pageHeader = "Gestión de Pedidos";
             const cliente_id = document.getElementById('editPedidoCliente').value;
             const fecha = document.getElementById('editPedidoFecha').value;
             const hora = document.getElementById('editPedidoHora').value;
+            if (!cliente_id) { showAlert('Debe seleccionar un cliente', 'warning'); return; }
             if (!fecha || !hora) { showAlert('Complete fecha y hora de entrega', 'warning'); return; }
 
             try {
@@ -537,7 +543,7 @@ $pageHeader = "Gestión de Pedidos";
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         id: id,
-                        cliente_id: cliente_id ? parseInt(cliente_id) : null,
+                        cliente_id: parseInt(cliente_id),
                         fecha_entrega: fecha,
                         hora_entrega: hora
                     })

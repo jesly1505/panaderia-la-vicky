@@ -5,18 +5,43 @@ console.log('Sistema La Vicky inicializado');
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('ventas-hoy')) {
         fetchDashboardStats();
-        // Polling controlado cada 15 segundos
-        setInterval(fetchDashboardStats, 15000);
     }
 });
 
 let refrescandoDashboard = false;
 
+function setDashboardLoading(loading) {
+    const container = document.getElementById('dashboardContent');
+    const btn = document.getElementById('dashboardRefreshBtn');
+    if (btn) {
+        btn.disabled = loading;
+        btn.querySelector('i').classList.toggle('fa-spin', loading);
+    }
+    if (container) {
+        container.style.opacity = loading ? '0.55' : '1';
+        let overlay = document.getElementById('dashboardOverlay');
+        if (loading) {
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'dashboardOverlay';
+                overlay.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;';
+                overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>';
+                container.appendChild(overlay);
+            }
+            overlay.style.display = '';
+        } else if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+}
+
 async function fetchDashboardStats() {
     if (refrescandoDashboard) return;
     refrescandoDashboard = true;
+    setDashboardLoading(true);
+    const minLoadTime = 600;
+    const startTime = Date.now();
 
-    // Si hay parámetros de filtro en la URL, pasarlos
     const params = new URLSearchParams(window.location.search);
     const filter = params.get('filter') || '';
     const startDate = params.get('start_date') || '';
@@ -31,7 +56,6 @@ async function fetchDashboardStats() {
         const response = await fetch(url);
         const data = await response.json();
         if (data.success) {
-            // Stats Cards
             if (document.getElementById('ventas-hoy')) {
                 document.getElementById('ventas-hoy').textContent = formatCurrency(data.data.ventas_hoy || 0);
             }
@@ -48,7 +72,6 @@ async function fetchDashboardStats() {
                 document.getElementById('clientes-registrados').textContent = data.data.clientes_registrados ?? 0;
             }
 
-            // KPIs Dinámicos CMMI si existen en el DOM
             if (data.data.kpis_dinamicos) {
                 const kpis = data.data.kpis_dinamicos;
                 if (document.getElementById('kpi-eventos')) document.getElementById('kpi-eventos').textContent = kpis.eventos ?? 0;
@@ -58,7 +81,6 @@ async function fetchDashboardStats() {
                 if (document.getElementById('kpi-produccion-qty')) document.getElementById('kpi-produccion-qty').textContent = kpis.produccion_registrada ?? 0;
             }
 
-            // Últimos Pedidos
             const pedidosBody = document.getElementById('ultimos-pedidos-body');
             if (pedidosBody) {
                 pedidosBody.innerHTML = '';
@@ -85,7 +107,6 @@ async function fetchDashboardStats() {
                 }
             }
 
-            // Alertas de Stock
             const alertsContainer = document.getElementById('alertas-stock-container');
             if (alertsContainer) {
                 alertsContainer.innerHTML = '';
@@ -115,13 +136,11 @@ async function fetchDashboardStats() {
     } catch (error) {
         console.error('Error en la petición de dashboard:', error);
     } finally {
-        refrescandoDashboard = false;
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, minLoadTime - elapsed);
+        setTimeout(() => {
+            refrescandoDashboard = false;
+            setDashboardLoading(false);
+        }, remaining);
     }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }

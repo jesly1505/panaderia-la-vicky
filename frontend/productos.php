@@ -588,7 +588,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 const res = await fetch('../backend/api.php?route=producir_producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ producto_id: prodId, cantidad_producida: cant })
+                    body: JSON.stringify({ producto_id: prodId, cantidad: cant })
                 });
                 const data = await res.json();
                 if (data.success) {
