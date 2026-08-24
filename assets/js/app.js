@@ -10,37 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let refrescandoDashboard = false;
 
-function setDashboardLoading(loading) {
-    const container = document.getElementById('dashboardContent');
-    const btn = document.getElementById('dashboardRefreshBtn');
-    if (btn) {
-        btn.disabled = loading;
-        btn.querySelector('i').classList.toggle('fa-spin', loading);
-    }
-    if (container) {
-        container.style.opacity = loading ? '0.55' : '1';
-        let overlay = document.getElementById('dashboardOverlay');
-        if (loading) {
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'dashboardOverlay';
-                overlay.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;';
-                overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>';
-                container.appendChild(overlay);
-            }
-            overlay.style.display = '';
-        } else if (overlay) {
-            overlay.style.display = 'none';
-        }
-    }
-}
-
 async function fetchDashboardStats() {
     if (refrescandoDashboard) return;
     refrescandoDashboard = true;
-    setDashboardLoading(true);
-    const minLoadTime = 600;
-    const startTime = Date.now();
+
+    const refreshBtn = document.getElementById('dashboardRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.querySelector('i').classList.add('fa-spin');
+    }
 
     const params = new URLSearchParams(window.location.search);
     const filter = params.get('filter') || '';
@@ -136,11 +114,10 @@ async function fetchDashboardStats() {
     } catch (error) {
         console.error('Error en la petición de dashboard:', error);
     } finally {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadTime - elapsed);
-        setTimeout(() => {
-            refrescandoDashboard = false;
-            setDashboardLoading(false);
-        }, remaining);
+        refrescandoDashboard = false;
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.querySelector('i').classList.remove('fa-spin');
+        }
     }
 }

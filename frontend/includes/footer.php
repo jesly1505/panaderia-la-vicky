@@ -22,6 +22,15 @@
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 10000;" id="sysToastContainer">
     </div>
 
+    <!-- Loader global para peticiones API -->
+    <div id="globalApiLoader" style="display:none; position:fixed; inset:0; z-index:9998; background:rgba(255,255,255,0.35); backdrop-filter:blur(2px); transition:opacity .2s;">
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);">
+            <div class="spinner-border text-primary" style="width:2.8rem; height:2.8rem;" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/common.js"></script>

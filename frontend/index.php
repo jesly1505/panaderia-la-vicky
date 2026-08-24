@@ -34,7 +34,7 @@ $pageHeader = "Panel de Control";
         <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
 
-            <div id="dashboardContent" class="container-fluid p-4 animate-fade-in position-relative" style="transition: opacity .2s;">
+            <div id="dashboardContent" class="container-fluid p-4 animate-fade-in">
                 
                 <!-- Filtro de fechas -->
                 <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $startDate, $endDate, 'index.php'); ?>

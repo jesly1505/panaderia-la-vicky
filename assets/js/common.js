@@ -14,6 +14,53 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Loader global automático para peticiones al backend
+(function() {
+    const MIN_LOADER_MS = 500;
+    const loader = document.getElementById('globalApiLoader');
+    let activeRequests = 0;
+    const originalFetch = window.fetch;
+
+    function isApiUrl(url) {
+        return typeof url === 'string' && url.includes('api.php');
+    }
+
+    window.fetch = function() {
+        const url = arguments[0];
+        const isApi = isApiUrl(url);
+
+        if (isApi) {
+            if (activeRequests === 0 && loader) loader.style.display = '';
+            activeRequests++;
+        }
+
+        const startTime = Date.now();
+
+        return originalFetch.apply(this, arguments).then(function(response) {
+            if (!isApi) return response;
+            activeRequests--;
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, MIN_LOADER_MS - elapsed);
+
+            if (remaining > 0) {
+                setTimeout(function() {
+                    if (activeRequests === 0 && loader) loader.style.display = 'none';
+                }, remaining);
+            } else {
+                if (activeRequests === 0 && loader) loader.style.display = 'none';
+            }
+
+            return response;
+        }).catch(function(err) {
+            if (isApi) {
+                activeRequests--;
+                if (activeRequests === 0 && loader) loader.style.display = 'none';
+            }
+            throw err;
+        });
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname.toLowerCase();
     if (path.includes('login') || path.includes('forgot_password') || path.includes('reset_password')) {
