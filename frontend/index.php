@@ -34,7 +34,7 @@ $pageHeader = "Panel de Control";
         <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
 
-            <div class="container-fluid p-4 animate-fade-in">
+            <div id="dashboardContent" class="container-fluid p-4 animate-fade-in">
                 
                 <!-- Filtro de fechas -->
                 <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $startDate, $endDate, 'index.php'); ?>
@@ -165,7 +165,7 @@ $pageHeader = "Panel de Control";
                                     <table class="table table-hover align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th>ID</th>
+                                                <th>N.º</th>
                                                 <th>Cliente</th>
                                                 <th>Fecha</th>
                                                 <th>Estado</th>

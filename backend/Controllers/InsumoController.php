@@ -101,6 +101,7 @@ class InsumoController
         $nombre = trim(Validator::input('nombre'));
         $unidad = trim(Validator::input('unidad_medida'));
         $minimo = !empty(Validator::input('stock_minimo')) ? Validator::input('stock_minimo') : 0;
+        $stock = !empty(Validator::input('stock_actual')) ? Validator::input('stock_actual') : 0;
         $precio = !empty(Validator::input('precio_costo')) ? Validator::input('precio_costo') : 0;
 
         $error = Validator::firstError([
@@ -112,6 +113,8 @@ class InsumoController
             Validator::length($unidad, 30, 'Unidad de medida'),
             Validator::numeric($minimo, 'Stock mínimo'),
             Validator::min($minimo, 0, 'Stock mínimo'),
+            Validator::numeric($stock, 'Stock actual'),
+            Validator::min($stock, 0, 'Stock actual'),
             Validator::numeric($precio, 'Precio de costo'),
             Validator::greaterThan($precio, 0, 'Precio de costo'),
         ]);
@@ -122,10 +125,11 @@ class InsumoController
         }
 
         $minimo = Money::round($minimo);
+        $stock = Money::round($stock);
         $precio = Money::round($precio);
 
         try {
-            if ($this->insumoModel->update($id, $proveedor_id, $nombre, $unidad, $minimo, $precio)) {
+            if ($this->insumoModel->update($id, $proveedor_id, $nombre, $unidad, $stock, $minimo, $precio)) {
                 $this->audit->log('Inventario', 'Edición de insumo', "Insumo ID {$id} actualizado: {$nombre} ({$unidad})");
                 echo json_encode(['success' => true, 'message' => 'Insumo actualizado correctamente.']);
             } else {

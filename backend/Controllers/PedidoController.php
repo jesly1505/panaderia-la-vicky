@@ -35,13 +35,18 @@ class PedidoController {
             return;
         }
 
+        $cliente_id = $data['cliente_id'] ?? null;
         $errors = [
-            Validator::integer($data['cliente_id'] ?? 0, 'Cliente'),
-            Validator::greaterThan($data['cliente_id'] ?? 0, 0, 'Cliente'),
             Validator::numeric($data['total'] ?? 0, 'Total'),
             Validator::min($data['total'] ?? 0, 0, 'Total'),
             Validator::date($data['fecha_entrega'] ?? null, 'Fecha de entrega'),
         ];
+        if ($cliente_id === null || $cliente_id === '' || (int)$cliente_id <= 0) {
+            $errors[] = 'El campo Cliente es obligatorio.';
+        } else {
+            $errors[] = Validator::integer($cliente_id, 'Cliente');
+            $errors[] = Validator::greaterThan((int)$cliente_id, 0, 'Cliente');
+        }
         foreach ($data['detalles'] as $i => $d) {
             $errors[] = Validator::integer($d['producto_id'] ?? $d['id'] ?? 0, "Producto #" . ($i + 1));
             $errors[] = Validator::greaterThan($d['producto_id'] ?? $d['id'] ?? 0, 0, "Producto #" . ($i + 1));
@@ -56,7 +61,6 @@ class PedidoController {
 
         // La sesión ya fue iniciada por el Router; nunca asignar un usuario por defecto.
         $usuario_id = $_SESSION['usuario_id'] ?? null;
-        $cliente_id = $data['cliente_id'] ?? null;
         $total = $data['total'] ?? 0;
         $detalles = $data['detalles'];
         $fecha_entrega = $data['fecha_entrega'] ?? null;

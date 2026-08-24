@@ -46,7 +46,7 @@ $pageHeader = "Gestión de Proveedores";
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-4">ID</th>
+                                        <th class="ps-4">N.º</th>
                                         <th>Nombre</th>
                                         <th>Contacto</th>
                                         <th>Teléfono</th>
@@ -63,6 +63,8 @@ $pageHeader = "Gestión de Proveedores";
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Pagination container -->
+                        <div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
                     </div>
                 </div>
             </div>
@@ -154,9 +156,10 @@ $pageHeader = "Gestión de Proveedores";
             loadProveedores();
         });
 
-        async function loadProveedores() {
+        async function loadProveedores(page = 1) {
             try {
-                const res = await fetch('../backend/api.php?route=get_proveedores');
+                const limit = 10;
+                const res = await fetch(`../backend/api.php?route=get_proveedores_paginated&page=${page}&limit=${limit}`);
                 const data = await res.json();
                 const tbody = document.getElementById('proveedoresTableBody');
                 tbody.innerHTML = '';
@@ -164,11 +167,13 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success && data.data && data.data.length > 0) {
                     proveedoresData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.gestionar') : true);
+                    const offset = (page - 1) * limit;
 
-                    data.data.forEach(p => {
+                    data.data.forEach((p, index) => {
+                        const rowNumber = offset + index + 1;
                         tbody.innerHTML += `
                             <tr>
-                                <td class="ps-4 text-muted fw-bold">#${p.id}</td>
+                                <td class="ps-4 text-muted fw-bold">${rowNumber}</td>
                                 <td class="fw-bold text-dark">${escapeHtml(p.nombre)}</td>
                                 <td class="small">${escapeHtml(p.contacto || '<span class="text-muted">N/A</span>')}</td>
                                 <td class="small">${escapeHtml(p.telefono || '<span class="text-muted">N/A</span>')}</td>
@@ -186,10 +191,39 @@ $pageHeader = "Gestión de Proveedores";
                             </tr>
                         `;
                     });
+
+                    // Render pagination using shared function
+                    renderPagination(data.total, data.limit, page);
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No hay proveedores registrados.</td></tr>';
+                    document.getElementById('clientPagination').innerHTML = '';
                 }
             } catch (e) { console.error(e); }
+        }
+
+        // Render pagination (shared with clientes)
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('clientPagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadProveedores(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         document.getElementById('addProveedorForm').addEventListener('submit', async (e) => {
@@ -200,7 +234,7 @@ $pageHeader = "Gestión de Proveedores";
                 telefono: e.target.telefono.value.trim(),
                 email: e.target.email.value.trim()
             };
-            if (!payload.nombre) { alert('El nombre es obligatorio'); return; }
+            if (!payload.nombre) { showAlert('El nombre es obligatorio', 'warning'); return; }
             try {
                 const res = await fetch('../backend/api.php?route=add_proveedor', {
                     method: 'POST',
@@ -212,10 +246,11 @@ $pageHeader = "Gestión de Proveedores";
                     bootstrap.Modal.getInstance(document.getElementById('addProveedorModal')).hide();
                     e.target.reset();
                     loadProveedores();
+                    showAlert('Proveedor registrado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al guardar.');
+                    showAlert(data.message || 'Error al guardar.', 'error');
                 }
-            } catch (err) { alert('Error de red'); }
+            } catch (err) { showAlert('Error de red', 'error'); }
         });
 
         function openEditModal(id) {
@@ -238,7 +273,7 @@ $pageHeader = "Gestión de Proveedores";
                 telefono: e.target.telefono.value.trim(),
                 email: e.target.email.value.trim()
             };
-            if (!payload.nombre) { alert('El nombre es obligatorio'); return; }
+            if (!payload.nombre) { showAlert('El nombre es obligatorio', 'warning'); return; }
             try {
                 const res = await fetch('../backend/api.php?route=update_proveedor', {
                     method: 'POST',
@@ -249,14 +284,15 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editProveedorModal')).hide();
                     loadProveedores();
+                    showAlert('Proveedor actualizado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al actualizar.');
+                    showAlert(data.message || 'Error al actualizar.', 'error');
                 }
-            } catch (err) { alert('Error de red'); }
+            } catch (err) { showAlert('Error de red', 'error'); }
         });
 
         async function deleteProveedor(id) {
-            if (!confirm('¿Está seguro de eliminar este proveedor?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este proveedor?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_proveedor', {
                     method: 'POST',
@@ -264,8 +300,8 @@ $pageHeader = "Gestión de Proveedores";
                     body: JSON.stringify({ id: id })
                 });
                 const data = await res.json();
-                if (data.success) loadProveedores();
-                else alert(data.message || 'Error al eliminar.');
+                if (data.success) { loadProveedores(); showAlert('Proveedor eliminado correctamente', 'success'); }
+                else showAlert(data.message || 'Error al eliminar.', 'error');
             } catch (e) { console.error(e); }
         }
     </script>

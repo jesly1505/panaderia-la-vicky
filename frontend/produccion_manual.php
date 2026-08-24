@@ -293,14 +293,6 @@ $pageHeader = "Registro de Producción Libre";
         loadHistory(page, pageLimit);
     }
 
-        function showAlert(message, type = 'info') {
-            const alert = document.getElementById('resultAlert');
-            alert.className = `alert alert-${type} d-block shadow-sm border-0 mb-4 animate-fade-in`;
-            alert.textContent = message;
-            setTimeout(() => {
-                alert.classList.add('d-none');
-            }, 5000);
-        }
-    </script>
+        // Se utiliza la función global showAlert de common.js</script>
 </body>
 </html>
