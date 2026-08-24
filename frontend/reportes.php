@@ -461,6 +461,7 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto registrado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al guardar el gasto.', 'error');
                 }
@@ -482,6 +483,7 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto eliminado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al eliminar el gasto.', 'error');
                 }
@@ -515,6 +517,7 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar el gasto.', 'error');
                 }

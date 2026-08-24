@@ -246,6 +246,7 @@ $pageHeader = "Gestión de Proveedores";
                     bootstrap.Modal.getInstance(document.getElementById('addProveedorModal')).hide();
                     e.target.reset();
                     loadProveedores();
+                    showAlert('Proveedor registrado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al guardar.', 'error');
                 }
@@ -283,6 +284,7 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editProveedorModal')).hide();
                     loadProveedores();
+                    showAlert('Proveedor actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar.', 'error');
                 }
@@ -298,7 +300,7 @@ $pageHeader = "Gestión de Proveedores";
                     body: JSON.stringify({ id: id })
                 });
                 const data = await res.json();
-                if (data.success) loadProveedores();
+                if (data.success) { loadProveedores(); showAlert('Proveedor eliminado correctamente', 'success'); }
                 else showAlert(data.message || 'Error al eliminar.', 'error');
             } catch (e) { console.error(e); }
         }

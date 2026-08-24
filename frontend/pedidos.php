@@ -506,6 +506,7 @@ $pageHeader = "Gestión de Pedidos";
                 const data = await res.json();
                 if (data.success) {
                     await loadPedidos();
+                    showAlert('Estado del pedido actualizado', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar el estado', 'error');
                 }
@@ -552,6 +553,7 @@ $pageHeader = "Gestión de Pedidos";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editPedidoModal')).hide();
                     await loadPedidos();
+                    showAlert('Pedido actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar pedido', 'error');
                 }

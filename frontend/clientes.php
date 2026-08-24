@@ -349,6 +349,7 @@ $pageHeader = "Gestión de Clientes";
                     bootstrap.Modal.getInstance(document.getElementById('addClienteModal')).hide();
                     e.target.reset();
                     await loadClientes();
+                    showAlert('Cliente registrado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al guardar', 'error');
                 }
@@ -372,6 +373,7 @@ $pageHeader = "Gestión de Clientes";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editClienteModal')).hide();
                     await loadClientes();
+                    showAlert('Cliente actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar', 'error');
                 }
@@ -391,6 +393,7 @@ $pageHeader = "Gestión de Clientes";
                 const data = await res.json();
                 if (data.success) {
                     await loadClientes();
+                    showAlert('Cliente eliminado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al eliminar', 'error');
                 }

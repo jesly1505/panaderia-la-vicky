@@ -268,6 +268,7 @@ $pageHeader = "Ajustes del Sistema";
                     e.target.reset();
                     loadEmployees();
                     loadEmployeeStats();
+                    showAlert('Empleado registrado correctamente', 'success');
                 } else showAlert(data.message, 'info');
             } catch (e) { 
                 showAlert('Error de red', 'error');
@@ -287,6 +288,7 @@ $pageHeader = "Ajustes del Sistema";
                 if (data.success) {
                     loadEmployees();
                     loadEmployeeStats();
+                    showAlert('Empleado dado de baja correctamente', 'success');
                 } else showAlert(data.message, 'info');
             } catch (e) {
                 console.error(e);
@@ -321,6 +323,7 @@ $pageHeader = "Ajustes del Sistema";
                     bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
                     loadEmployees();
                     loadEmployeeStats();
+                    showAlert('Empleado actualizado correctamente', 'success');
                 } else showAlert(data.message, 'info');
             } catch (e) {
                 showAlert('Error de red', 'error');
