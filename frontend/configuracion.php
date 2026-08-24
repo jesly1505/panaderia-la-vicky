@@ -65,6 +65,7 @@ $pageHeader = "Ajustes del Sistema";
                                     </table>
                                 </div>
                             </div>
+                            <div id="employeePagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
                     </div>
 
@@ -165,8 +166,11 @@ $pageHeader = "Ajustes del Sistema";
 
     <?php include 'includes/footer.php'; ?>
     <script>
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
         document.addEventListener('DOMContentLoaded', () => {
-            loadEmployees();
+            loadEmployees(1);
             loadEmployeeStats();
         });
 
@@ -178,19 +182,22 @@ $pageHeader = "Ajustes del Sistema";
                 .replace(/\r?\n/g, ' ');
         }
 
-        async function loadEmployees() {
+        async function loadEmployees(page = 1) {
+            currentPage = page;
             try {
-                const res = await fetch('../backend/api.php?route=get_employees');
+                const offset = (page - 1) * itemsPerPage;
+                const res = await fetch(`../backend/api.php?route=get_employees&page=${page}&limit=${itemsPerPage}`);
                 const data = await res.json();
                 const tbody = document.getElementById('employeeTableBody');
                 tbody.innerHTML = '';
-                if (data.success) {
-                    data.data.forEach(emp => {
+                if (data.success && data.data && data.data.length > 0) {
+                    data.data.forEach((emp, index) => {
+                        const rowNumber = offset + index + 1;
                         const isMainAdmin = (emp.id == 1);
                         tbody.innerHTML += `
                             <tr class="animate-fade-in">
                                 <td class="ps-4">
-                                    <div class="fw-bold text-dark">${emp.nombre}</div>
+                                    <div class="fw-bold text-dark">${rowNumber}. ${emp.nombre}</div>
                                 </td>
                                 <td><small class="text-muted">${emp.email}</small></td>
                                 <td>
@@ -199,22 +206,43 @@ $pageHeader = "Ajustes del Sistema";
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    ${!isMainAdmin ? `
-                                        <button class="btn btn-sm btn-outline-primary border-0 me-1" onclick="openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})" title="Editar">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteEmployee(${emp.id})" title="Dar de baja">
-                                            <i class="fas fa-user-slash"></i>
-                                        </button>
-                                    ` : '<span class="text-muted x-small italic">System Protected</span>'}
+                                    ${!isMainAdmin ? TA.edit(`openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})`) + TA.custom(`deleteEmployee(${emp.id})`, 'fa-user-slash', 'Dar de baja', 'btn-outline-danger') : '<span class="text-muted x-small italic">System Protected</span>'}
                                 </td>
                             </tr>
                         `;
                     });
+                    renderPagination(data.total, itemsPerPage, page);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No se encontraron empleados.</td></tr>';
+                    document.getElementById('employeePagination').innerHTML = '';
                 }
             } catch (e) { 
                 console.error(e);
             }
+        }
+
+        function renderPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('employeePagination');
+            nav.innerHTML = '';
+            if (totalPages <= 1) return;
+            let html = '<ul class="pagination justify-content-center">';
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadEmployees(${page - 1}); return false;">&laquo;</a></li>`;
+            const maxVisible = 5;
+            let start = Math.max(1, page - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            for (let i = start; i <= end; i++) {
+                const active = i === page ? ' active' : '';
+                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadEmployees(${i}); return false;">${i}</a></li>`;
+            }
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadEmployees(${page + 1}); return false;">&raquo;</a></li>`;
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         async function loadEmployeeStats() {
@@ -266,7 +294,7 @@ $pageHeader = "Ajustes del Sistema";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
                     e.target.reset();
-                    loadEmployees();
+                    loadEmployees(currentPage);
                     loadEmployeeStats();
                     showAlert('Empleado registrado correctamente', 'success');
                 } else showAlert(data.message, 'info');
@@ -286,7 +314,7 @@ $pageHeader = "Ajustes del Sistema";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    loadEmployees();
+                    loadEmployees(currentPage);
                     loadEmployeeStats();
                     showAlert('Empleado dado de baja correctamente', 'success');
                 } else showAlert(data.message, 'info');
@@ -321,7 +349,7 @@ $pageHeader = "Ajustes del Sistema";
                 const data = await res.json();
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
-                    loadEmployees();
+                    loadEmployees(currentPage);
                     loadEmployeeStats();
                     showAlert('Empleado actualizado correctamente', 'success');
                 } else showAlert(data.message, 'info');

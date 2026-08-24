@@ -249,10 +249,7 @@ $pageHeader = "Gestión de Clientes";
                         <td class="small text-muted">${c.direccion || 'No registrada'}</td>
                         <td class="text-end pe-4">
                             <button class="btn btn-sm btn-outline-info me-1" onclick="viewHistory(${c.id})" title="Historial"><i class="fas fa-history"></i></button>
-                            ${puedeGestionar ? `
-                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditModal(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteClient(${c.id})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
-                            ` : ''}
+                            ${puedeGestionar ? TA.edit(`openEditModal(${c.id})`) + TA.remove(`deleteClient(${c.id})`) : ''}
                         </td>
                     </tr>
                 `;

@@ -19,8 +19,20 @@ class PedidoController {
 
     public function getAll() {
         header('Content-Type: application/json');
-        $pedidos = $this->pedidoModel->readAll();
-        echo json_encode(['success' => true, 'data' => $pedidos]);
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+
+        $pedidos = $this->pedidoModel->readAll($limit, $offset);
+        $total = $this->pedidoModel->countAll();
+
+        echo json_encode([
+            'success' => true,
+            'data' => $pedidos,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ]);
     }
 
     public function create() {

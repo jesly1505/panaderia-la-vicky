@@ -396,19 +396,8 @@ $pageHeader = "Catálogo y Recetas de Productos";
                                         </div>
 
                                         <div class="d-flex gap-2">
-                                            ${puedeGestionar ? `
-                                                <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')">
-                                                    <i class="fas fa-industry me-1"></i> Producir
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-primary" onclick="openEditProductoModal(${p.id})">
-                                                    <i class="fas fa-pen"></i>
-                                                </button>
-                                            ` : ''}
-                                            ${puedeEliminar ? `
-                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id}, '${escapeHtml(p.nombre)}')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            ` : ''}
+                                            ${puedeGestionar ? TA.custom(`openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')`, 'fa-industry', 'Producir', 'btn-outline-success flex-grow-1') + TA.edit(`openEditProductoModal(${p.id})`) : ''}
+                                            ${puedeEliminar ? TA.remove(`deleteProduct(${p.id}, '${escapeHtml(p.nombre)}')`, 'Eliminar producto') : ''}
                                         </div>
                                     </div>
                                 </div>

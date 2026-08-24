@@ -179,14 +179,7 @@ $pageHeader = "Gestión de Proveedores";
                                 <td class="small">${escapeHtml(p.telefono || '<span class="text-muted">N/A</span>')}</td>
                                 <td class="small text-muted">${escapeHtml(p.email || 'Sin email')}</td>
                                 <td class="text-end pe-4">
-                                    ${puedeGestionar ? `
-                                        <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditModal(${p.id})" title="Editar">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteProveedor(${p.id})" title="Eliminar">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    ` : ''}
+                                    ${puedeGestionar ? TA.edit(`openEditModal(${p.id})`) + TA.remove(`deleteProveedor(${p.id})`) : ''}
                                 </td>
                             </tr>
                         `;
