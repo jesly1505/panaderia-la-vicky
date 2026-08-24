@@ -322,16 +322,8 @@ $pageHeader = "Inventario";
                                 <td><span class="text-muted small">${parseFloat(i.stock_minimo).toFixed(2)} ${i.unidad_medida}</span></td>
                                 <td>${formatCurrency(i.precio_costo)}</td>
                                 <td class="text-end">
-                                    ${puedeGestionar ? `
-                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInsumoModal(${i.id})" title="Editar insumo">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                    ` : ''}
-                                    ${puedeEliminar ? `
-                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInsumo(${i.id})">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    ` : ''}
+                                    ${puedeGestionar ? TA.edit(`openEditInsumoModal(${i.id})`, 'Editar insumo') : ''}
+                                    ${puedeEliminar ? TA.remove(`deleteInsumo(${i.id})`, 'Eliminar insumo') : ''}
                                 </td>
                             </tr>
                         `;

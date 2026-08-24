@@ -206,14 +206,7 @@ $pageHeader = "Ajustes del Sistema";
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    ${!isMainAdmin ? `
-                                        <button class="btn btn-sm btn-outline-primary border-0 me-1" onclick="openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})" title="Editar">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteEmployee(${emp.id})" title="Dar de baja">
-                                            <i class="fas fa-user-slash"></i>
-                                        </button>
-                                    ` : '<span class="text-muted x-small italic">System Protected</span>'}
+                                    ${!isMainAdmin ? TA.edit(`openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})`) + TA.custom(`deleteEmployee(${emp.id})`, 'fa-user-slash', 'Dar de baja', 'btn-outline-danger') : '<span class="text-muted x-small italic">System Protected</span>'}
                                 </td>
                             </tr>
                         `;

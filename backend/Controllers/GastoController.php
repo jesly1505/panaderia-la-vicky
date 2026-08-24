@@ -19,9 +19,17 @@ class GastoController {
     public function getByDate() {
         header('Content-Type: application/json');
         $startDate = $_GET['start_date'] ?? '';
-        $endDate = $_GET['end_date'] ?? '';
-        $gastos = $this->model->getByDate($startDate, $endDate);
-        echo json_encode(['success' => true, 'data' => $gastos]);
+        $endDate   = $_GET['end_date'] ?? '';
+        $page      = max(1, (int)($_GET['page'] ?? 1));
+        $limit     = min(20, max(5, (int)($_GET['limit'] ?? 10)));
+        $offset    = ($page - 1) * $limit;
+        $total     = $this->model->countByDate($startDate, $endDate);
+        $gastos    = $this->model->getByDate($startDate, $endDate, $limit, $offset);
+        echo json_encode([
+            'success'    => true,
+            'data'       => $gastos,
+            'pagination' => ['page' => $page, 'limit' => $limit, 'total' => $total]
+        ]);
     }
 
     /** POST route=add_gasto */

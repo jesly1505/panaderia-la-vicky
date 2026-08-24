@@ -595,4 +595,20 @@ INSERT INTO produccion_detalle (produccion_id, insumo_id, cantidad_usada) VALUES
 (6, 8,   3.00),
 (6, 9,  60.00);
 
+-- =============================================================
+-- CATALOGOS (categorías de gastos)
+-- =============================================================
+INSERT INTO catalogos (tipo, valor, etiqueta, estado) VALUES
+('gastos', 'servicios',       'Servicios (Agua, Luz, Gas)',  1),
+('gastos', 'mantenimiento',   'Mantenimiento / Equipos',     1),
+('gastos', 'limpieza',        'Limpieza',                    1),
+('gastos', 'combustible',     'Combustible',                 1),
+('gastos', 'transporte',      'Transporte / Flete',          1),
+('gastos', 'personal',        'Personal / Nómina',           1),
+('gastos', 'papeleria',       'Papelería y Útiles',          1),
+('gastos', 'impuestos',       'Impuestos y Tasas',           1),
+('gastos', 'publicidad',      'Publicidad y Marketing',      1),
+('gastos', 'otros',           'Otros',                       1)
+ON DUPLICATE KEY UPDATE etiqueta = VALUES(etiqueta);
+
 SET FOREIGN_KEY_CHECKS = 1;

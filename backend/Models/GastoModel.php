@@ -12,7 +12,7 @@ class GastoModel {
     }
 
     /** Gastos filtrados por rango de fechas (opcional) */
-    public function getByDate($startDate = '', $endDate = '') {
+    public function getByDate($startDate = '', $endDate = '', $limit = 10, $offset = 0) {
         $where = "WHERE eliminado = 0";
         $params = [];
         if (!empty($startDate) && !empty($endDate)) {
@@ -26,13 +26,38 @@ class GastoModel {
             $where .= " AND DATE(fecha) <= :end";
             $params[':end'] = $endDate;
         }
-        $query = "SELECT * FROM {$this->table} $where ORDER BY fecha DESC";
+        $query = "SELECT * FROM {$this->table} $where ORDER BY fecha DESC LIMIT :limit OFFSET :offset";
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countByDate($startDate = '', $endDate = '') {
+        $where = "WHERE eliminado = 0";
+        $params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $where .= " AND DATE(fecha) BETWEEN :start AND :end";
+            $params[':start'] = $startDate;
+            $params[':end'] = $endDate;
+        } elseif (!empty($startDate)) {
+            $where .= " AND DATE(fecha) >= :start";
+            $params[':start'] = $startDate;
+        } elseif (!empty($endDate)) {
+            $where .= " AND DATE(fecha) <= :end";
+            $params[':end'] = $endDate;
+        }
+        $query = "SELECT COUNT(*) FROM {$this->table} $where";
         $stmt = $this->conn->prepare($query);
         foreach ($params as $k => $v) {
             $stmt->bindValue($k, $v);
         }
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return (int) $stmt->fetchColumn();
     }
 
     /** Registrar un nuevo gasto */

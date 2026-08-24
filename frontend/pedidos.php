@@ -440,14 +440,8 @@ $pageHeader = "Gestión de Pedidos";
                                 <td><span class="badge ${badge} badge-status">${estadoTexto}</span></td>
                                 <td class="fw-bold text-dark">${formatCurrency(p.total)}</td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-info me-1" onclick="viewDetails(${p.id}, ${p.total})" title="Detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    ${p.estado === 'pendiente' && puedeGestionar ? `
-                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditPedidoModal(${p.id}, '${p.cliente_nombre || ''}', '${escapeHtml(p.fecha_entrega || '')}', '${escapeHtml(p.hora_entrega || '')}')" title="Editar">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                    ` : ''}
+                                    ${TA.view(`viewDetails(${p.id}, ${p.total})`, 'Detalles')}
+                                    ${p.estado === 'pendiente' && puedeGestionar ? TA.edit(`openEditPedidoModal(${p.id}, '${p.cliente_nombre || ''}', '${escapeHtml(p.fecha_entrega || '')}', '${escapeHtml(p.hora_entrega || '')}')`, 'Editar pedido') : ''}
                                     ${p.estado !== 'entregado' && p.estado !== 'cancelado' && puedeGestionar ? `
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
