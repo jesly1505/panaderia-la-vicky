@@ -268,15 +268,16 @@ $pageHeader = "Ajustes del Sistema";
                     e.target.reset();
                     loadEmployees();
                     loadEmployeeStats();
-                } else alert(data.message);
+                    showAlert('Empleado registrado correctamente', 'success');
+                } else showAlert(data.message, 'info');
             } catch (e) { 
-                alert('Error de red');
+                showAlert('Error de red', 'error');
                 console.error(e);
             }
         });
 
         async function deleteEmployee(id) {
-            if (!confirm('¿Está seguro de dar de baja a este empleado? Perderá acceso inmediato al sistema.')) return;
+            if (!(await showConfirm('¿Está seguro de dar de baja a este empleado? Perderá acceso inmediato al sistema.'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_employee', {
                     method: 'POST',
@@ -287,7 +288,8 @@ $pageHeader = "Ajustes del Sistema";
                 if (data.success) {
                     loadEmployees();
                     loadEmployeeStats();
-                } else alert(data.message);
+                    showAlert('Empleado dado de baja correctamente', 'success');
+                } else showAlert(data.message, 'info');
             } catch (e) {
                 console.error(e);
             }
@@ -321,9 +323,10 @@ $pageHeader = "Ajustes del Sistema";
                     bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
                     loadEmployees();
                     loadEmployeeStats();
-                } else alert(data.message);
+                    showAlert('Empleado actualizado correctamente', 'success');
+                } else showAlert(data.message, 'info');
             } catch (e) {
-                alert('Error de red');
+                showAlert('Error de red', 'error');
                 console.error(e);
             }
         });

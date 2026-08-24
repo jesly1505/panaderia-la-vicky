@@ -132,12 +132,13 @@ class InsumoModel implements InsumoRepositoryInterface {
         }
     }
 
-    public function update($id, $proveedor_id, $nombre, $unidad_medida, $stock_minimo, $precio_costo) {
-        $query = "UPDATE " . $this->table_name . " SET proveedor_id = :proveedor_id, nombre = :nombre, unidad_medida = :unidad_medida, stock_minimo = :stock_minimo, precio_costo = :precio_costo WHERE id = :id AND eliminado = false";
+    public function update($id, $proveedor_id, $nombre, $unidad_medida, $stock_actual, $stock_minimo, $precio_costo) {
+        $query = "UPDATE " . $this->table_name . " SET proveedor_id = :proveedor_id, nombre = :nombre, unidad_medida = :unidad_medida, stock_actual = :stock_actual, stock_minimo = :stock_minimo, precio_costo = :precio_costo WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":proveedor_id", $proveedor_id);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":unidad_medida", $unidad_medida);
+        $stmt->bindParam(":stock_actual", $stock_actual);
         $stmt->bindParam(":stock_minimo", $stock_minimo);
         $stmt->bindParam(":precio_costo", $precio_costo);
         $stmt->bindParam(":id", $id);

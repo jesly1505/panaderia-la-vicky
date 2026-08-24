@@ -221,12 +221,16 @@ $pageHeader = "Inventario";
                                 <option value="Metros">Metros</option>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Proveedor Predet.</label>
+                            <select name="proveedor_id" class="form-select py-2 provider-select">
+                                <option value="">Seleccione...</option>
+                            </select>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-semibold small text-uppercase text-muted">Proveedor Predet.</label>
-                                <select name="proveedor_id" class="form-select py-2 provider-select">
-                                    <option value="">Seleccione...</option>
-                                </select>
+                                <label class="form-label fw-semibold small text-uppercase text-muted">Stock Actual</label>
+                                <input type="number" step="0.01" min="0" max="999999.99" name="stock_actual" class="form-control py-2" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold small text-uppercase text-muted">Stock Mínimo</label>
@@ -319,10 +323,7 @@ $pageHeader = "Inventario";
                                 <td>${formatCurrency(i.precio_costo)}</td>
                                 <td class="text-end">
                                     ${puedeGestionar ? `
-                                        <button class="btn btn-sm btn-outline-success me-1" onclick="openAdjustModal(${i.id}, '${escapeHtml(i.nombre)}')">
-                                            <i class="fas fa-plus"></i> Ajustar
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInsumoModal(${i.id})">
+                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInsumoModal(${i.id})" title="Editar insumo">
                                             <i class="fas fa-pen"></i>
                                         </button>
                                     ` : ''}
@@ -406,8 +407,9 @@ $pageHeader = "Inventario";
                     e.target.reset();
                     await loadInsumos();
                     await loadAlerts();
+                    showAlert('Insumo registrado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al guardar insumo');
+                    showAlert(data.message || 'Error al guardar insumo', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -431,8 +433,9 @@ $pageHeader = "Inventario";
                     e.target.reset();
                     await loadInsumos();
                     await loadAlerts();
+                    showAlert('Compra registrada correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al registrar la compra');
+                    showAlert(data.message || 'Error al registrar la compra', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -449,7 +452,7 @@ $pageHeader = "Inventario";
         function openEditInsumoModal(id) {
             const insumo = insumosData.find(x => parseInt(x.id) === parseInt(id));
             if (!insumo) {
-                alert('No se encontró el insumo seleccionado.');
+                showAlert('No se encontró el insumo seleccionado.', 'warning');
                 return;
             }
             const form = document.getElementById('editInsumoForm');
@@ -466,6 +469,7 @@ $pageHeader = "Inventario";
             unidadSelect.value = insumo.unidad_medida;
 
             form.elements['proveedor_id'].value = insumo.proveedor_id || '';
+            form.elements['stock_actual'].value = insumo.stock_actual;
             form.elements['stock_minimo'].value = insumo.stock_minimo;
             form.elements['precio_costo'].value = insumo.precio_costo;
             new bootstrap.Modal(document.getElementById('editInsumoModal')).show();
@@ -487,8 +491,9 @@ $pageHeader = "Inventario";
                     bootstrap.Modal.getInstance(document.getElementById('editInsumoModal')).hide();
                     await loadInsumos();
                     await loadAlerts();
+                    showAlert('Insumo actualizado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al actualizar el insumo');
+                    showAlert(data.message || 'Error al actualizar el insumo', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -512,8 +517,9 @@ $pageHeader = "Inventario";
                     e.target.reset();
                     await loadInsumos();
                     await loadAlerts();
+                    showAlert('Stock ajustado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al ajustar stock');
+                    showAlert(data.message || 'Error al ajustar stock', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -521,7 +527,7 @@ $pageHeader = "Inventario";
         });
 
         async function deleteInsumo(id) {
-            if (!confirm('¿Está seguro de eliminar este insumo?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este insumo?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_insumo', {
                     method: 'POST',
@@ -532,8 +538,9 @@ $pageHeader = "Inventario";
                 if (data.success) {
                     await loadInsumos();
                     await loadAlerts();
+                    showAlert('Insumo eliminado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al eliminar insumo');
+                    showAlert(data.message || 'Error al eliminar insumo', 'error');
                 }
             } catch (e) {
                 console.error(e);

@@ -90,6 +90,9 @@ class DateFilterHelper {
                             <i class="fas fa-filter me-1"></i> Filtrar
                         </button>
                         '.(($currentFilter !== 'all' && !empty($currentFilter)) ? '<a href="'.$cleanAction.'" class="btn btn-outline-secondary btn-sm ms-2">Limpiar</a>' : '').'
+                        <button type="button" id="dashboardRefreshBtn" class="btn btn-outline-primary btn-sm ms-2" onclick="if(typeof fetchDashboardStats===\'function\')fetchDashboardStats()" title="Actualizar datos">
+                            <i class="fas fa-sync-alt me-1"></i> Actualizar
+                        </button>
                     </div>
                 </form>
             </div>

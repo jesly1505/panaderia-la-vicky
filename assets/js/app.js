@@ -5,8 +5,6 @@ console.log('Sistema La Vicky inicializado');
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('ventas-hoy')) {
         fetchDashboardStats();
-        // Polling controlado cada 15 segundos
-        setInterval(fetchDashboardStats, 15000);
     }
 });
 
@@ -16,7 +14,12 @@ async function fetchDashboardStats() {
     if (refrescandoDashboard) return;
     refrescandoDashboard = true;
 
-    // Si hay parámetros de filtro en la URL, pasarlos
+    const refreshBtn = document.getElementById('dashboardRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.querySelector('i').classList.add('fa-spin');
+    }
+
     const params = new URLSearchParams(window.location.search);
     const filter = params.get('filter') || '';
     const startDate = params.get('start_date') || '';
@@ -31,7 +34,6 @@ async function fetchDashboardStats() {
         const response = await fetch(url);
         const data = await response.json();
         if (data.success) {
-            // Stats Cards
             if (document.getElementById('ventas-hoy')) {
                 document.getElementById('ventas-hoy').textContent = formatCurrency(data.data.ventas_hoy || 0);
             }
@@ -48,7 +50,6 @@ async function fetchDashboardStats() {
                 document.getElementById('clientes-registrados').textContent = data.data.clientes_registrados ?? 0;
             }
 
-            // KPIs Dinámicos CMMI si existen en el DOM
             if (data.data.kpis_dinamicos) {
                 const kpis = data.data.kpis_dinamicos;
                 if (document.getElementById('kpi-eventos')) document.getElementById('kpi-eventos').textContent = kpis.eventos ?? 0;
@@ -58,12 +59,12 @@ async function fetchDashboardStats() {
                 if (document.getElementById('kpi-produccion-qty')) document.getElementById('kpi-produccion-qty').textContent = kpis.produccion_registrada ?? 0;
             }
 
-            // Últimos Pedidos
             const pedidosBody = document.getElementById('ultimos-pedidos-body');
             if (pedidosBody) {
                 pedidosBody.innerHTML = '';
                 if (data.data.ultimos_pedidos && data.data.ultimos_pedidos.length > 0) {
-                    data.data.ultimos_pedidos.forEach(p => {
+                    data.data.ultimos_pedidos.forEach((p, index) => {
+                        const rowNumber = index + 1;
                         let badgeClass = 'bg-secondary';
                         if (p.estado === 'en_proceso' || p.estado === 'pendiente') badgeClass = 'bg-warning text-dark';
                         if (p.estado === 'entregado' || p.estado === 'completado') badgeClass = 'bg-success';
@@ -71,7 +72,7 @@ async function fetchDashboardStats() {
 
                         pedidosBody.innerHTML += `
                             <tr>
-                                <td>#${p.id}</td>
+                                <td>${rowNumber}</td>
                                 <td>${escapeHtml(p.cliente_nombre || 'Consumidor Final')}</td>
                                 <td>${p.fecha_pedido ? p.fecha_pedido.split(' ')[0] : '-'}</td>
                                 <td><span class="badge ${badgeClass}">${p.estado}</span></td>
@@ -84,7 +85,6 @@ async function fetchDashboardStats() {
                 }
             }
 
-            // Alertas de Stock
             const alertsContainer = document.getElementById('alertas-stock-container');
             if (alertsContainer) {
                 alertsContainer.innerHTML = '';
@@ -115,12 +115,9 @@ async function fetchDashboardStats() {
         console.error('Error en la petición de dashboard:', error);
     } finally {
         refrescandoDashboard = false;
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.querySelector('i').classList.remove('fa-spin');
+        }
     }
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }

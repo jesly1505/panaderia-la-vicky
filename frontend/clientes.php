@@ -52,7 +52,7 @@ $pageHeader = "Gestión de Clientes";
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-4">ID</th>
+                                        <th class="ps-4">N.º</th>
                                         <th>Cliente</th>
                                         <th>DNI</th>
                                         <th>Contacto</th>
@@ -233,14 +233,15 @@ $pageHeader = "Gestión de Clientes";
                 if (data.success && data.data && data.data.length > 0) {
                     clientsData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.gestionar') : true);
-                    data.data.forEach(c => {
+                    data.data.forEach((c, index) => {
+                        const rowNumber = offset + index + 1;
                         let badge = '<span class="badge bg-secondary">Casual</span>';
                         if (c.puntos_fidelidad > 50) badge = '<span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>Oro</span>';
                         else if (c.puntos_fidelidad > 20) badge = '<span class="badge bg-info text-dark">Plata</span>';
                         else if (c.puntos_fidelidad > 0) badge = '<span class="badge bg-light text-dark border">Bronce</span>';
                         tbody.innerHTML += `
                     <tr>
-                        <td class="ps-4 text-muted fw-bold">#${c.id}</td>
+                        <td class="ps-4 text-muted fw-bold">${rowNumber}</td>
                         <td><div class="fw-bold text-dark">${c.nombre}</div></td>
                         <td>${c.dni || ''}</td>
                         <td class="small">${c.telefono || '<span class="text-muted">N/A</span>'}</td>
@@ -348,8 +349,9 @@ $pageHeader = "Gestión de Clientes";
                     bootstrap.Modal.getInstance(document.getElementById('addClienteModal')).hide();
                     e.target.reset();
                     await loadClientes();
+                    showAlert('Cliente registrado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al guardar');
+                    showAlert(data.message || 'Error al guardar', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -371,8 +373,9 @@ $pageHeader = "Gestión de Clientes";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editClienteModal')).hide();
                     await loadClientes();
+                    showAlert('Cliente actualizado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al actualizar');
+                    showAlert(data.message || 'Error al actualizar', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -380,7 +383,7 @@ $pageHeader = "Gestión de Clientes";
         });
 
         async function deleteClient(id) {
-            if (!confirm('¿Desea eliminar a este cliente?')) return;
+            if (!(await showConfirm('¿Desea eliminar a este cliente?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_cliente', {
                     method: 'POST',
@@ -390,8 +393,9 @@ $pageHeader = "Gestión de Clientes";
                 const data = await res.json();
                 if (data.success) {
                     await loadClientes();
+                    showAlert('Cliente eliminado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al eliminar');
+                    showAlert(data.message || 'Error al eliminar', 'error');
                 }
             } catch (err) {
                 console.error(err);

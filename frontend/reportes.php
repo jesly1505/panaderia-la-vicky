@@ -461,8 +461,9 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto registrado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al guardar el gasto.');
+                    showAlert(data.message || 'Error al guardar el gasto.', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -470,7 +471,7 @@ $pageHeader = "Reportes y Estadísticas";
         });
 
         async function deleteGasto(id) {
-            if (!confirm('¿Está seguro de eliminar este gasto?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este gasto?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_gasto', {
                     method: 'POST',
@@ -482,8 +483,9 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto eliminado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al eliminar el gasto.');
+                    showAlert(data.message || 'Error al eliminar el gasto.', 'error');
                 }
             } catch (e) { console.error(e); }
         }
@@ -515,8 +517,9 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto actualizado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al actualizar el gasto.');
+                    showAlert(data.message || 'Error al actualizar el gasto.', 'error');
                 }
             } catch (err) {
                 console.error(err);
