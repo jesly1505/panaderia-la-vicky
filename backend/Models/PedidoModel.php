@@ -56,7 +56,7 @@ class PedidoModel {
         }
     }
 
-    public function readAll() {
+    public function readAll($limit = null, $offset = null) {
         $query = "SELECT p.*, c.nombre as cliente_nombre, u.nombre as vendedor,
                     (SELECT GROUP_CONCAT(CONCAT(pr.nombre, ' x', dp.cantidad) SEPARATOR ', ')
                      FROM detalle_pedido dp
@@ -67,9 +67,27 @@ class PedidoModel {
                   LEFT JOIN usuarios u ON p.usuario_id = u.id
                   WHERE p.eliminado = false
                   ORDER BY p.fecha_pedido DESC";
+        if ($limit !== null && $offset !== null) {
+            $query .= " LIMIT :limit OFFSET :offset";
+        }
         $stmt = $this->conn->prepare($query);
+        if ($limit !== null && $offset !== null) {
+            $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    public function countAll() {
+        try {
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
     }
 
     public function updateEstado($pedido_id, $estado, $hora_real = null, ?int $usuario_id = null) {
