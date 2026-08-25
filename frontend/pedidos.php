@@ -39,13 +39,28 @@ $pageHeader = "Gestión de Pedidos";
                     <!-- Orders History -->
                     <div class="col-12">
                         <div class="card shadow-sm border-0">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos(currentPage)">
-                                        <i class="fas fa-sync-alt"></i> Actualizar
-                                    </button>
-                                    <button class="btn btn-sm btn-primary" id="btnNuevoPedidoEspecial"><i class="fas fa-plus"></i> + Nuevo Pedido Especial</button>
+                            <div class="card-header bg-white py-3">
+                                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
+                                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                                        <!-- Buscador de Pedidos -->
+                                        <div class="input-group input-group-sm" style="min-width: 240px; max-width: 320px;">
+                                            <span class="input-group-text bg-light border-end-0 text-muted">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" id="pedidoSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar pedido..." oninput="handlePedidoSearch()" autocomplete="off">
+                                            <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" id="btnClearPedidoSearch" onclick="clearPedidoSearch()" title="Limpiar búsqueda" style="display: none;">
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-secondary shadow-sm text-nowrap" onclick="loadPedidos(currentPage)">
+                                                <i class="fas fa-sync-alt me-1"></i> Actualizar
+                                            </button>
+                                            <button class="btn btn-sm btn-primary shadow-sm text-nowrap" id="btnNuevoPedidoEspecial"><i class="fas fa-plus me-1"></i> + Nuevo Pedido Especial</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="card-body p-0">
@@ -210,6 +225,8 @@ $pageHeader = "Gestión de Pedidos";
         let availableProducts = [];
         let pedidosData = [];
         let currentPage = 1;
+        let currentSearch = '';
+        let searchTimeout = null;
         const itemsPerPage = 10;
 
         // Open new order modal handler
@@ -409,11 +426,37 @@ $pageHeader = "Gestión de Pedidos";
             }
         }
 
+        function handlePedidoSearch() {
+            const input = document.getElementById('pedidoSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearPedidoSearch');
+            if (btnClear) {
+                btnClear.style.display = query.length > 0 ? 'inline-block' : 'none';
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = query;
+                loadPedidos(1);
+            }, 250);
+        }
+
+        function clearPedidoSearch() {
+            const input = document.getElementById('pedidoSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearPedidoSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            currentSearch = '';
+            loadPedidos(1);
+            input.focus();
+        }
+
         async function loadPedidos(page = 1) {
             currentPage = page;
             try {
                 const offset = (page - 1) * itemsPerPage;
-                const res = await fetch(`../backend/api.php?route=get_pedidos&limit=${itemsPerPage}&offset=${offset}`);
+                const searchParam = encodeURIComponent(currentSearch);
+                const res = await fetch(`../backend/api.php?route=get_pedidos&limit=${itemsPerPage}&offset=${offset}&search=${searchParam}`);
                 const data = await res.json();
                 const tbody = document.getElementById('pedidosTableBody');
                 tbody.innerHTML = '';
@@ -469,7 +512,7 @@ $pageHeader = "Gestión de Pedidos";
 
                     renderPagination(data.total, itemsPerPage, page);
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos.</td></tr>`;
                     const nav = document.getElementById('pedidosPagination');
                     if (nav) nav.innerHTML = '';
                 }
