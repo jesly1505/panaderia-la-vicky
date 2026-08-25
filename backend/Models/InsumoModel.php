@@ -36,12 +36,15 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     /**
-     * Read all insumos with optional pagination.
+     * Read all insumos with optional pagination and search.
      * If $limit is null, returns all rows (legacy behavior).
      */
-    public function readAll($limit = null, $offset = null, $onlyVisible = true) {
+    public function readAll($limit = null, $offset = null, $onlyVisible = true, $search = '') {
         $where = " i.eliminado = false ";
         if ($onlyVisible) $where .= " AND i.visible = 1 ";
+        if (!empty($search)) {
+            $where .= " AND (i.nombre LIKE :search OR p.nombre LIKE :search2) ";
+        }
         $query = "SELECT i.*, p.nombre as proveedor_nombre FROM " . $this->table_name . " i 
                   LEFT JOIN proveedores p ON i.proveedor_id = p.id
                   WHERE $where
@@ -53,6 +56,11 @@ class InsumoModel implements InsumoRepositoryInterface {
             }
         }
         $stmt = $this->conn->prepare($query);
+        if (!empty($search)) {
+            $term = "%" . $search . "%";
+            $stmt->bindValue(':search', $term);
+            $stmt->bindValue(':search2', $term);
+        }
         if (is_int($limit) && $limit > 0) {
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             if (is_int($offset) && $offset >= 0) {
@@ -64,13 +72,23 @@ class InsumoModel implements InsumoRepositoryInterface {
     }
 
     /**
-     * Return total count of insumos (optionally filtered by visibility).
+     * Return total count of insumos (optionally filtered by visibility and search).
      */
-    public function countAll($onlyVisible = true) {
-        $where = " eliminado = false ";
-        if ($onlyVisible) $where .= " AND visible = 1 ";
-        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE $where";
+    public function countAll($onlyVisible = true, $search = '') {
+        $where = " i.eliminado = false ";
+        if ($onlyVisible) $where .= " AND i.visible = 1 ";
+        if (!empty($search)) {
+            $where .= " AND (i.nombre LIKE :search OR p.nombre LIKE :search2) ";
+        }
+        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " i 
+                  LEFT JOIN proveedores p ON i.proveedor_id = p.id
+                  WHERE $where";
         $stmt = $this->conn->prepare($query);
+        if (!empty($search)) {
+            $term = "%" . $search . "%";
+            $stmt->bindValue(':search', $term);
+            $stmt->bindValue(':search2', $term);
+        }
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? (int)$row['total'] : 0;
