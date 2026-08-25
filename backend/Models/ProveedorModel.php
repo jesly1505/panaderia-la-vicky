@@ -37,29 +37,52 @@ class ProveedorModel
     }
 
     /**
-     * Get total count of non-deleted providers.
+     * Get total count of non-deleted providers with optional search.
      */
-    public function countAll()
+    public function countAll($search = '')
     {
-        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE eliminado = 0";
+        $where = "eliminado = 0";
+        if (!empty($search)) {
+            $where .= " AND (nombre LIKE :search OR contacto LIKE :search2 OR telefono LIKE :search3 OR email LIKE :search4)";
+        }
+        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE " . $where;
         $stmt = $this->conn->prepare($query);
+        if (!empty($search)) {
+            $term = "%" . $search . "%";
+            $stmt->bindValue(':search', $term);
+            $stmt->bindValue(':search2', $term);
+            $stmt->bindValue(':search3', $term);
+            $stmt->bindValue(':search4', $term);
+        }
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['total'] ?? 0);
     }
 
     /**
-     * Get paginated providers.
+     * Get paginated providers with optional search.
      * @param int $limit Number of records per page.
      * @param int $offset Starting offset.
+     * @param string $search Search term.
      */
-    public function readPaginated($limit, $offset)
+    public function readPaginated($limit, $offset, $search = '')
     {
+        $where = "eliminado = 0";
+        if (!empty($search)) {
+            $where .= " AND (nombre LIKE :search OR contacto LIKE :search2 OR telefono LIKE :search3 OR email LIKE :search4)";
+        }
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE eliminado = 0 
+                  WHERE " . $where . " 
                   ORDER BY nombre ASC 
                   LIMIT :limit OFFSET :offset";
         $stmt = $this->conn->prepare($query);
+        if (!empty($search)) {
+            $term = "%" . $search . "%";
+            $stmt->bindValue(':search', $term);
+            $stmt->bindValue(':search2', $term);
+            $stmt->bindValue(':search3', $term);
+            $stmt->bindValue(':search4', $term);
+        }
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         $stmt->execute();
