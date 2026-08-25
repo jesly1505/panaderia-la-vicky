@@ -47,8 +47,6 @@ $end_date = $_GET['end_date'] ?? '';
             <?php include 'includes/navbar.php'; ?>
 
             <div class="container-fluid p-4 animate-fade-in">
-                <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $start_date, $end_date, 'ventas.php'); ?>
-                
                 <!-- Stats Row -->
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-md-6">
@@ -75,17 +73,86 @@ $end_date = $_GET['end_date'] ?? '';
                 <div class="row g-4">
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Ventas</h5>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadSalesHistory(currentPage)">
-                                        <i class="fas fa-sync-alt me-1"></i> Actualizar
-                                    </button>
-                                    <?php if (tiene_permiso('ventas.gestionar')): ?>
-                                        <button class="btn btn-sm btn-primary fw-bold px-3" onclick="openClientSelectionModal()">
-                                            <i class="fas fa-plus me-1"></i> + Nueva Venta
+                            <div class="card-header bg-white border-0 py-3">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Ventas</h5>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-secondary shadow-sm text-nowrap" onclick="loadSalesHistory(currentPage)">
+                                            <i class="fas fa-sync-alt me-1"></i> Actualizar
                                         </button>
-                                    <?php endif; ?>
+                                        <?php if (tiene_permiso('ventas.gestionar')): ?>
+                                            <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm text-nowrap" onclick="openClientSelectionModal()">
+                                                <i class="fas fa-plus me-1"></i> + Nueva Venta
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <!-- Buscador y Filtros -->
+                                <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+                                    <!-- Buscador -->
+                                    <div class="input-group input-group-sm" style="min-width: 220px; max-width: 280px;">
+                                        <span class="input-group-text bg-light border-end-0 text-muted">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" id="ventaSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar venta..." oninput="handleVentaSearch()" autocomplete="off">
+                                        <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" id="btnClearVentaSearch" onclick="clearVentaSearch()" title="Limpiar búsqueda" style="display: none;">
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    <!-- Filtro Período -->
+                                    <div style="min-width: 140px;">
+                                        <select id="filterPeriodo" class="form-select form-select-sm" onchange="onPeriodoChange()">
+                                            <option value="all">Período: Todo el historial</option>
+                                            <option value="hoy">Período: Hoy</option>
+                                            <option value="semana">Período: Esta semana</option>
+                                            <option value="mes">Período: Este mes</option>
+                                            <option value="custom">Período: Personalizado</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Fechas personalizadas (ocultas por defecto) -->
+                                    <div id="customDateRange" class="d-flex align-items-center gap-1" style="display: none !important;">
+                                        <input type="date" id="filterStartDate" class="form-control form-control-sm" style="width: 130px;" onchange="applyFilters()">
+                                        <span class="text-muted small">a</span>
+                                        <input type="date" id="filterEndDate" class="form-control form-control-sm" style="width: 130px;" onchange="applyFilters()">
+                                    </div>
+
+                                    <!-- Filtro Estado -->
+                                    <div style="min-width: 130px;">
+                                        <select id="filterEstado" class="form-select form-select-sm" onchange="applyFilters()">
+                                            <option value="all">Estado: Todos</option>
+                                            <option value="completado">Completada</option>
+                                            <option value="cancelado">Anulada</option>
+                                            <option value="pendiente">Pendiente</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Filtro Tipo de Pago -->
+                                    <div style="min-width: 140px;">
+                                        <select id="filterTipoPago" class="form-select form-select-sm" onchange="applyFilters()">
+                                            <option value="all">Tipo de pago: Todos</option>
+                                            <option value="efectivo">Efectivo</option>
+                                            <option value="tarjeta">Tarjeta</option>
+                                            <option value="transferencia">Transferencia</option>
+                                            <option value="wallet">Wallet</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Filtro Vendedor -->
+                                    <div style="min-width: 140px;">
+                                        <select id="filterVendedor" class="form-select form-select-sm" onchange="applyFilters()">
+                                            <option value="all">Vendedor: Todos</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Botón Limpiar Filtros -->
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" onclick="resetAllFilters()">
+                                            <i class="fas fa-undo me-1"></i> Limpiar filtros
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="card-body p-0">
@@ -440,10 +507,13 @@ $end_date = $_GET['end_date'] ?? '';
         let currentPage = 1;
         const itemsPerPage = 10;
 
+        let searchTimeout = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             await fetchCompanyInfo();
             await loadProducts();
             await loadClients();
+            await loadVendedoresSelect();
             await loadSalesHistory(1);
 
             if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
@@ -954,17 +1024,102 @@ $end_date = $_GET['end_date'] ?? '';
             }
         }
 
+        async function loadVendedoresSelect() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_vendedores');
+                const data = await res.json();
+                const select = document.getElementById('filterVendedor');
+                if (select && data.success && data.data) {
+                    select.innerHTML = '<option value="all">Vendedor: Todos</option>';
+                    data.data.forEach(u => {
+                        select.innerHTML += `<option value="${u.id}">${escapeHtml(u.nombre)}</option>`;
+                    });
+                }
+            } catch (e) {
+                console.error('Error fetching vendedores:', e);
+            }
+        }
+
+        function onPeriodoChange() {
+            const periodo = document.getElementById('filterPeriodo').value;
+            const customRange = document.getElementById('customDateRange');
+            if (periodo === 'custom') {
+                customRange.style.removeProperty('display');
+                customRange.style.display = 'flex';
+            } else {
+                customRange.style.display = 'none';
+                applyFilters();
+            }
+        }
+
+        function handleVentaSearch() {
+            const input = document.getElementById('ventaSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearVentaSearch');
+            if (btnClear) {
+                btnClear.style.display = query.length > 0 ? 'inline-block' : 'none';
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 250);
+        }
+
+        function clearVentaSearch() {
+            const input = document.getElementById('ventaSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearVentaSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            applyFilters();
+            input.focus();
+        }
+
+        function applyFilters() {
+            loadSalesHistory(1);
+        }
+
+        function resetAllFilters() {
+            document.getElementById('ventaSearchInput').value = '';
+            const btnClear = document.getElementById('btnClearVentaSearch');
+            if (btnClear) btnClear.style.display = 'none';
+
+            document.getElementById('filterPeriodo').value = 'all';
+            document.getElementById('filterEstado').value = 'all';
+            document.getElementById('filterTipoPago').value = 'all';
+            document.getElementById('filterVendedor').value = 'all';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            document.getElementById('customDateRange').style.display = 'none';
+
+            loadSalesHistory(1);
+        }
+
         async function loadSalesHistory(page = 1) {
             currentPage = page;
-            const urlParams = new URLSearchParams(window.location.search);
-            const filter = urlParams.get('filter') || 'all';
-            const startDate = urlParams.get('start_date') || '';
-            const endDate = urlParams.get('end_date') || '';
+            const search = (document.getElementById('ventaSearchInput')?.value || '').trim();
+            const periodo = document.getElementById('filterPeriodo')?.value || 'all';
+            const estado = document.getElementById('filterEstado')?.value || 'all';
+            const tipoPago = document.getElementById('filterTipoPago')?.value || 'all';
+            const vendedor = document.getElementById('filterVendedor')?.value || 'all';
+            const startDate = document.getElementById('filterStartDate')?.value || '';
+            const endDate = document.getElementById('filterEndDate')?.value || '';
 
-            let url = `../backend/api.php?route=get_ventas&filter=${encodeURIComponent(filter)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&limit=${itemsPerPage}&page=${page}`;
+            const params = new URLSearchParams({
+                route: 'get_ventas',
+                filter: periodo,
+                start_date: startDate,
+                end_date: endDate,
+                search: search,
+                estado: estado,
+                tipo_pago: tipoPago,
+                vendedor: vendedor,
+                limit: itemsPerPage,
+                page: page
+            });
 
             try {
-                const res = await fetch(url);
+                const res = await fetch(`../backend/api.php?${params.toString()}`);
                 const data = await res.json();
                 const tbody = document.getElementById('salesTableBody');
                 tbody.innerHTML = '';
@@ -975,6 +1130,7 @@ $end_date = $_GET['end_date'] ?? '';
                         const rowNumber = offset + index + 1;
                         let statusBadge = '<span class="badge bg-success">Completada</span>';
                         if (v.estado === 'cancelado') statusBadge = '<span class="badge bg-danger">Cancelada</span>';
+                        else if (v.estado === 'pendiente') statusBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
 
                         const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('ventas.gestionar') : true);
 
@@ -1013,9 +1169,14 @@ $end_date = $_GET['end_date'] ?? '';
 
                     renderPagination(data.total, itemsPerPage, page);
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No hay registros de ventas para el periodo seleccionado</td></tr>`;
-                    document.getElementById('totalRevenue').textContent = formatCurrency(0);
-                    document.getElementById('totalProfit').textContent = formatCurrency(0);
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No se encontraron ventas.</td></tr>`;
+                    if (data.totales_periodo) {
+                        document.getElementById('totalRevenue').textContent = formatCurrency(data.totales_periodo.total_ingresos);
+                        document.getElementById('totalProfit').textContent = formatCurrency(data.totales_periodo.total_ganancias);
+                    } else {
+                        document.getElementById('totalRevenue').textContent = formatCurrency(0);
+                        document.getElementById('totalProfit').textContent = formatCurrency(0);
+                    }
                     const nav = document.getElementById('salesPagination');
                     if (nav) nav.innerHTML = '';
                 }
