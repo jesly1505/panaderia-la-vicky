@@ -22,6 +22,11 @@ class VentaController {
         $filter = $_GET['filter'] ?? 'all';
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $estado = isset($_GET['estado']) ? trim($_GET['estado']) : '';
+        $tipoPago = isset($_GET['tipo_pago']) ? trim($_GET['tipo_pago']) : '';
+        $vendedor = isset($_GET['vendedor']) ? trim($_GET['vendedor']) : '';
+
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
         $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
         if (isset($_GET['page']) && $limit !== null && $offset === null) {
@@ -29,9 +34,9 @@ class VentaController {
             $offset = ($page - 1) * $limit;
         }
 
-        $ventas = $this->ventaModel->readAll($filter, $startDate, $endDate, $limit, $offset);
-        $total = $this->ventaModel->countAll($filter, $startDate, $endDate);
-        $totals = $this->ventaModel->getTotals($filter, $startDate, $endDate);
+        $ventas = $this->ventaModel->readAll($filter, $startDate, $endDate, $limit, $offset, $search, $estado, $tipoPago, $vendedor);
+        $total = $this->ventaModel->countAll($filter, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
+        $totals = $this->ventaModel->getTotals($filter, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
 
         echo json_encode([
             'success' => true, 
@@ -39,6 +44,12 @@ class VentaController {
             'total' => $total, 
             'totales_periodo' => $totals
         ], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function getVendedores(): void {
+        header('Content-Type: application/json');
+        $vendedores = $this->ventaModel->getVendedores();
+        echo json_encode(['success' => true, 'data' => $vendedores], JSON_UNESCAPED_UNICODE);
     }
 
     public function createDirecta() {

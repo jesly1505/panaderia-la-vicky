@@ -16,8 +16,56 @@ class VentaModel {
         $this->productoModel = $productoModel;
     }
 
-    public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '', ?int $limit = null, ?int $offset = null) {
+    private function buildWhereClause(string $filterType = 'all', string $startDate = '', string $endDate = '', string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = ''): array {
+        $conditions = [];
+        $params = [];
+
         $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
+        if (!empty($dateCondition)) {
+            $conditions[] = $dateCondition;
+        }
+
+        if (!empty($search)) {
+            $conditions[] = "(COALESCE(c.nombre, cp.nombre, 'Consumidor Final') LIKE :search OR u.nombre LIKE :search2 OR v.id LIKE :search3)";
+            $params[':search'] = "%" . $search . "%";
+            $params[':search2'] = "%" . $search . "%";
+            $params[':search3'] = "%" . $search . "%";
+        }
+
+        if (!empty($estado) && $estado !== 'all') {
+            if ($estado === 'completada' || $estado === 'completado') {
+                $conditions[] = "v.estado = 'completado'";
+            } elseif ($estado === 'anulada' || $estado === 'cancelado' || $estado === 'cancelada') {
+                $conditions[] = "v.estado = 'cancelado'";
+            } elseif ($estado === 'pendiente') {
+                $conditions[] = "v.estado = 'pendiente'";
+            } else {
+                $conditions[] = "v.estado = :estado";
+                $params[':estado'] = $estado;
+            }
+        }
+
+        if (!empty($tipoPago) && $tipoPago !== 'all') {
+            $conditions[] = "v.tipo_pago = :tipo_pago";
+            $params[':tipo_pago'] = $tipoPago;
+        }
+
+        if (!empty($vendedor) && $vendedor !== 'all') {
+            if (is_numeric($vendedor)) {
+                $conditions[] = "v.usuario_id = :usuario_id";
+                $params[':usuario_id'] = (int)$vendedor;
+            } else {
+                $conditions[] = "u.nombre = :vendedor_nombre";
+                $params[':vendedor_nombre'] = $vendedor;
+            }
+        }
+
+        $whereSql = !empty($conditions) ? implode(" AND ", $conditions) : "1=1";
+        return ['sql' => $whereSql, 'params' => $params];
+    }
+
+    public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '', ?int $limit = null, ?int $offset = null, string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = '') {
+        $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
         $query = "SELECT v.*, p.estado as estado_pedido, u.nombre as vendedor,
                          COALESCE(c.nombre, cp.nombre, 'Consumidor Final') as cliente_nombre
                   FROM ventas v 
@@ -25,12 +73,15 @@ class VentaModel {
                   LEFT JOIN clientes cp ON p.cliente_id = cp.id
                   LEFT JOIN clientes c ON v.cliente_id = c.id
                   LEFT JOIN usuarios u ON v.usuario_id = u.id
-                  WHERE $dateCondition
+                  WHERE " . $where['sql'] . "
                   ORDER BY v.fecha_venta DESC";
         if ($limit !== null && $offset !== null) {
             $query .= " LIMIT :limit OFFSET :offset";
         }
         $stmt = $this->conn->prepare($query);
+        foreach ($where['params'] as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
         if ($limit !== null && $offset !== null) {
             $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
@@ -39,11 +90,20 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function countAll(string $filterType = 'all', string $startDate = '', string $endDate = ''): int {
+    public function countAll(string $filterType = 'all', string $startDate = '', string $endDate = '', string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = ''): int {
         try {
-            $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
-            $query = "SELECT COUNT(*) FROM ventas v WHERE $dateCondition";
+            $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
+            $query = "SELECT COUNT(*) 
+                      FROM ventas v 
+                      LEFT JOIN pedidos p ON v.pedido_id = p.id
+                      LEFT JOIN clientes cp ON p.cliente_id = cp.id
+                      LEFT JOIN clientes c ON v.cliente_id = c.id
+                      LEFT JOIN usuarios u ON v.usuario_id = u.id
+                      WHERE " . $where['sql'];
             $stmt = $this->conn->prepare($query);
+            foreach ($where['params'] as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
             $stmt->execute();
             return (int) $stmt->fetchColumn();
         } catch (\Exception $e) {
@@ -51,14 +111,21 @@ class VentaModel {
         }
     }
 
-    public function getTotals(string $filterType = 'all', string $startDate = '', string $endDate = ''): array {
+    public function getTotals(string $filterType = 'all', string $startDate = '', string $endDate = '', string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = ''): array {
         try {
-            $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
-            $query = "SELECT COALESCE(SUM(total), 0) as total_ingresos, 
-                             COALESCE(SUM(ganancias), 0) as total_ganancias 
+            $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
+            $query = "SELECT COALESCE(SUM(v.total), 0) as total_ingresos, 
+                             COALESCE(SUM(v.ganancias), 0) as total_ganancias 
                       FROM ventas v 
-                      WHERE $dateCondition AND v.estado != 'cancelado'";
+                      LEFT JOIN pedidos p ON v.pedido_id = p.id
+                      LEFT JOIN clientes cp ON p.cliente_id = cp.id
+                      LEFT JOIN clientes c ON v.cliente_id = c.id
+                      LEFT JOIN usuarios u ON v.usuario_id = u.id
+                      WHERE " . $where['sql'] . " AND v.estado != 'cancelado'";
             $stmt = $this->conn->prepare($query);
+            foreach ($where['params'] as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
             $stmt->execute();
             $res = $stmt->fetch(PDO::FETCH_ASSOC);
             return [
@@ -67,6 +134,20 @@ class VentaModel {
             ];
         } catch (\Exception $e) {
             return ['total_ingresos' => 0.0, 'total_ganancias' => 0.0];
+        }
+    }
+
+    public function getVendedores(): array {
+        try {
+            $query = "SELECT DISTINCT u.id, u.nombre 
+                      FROM usuarios u 
+                      WHERE u.eliminado = 0 
+                      ORDER BY u.nombre ASC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Exception $e) {
+            return [];
         }
     }
 
