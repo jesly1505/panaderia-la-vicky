@@ -91,6 +91,33 @@ $pageHeader = "Catálogo y Recetas de Productos";
             padding: 10px;
             margin-bottom: 8px;
         }
+
+        .pagination .page-link {
+            color: var(--primary, #c0560f);
+            border-color: #dee2e6;
+            padding: 0.5rem 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pagination .page-link:hover {
+            background-color: var(--primary-light, #fdf4ed);
+            color: var(--primary, #c0560f);
+            border-color: var(--primary, #c0560f);
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary, #c0560f);
+            border-color: var(--primary, #c0560f);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(192, 86, 15, 0.3);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+        }
     </style>
 </head>
 
@@ -155,6 +182,12 @@ $pageHeader = "Catálogo y Recetas de Productos";
                         <div class="spinner-border text-primary mb-3" role="status"></div>
                         <p>Cargando catálogo de productos...</p>
                     </div>
+                </div>
+
+                <!-- Paginación de Productos -->
+                <div class="mt-5 mb-4 d-flex flex-column align-items-center justify-content-center" id="catalogPaginationWrapper">
+                    <div id="paginationInfo" class="text-muted small mb-2 fw-semibold"></div>
+                    <nav aria-label="Paginación de catálogo" id="catalogPagination"></nav>
                 </div>
             </div>
         </div>
@@ -332,6 +365,8 @@ $pageHeader = "Catálogo y Recetas de Productos";
         let allProductos = [];
         let currentCategoria = '';
         let currentSearch = '';
+        let currentPage = 1;
+        const itemsPerPage = 8;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadInsumos();
@@ -352,6 +387,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
 
         async function loadProductos(categoria = '') {
             currentCategoria = categoria;
+            currentPage = 1;
             let url = '../backend/api.php?route=get_productos';
             if (categoria) {
                 url = `../backend/api.php?route=get_productos_by_categoria&categoria=${encodeURIComponent(categoria)}`;
@@ -379,6 +415,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 btnClear.style.display = query.length > 0 ? 'inline-block' : 'none';
             }
             currentSearch = query;
+            currentPage = 1;
             renderProductosGrid();
         }
 
@@ -388,15 +425,26 @@ $pageHeader = "Catálogo y Recetas de Productos";
             const btnClear = document.getElementById('btnClearProductSearch');
             if (btnClear) btnClear.style.display = 'none';
             currentSearch = '';
+            currentPage = 1;
             renderProductosGrid();
             input.focus();
         }
 
         function filterCategoria(cat, btn) {
             currentCategoria = cat;
+            currentPage = 1;
             document.querySelectorAll('#categoryFilters .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             loadProductos(cat);
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderProductosGrid();
+            const categorySection = document.getElementById('categoryFilters');
+            if (categorySection) {
+                categorySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function renderProductosGrid() {
@@ -411,13 +459,26 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 return matchesCat && matchesName;
             });
 
-            if (filtered.length > 0) {
-                countBadge.textContent = `Mostrando ${filtered.length} producto(s)`;
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / itemsPerPage);
+
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            } else if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            if (total > 0) {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, total);
+                const pageProducts = filtered.slice(startIndex, endIndex);
+
+                countBadge.textContent = `Mostrando ${startIndex + 1}–${endIndex} de ${total} productos`;
 
                 const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
                 const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('productos.eliminar') : true);
 
-                filtered.forEach(p => {
+                pageProducts.forEach(p => {
                     let catEmoji = '🍞';
                     let catBg = 'bg-warning text-dark';
                     if (p.categoria === 'Pan Salado') { catEmoji = '🥖'; catBg = 'bg-info text-white'; }
@@ -478,6 +539,8 @@ $pageHeader = "Catálogo y Recetas de Productos";
                         </div>
                     `;
                 });
+
+                renderCatalogPagination(total, itemsPerPage, currentPage);
             } else {
                 countBadge.textContent = '0 productos encontrados';
                 container.innerHTML = `
@@ -486,7 +549,81 @@ $pageHeader = "Catálogo y Recetas de Productos";
                         <p>No se encontraron productos.</p>
                     </div>
                 `;
+                const nav = document.getElementById('catalogPagination');
+                const info = document.getElementById('paginationInfo');
+                if (nav) nav.innerHTML = '';
+                if (info) info.textContent = '';
             }
+        }
+
+        function renderCatalogPagination(total, limit, page) {
+            const totalPages = Math.ceil(total / limit);
+            const nav = document.getElementById('catalogPagination');
+            const info = document.getElementById('paginationInfo');
+            if (!nav) return;
+
+            if (total === 0 || totalPages <= 1) {
+                nav.innerHTML = '';
+                if (info) info.textContent = total > 0 ? `Mostrando ${total} de ${total} productos` : '';
+                return;
+            }
+
+            const startItem = (page - 1) * limit + 1;
+            const endItem = Math.min(page * limit, total);
+            if (info) {
+                info.textContent = `Mostrando ${startItem}–${endItem} de ${total} productos`;
+            }
+
+            let html = '<ul class="pagination justify-content-center mb-0">';
+
+            // Anterior
+            const prevDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="goToPage(${page - 1}); return false;">Anterior</a></li>`;
+
+            // Páginas numeradas
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const active = i === page ? ' active' : '';
+                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
+                }
+            } else {
+                let startPage = Math.max(1, page - 2);
+                let endPage = Math.min(totalPages, page + 2);
+
+                if (page <= 3) {
+                    startPage = 1;
+                    endPage = 5;
+                } else if (page >= totalPages - 2) {
+                    startPage = totalPages - 4;
+                    endPage = totalPages;
+                }
+
+                if (startPage > 1) {
+                    html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(1); return false;">1</a></li>`;
+                    if (startPage > 2) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const active = i === page ? ' active' : '';
+                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+                    html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${totalPages}); return false;">${totalPages}</a></li>`;
+                }
+            }
+
+            // Siguiente
+            const nextDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="goToPage(${page + 1}); return false;">Siguiente</a></li>`;
+
+            html += '</ul>';
+            nav.innerHTML = html;
         }
 
         function addIngredienteRow() {
