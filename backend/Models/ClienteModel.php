@@ -125,13 +125,14 @@ class ClienteModel
     {
         // No duplicate check needed here
         try {
-            $query = "SELECT v.*, p.fecha_pedido 
+            $query = "SELECT v.*, COALESCE(p.fecha_pedido, v.fecha_venta) as fecha_pedido 
                   FROM ventas v 
-                  JOIN pedidos p ON v.pedido_id = p.id 
-                  WHERE p.cliente_id = :cliente_id 
+                  LEFT JOIN pedidos p ON v.pedido_id = p.id 
+                  WHERE (p.cliente_id = :cliente_id OR v.cliente_id = :cliente_id2)
                   ORDER BY v.fecha_venta DESC";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":cliente_id", $cliente_id);
+            $stmt->bindParam(":cliente_id2", $cliente_id);
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {

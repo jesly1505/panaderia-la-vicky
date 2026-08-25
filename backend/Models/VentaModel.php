@@ -16,17 +16,58 @@ class VentaModel {
         $this->productoModel = $productoModel;
     }
 
-    public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '') {
+    public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '', ?int $limit = null, ?int $offset = null) {
         $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
-        $query = "SELECT v.*, p.estado as estado_pedido, u.nombre as vendedor 
+        $query = "SELECT v.*, p.estado as estado_pedido, u.nombre as vendedor,
+                         COALESCE(c.nombre, cp.nombre, 'Consumidor Final') as cliente_nombre
                   FROM ventas v 
                   LEFT JOIN pedidos p ON v.pedido_id = p.id
+                  LEFT JOIN clientes cp ON p.cliente_id = cp.id
+                  LEFT JOIN clientes c ON v.cliente_id = c.id
                   LEFT JOIN usuarios u ON v.usuario_id = u.id
                   WHERE $dateCondition
                   ORDER BY v.fecha_venta DESC";
+        if ($limit !== null && $offset !== null) {
+            $query .= " LIMIT :limit OFFSET :offset";
+        }
         $stmt = $this->conn->prepare($query);
+        if ($limit !== null && $offset !== null) {
+            $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countAll(string $filterType = 'all', string $startDate = '', string $endDate = ''): int {
+        try {
+            $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
+            $query = "SELECT COUNT(*) FROM ventas v WHERE $dateCondition";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    public function getTotals(string $filterType = 'all', string $startDate = '', string $endDate = ''): array {
+        try {
+            $dateCondition = \App\Helpers\DateFilterHelper::getSqlCondition('v.fecha_venta', $filterType, $startDate, $endDate);
+            $query = "SELECT COALESCE(SUM(total), 0) as total_ingresos, 
+                             COALESCE(SUM(ganancias), 0) as total_ganancias 
+                      FROM ventas v 
+                      WHERE $dateCondition AND v.estado != 'cancelado'";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+            return [
+                'total_ingresos' => (float)($res['total_ingresos'] ?? 0),
+                'total_ganancias' => (float)($res['total_ganancias'] ?? 0),
+            ];
+        } catch (\Exception $e) {
+            return ['total_ingresos' => 0.0, 'total_ganancias' => 0.0];
+        }
     }
 
     public function createDirecta($data, ?int $usuario_id = null) {
@@ -37,6 +78,7 @@ class VentaModel {
             $impuestos = Money::round($data['impuestos'] ?? 0);
             $descuento = Money::round($data['descuento'] ?? 0);
             $total = Money::round($data['total'] ?? 0);
+            $cliente_id = !empty($data['cliente_id']) ? (int)$data['cliente_id'] : null;
             $detalles = $data['detalles'] ?? [];
             $pagos = $data['pagos'] ?? [];
 
@@ -49,9 +91,10 @@ class VentaModel {
 
             // 1. Insertar Venta
             $tipo_pago = $pagos[0]['metodo'] ?? 'efectivo';
-            $query = "INSERT INTO ventas (pedido_id, subtotal, impuestos, descuento, total, tipo_pago, ganancias, estado, usuario_id) 
-                      VALUES (NULL, :subtotal, :impuestos, :descuento, :total, :tipo_pago, :ganancias, 'completado', :usuario_id)";
+            $query = "INSERT INTO ventas (pedido_id, cliente_id, subtotal, impuestos, descuento, total, tipo_pago, ganancias, estado, usuario_id) 
+                      VALUES (NULL, :cliente_id, :subtotal, :impuestos, :descuento, :total, :tipo_pago, :ganancias, 'completado', :usuario_id)";
             $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":cliente_id", $cliente_id);
             $stmt->bindParam(":subtotal", $subtotal);
             $stmt->bindParam(":impuestos", $impuestos);
             $stmt->bindParam(":descuento", $descuento);
@@ -263,11 +306,17 @@ class VentaModel {
     }
 
     public function getVentaConDetalles($id) {
-        $query = "SELECT v.*, u.nombre as vendedor, c.nombre as cliente_nombre, c.email as cliente_email, c.direccion as cliente_direccion 
+        $query = "SELECT v.*, u.nombre as vendedor, 
+                         COALESCE(c.nombre, cp.nombre) as cliente_nombre, 
+                         COALESCE(c.email, cp.email) as cliente_email, 
+                         COALESCE(c.direccion, cp.direccion) as cliente_direccion,
+                         COALESCE(c.dni, cp.dni) as cliente_dni,
+                         COALESCE(c.telefono, cp.telefono) as cliente_telefono
                   FROM ventas v 
                   LEFT JOIN usuarios u ON v.usuario_id = u.id 
                   LEFT JOIN pedidos p ON v.pedido_id = p.id 
-                  LEFT JOIN clientes c ON p.cliente_id = c.id 
+                  LEFT JOIN clientes cp ON p.cliente_id = cp.id 
+                  LEFT JOIN clientes c ON v.cliente_id = c.id
                   WHERE v.id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
