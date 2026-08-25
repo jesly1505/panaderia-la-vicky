@@ -85,16 +85,26 @@ class ClienteModel
         }
     }
 
-    public function readAll($limit = null, $offset = null)
+    public function readAll($limit = null, $offset = null, string $search = '')
     {
         try {
-            $query = "SELECT  id,nombre,dni,telefono,email,direccion FROM " . $this->table_name . " 
-                  WHERE eliminado = false 
-                  ORDER BY nombre ASC";
+            $query = "SELECT id, nombre, dni, telefono, email, direccion FROM " . $this->table_name . " 
+                  WHERE eliminado = false";
+            if (!empty($search)) {
+                $query .= " AND (nombre LIKE :search OR dni LIKE :search2 OR telefono LIKE :search3 OR email LIKE :search4)";
+            }
+            $query .= " ORDER BY nombre ASC";
             if ($limit !== null && $offset !== null) {
                 $query .= " LIMIT :limit OFFSET :offset";
             }
             $stmt = $this->conn->prepare($query);
+            if (!empty($search)) {
+                $term = "%" . $search . "%";
+                $stmt->bindValue(':search', $term);
+                $stmt->bindValue(':search2', $term);
+                $stmt->bindValue(':search3', $term);
+                $stmt->bindValue(':search4', $term);
+            }
             if ($limit !== null && $offset !== null) {
                 $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
                 $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
@@ -108,11 +118,21 @@ class ClienteModel
     }
 
     // Count total non‑deleted clients
-    public function countAll()
+    public function countAll(string $search = ''): int
     {
         try {
             $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false";
+            if (!empty($search)) {
+                $query .= " AND (nombre LIKE :search OR dni LIKE :search2 OR telefono LIKE :search3 OR email LIKE :search4)";
+            }
             $stmt = $this->conn->prepare($query);
+            if (!empty($search)) {
+                $term = "%" . $search . "%";
+                $stmt->bindValue(':search', $term);
+                $stmt->bindValue(':search2', $term);
+                $stmt->bindValue(':search3', $term);
+                $stmt->bindValue(':search4', $term);
+            }
             $stmt->execute();
             return (int) $stmt->fetchColumn();
         } catch (PDOException $e) {
