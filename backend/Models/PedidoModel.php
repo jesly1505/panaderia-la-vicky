@@ -67,28 +67,27 @@ class PedidoModel {
                   LEFT JOIN usuarios u ON p.usuario_id = u.id
                   WHERE p.eliminado = false
                   ORDER BY p.fecha_pedido DESC";
-        if (is_int($limit) && $limit > 0) {
-            $query .= " LIMIT :limit";
-            if (is_int($offset) && $offset >= 0) {
-                $query .= " OFFSET :offset";
-            }
+        if ($limit !== null && $offset !== null) {
+            $query .= " LIMIT :limit OFFSET :offset";
         }
         $stmt = $this->conn->prepare($query);
-        if (is_int($limit) && $limit > 0) {
-            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            if (is_int($offset) && $offset >= 0) {
-                $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            }
+        if ($limit !== null && $offset !== null) {
+            $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         }
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
     public function countAll() {
-        $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM pedidos WHERE eliminado = false");
-        $stmt->execute();
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        return $row ? (int)$row['total'] : 0;
+        try {
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
     }
 
     public function updateEstado($pedido_id, $estado, $hora_real = null, ?int $usuario_id = null) {

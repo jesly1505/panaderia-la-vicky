@@ -42,28 +42,27 @@ $pageHeader = "Gestión de Pedidos";
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                                 <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
                                 <div class="d-flex gap-2">
-    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos(currentPage)">
-        <i class="fas fa-sync-alt"></i> Actualizar
-    </button>
-    <button class="btn btn-sm btn-primary" id="btnNuevoPedidoEspecial"><i class="fas fa-plus"></i> + Nuevo Pedido Especial</button>
-</div>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos(currentPage)">
+                                        <i class="fas fa-sync-alt"></i> Actualizar
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" id="btnNuevoPedidoEspecial"><i class="fas fa-plus"></i> + Nuevo Pedido Especial</button>
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th>N.º / Fecha</th>
+                                                <th class="ps-4">N.º / Fecha</th>
                                                 <th>Cliente</th>
-                                                
                                                 <th>Estado</th>
                                                 <th>Total</th>
-                                                <th class="text-end">Acciones</th>
+                                                <th class="text-end pe-4">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="pedidosTableBody">
                                             <tr>
-                                                <td colspan="6" class="text-center py-5 text-muted">
+                                                <td colspan="5" class="text-center py-5 text-muted">
                                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                                     Cargando historial...
                                                 </td>
@@ -71,6 +70,7 @@ $pageHeader = "Gestión de Pedidos";
                                         </tbody>
                                     </table>
                                 </div>
+                                <div id="pedidosPagination" class="p-3 d-flex justify-content-end"></div>
                             </div>
                             <div id="pedidoPagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
@@ -209,6 +209,10 @@ $pageHeader = "Gestión de Pedidos";
     <?php include 'includes/footer.php'; ?>
     <script>
         let availableProducts = [];
+        let pedidosData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
         // Open new order modal handler
         document.getElementById('btnNuevoPedidoEspecial')?.addEventListener('click', () => {
             // Reset form fields and cart
@@ -228,7 +232,7 @@ $pageHeader = "Gestión de Pedidos";
         document.addEventListener('DOMContentLoaded', async () => {
             await loadClientes();
             await loadProductos();
-            await loadPedidos();
+            await loadPedidos(1);
 
             // Set default delivery date to tomorrow
             const tomorrow = new Date();
@@ -412,12 +416,13 @@ $pageHeader = "Gestión de Pedidos";
             currentPage = page;
             try {
                 const offset = (page - 1) * itemsPerPage;
-                const res = await fetch(`../backend/api.php?route=get_pedidos&page=${page}&limit=${itemsPerPage}`);
+                const res = await fetch(`../backend/api.php?route=get_pedidos&limit=${itemsPerPage}&offset=${offset}`);
                 const data = await res.json();
                 const tbody = document.getElementById('pedidosTableBody');
                 tbody.innerHTML = '';
 
                 if (data.success && data.data && data.data.length > 0) {
+                    pedidosData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.gestionar') : true);
 
                     data.data.forEach((p, index) => {
@@ -431,27 +436,32 @@ $pageHeader = "Gestión de Pedidos";
 
                         tbody.innerHTML += `
                             <tr>
-                                <td>
+                                <td class="ps-4">
                                     <div class="fw-bold text-dark">${rowNumber}</div>
-                                    <small class="text-muted"><i class="far fa-clock me-1"></i>${p.fecha_entrega}</small>
+                                    <small class="text-muted"><i class="far fa-clock me-1"></i>${escapeHtml(p.fecha_entrega || '')}</small>
                                 </td>
-                                <td>${p.cliente_nombre || '<span class="text-muted">Consumidor Final</span>'}</td>
-                                
+                                <td>${escapeHtml(p.cliente_nombre || 'Consumidor Final')}</td>
                                 <td><span class="badge ${badge} badge-status">${estadoTexto}</span></td>
                                 <td class="fw-bold text-dark">${formatCurrency(p.total)}</td>
-                                <td class="text-end">
-                                    ${TA.view(`viewDetails(${p.id}, ${p.total})`, 'Detalles')}
-                                    ${p.estado === 'pendiente' && puedeGestionar ? TA.edit(`openEditPedidoModal(${p.id}, '${p.cliente_nombre || ''}', '${escapeHtml(p.fecha_entrega || '')}', '${escapeHtml(p.hora_entrega || '')}')`, 'Editar pedido') : ''}
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-info me-1" onclick="viewDetails(${p.id}, ${p.total})" title="Detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    ${p.estado === 'pendiente' && puedeGestionar ? `
+                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditPedidoModal(${p.id})" title="Editar">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    ` : ''}
                                     ${p.estado !== 'entregado' && p.estado !== 'cancelado' && puedeGestionar ? `
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                                                 Estado
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'en_proceso')">En Proceso</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'entregado')">Entregado</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'en_proceso'); return false;">En Proceso</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'entregado'); return false;">Entregado</a></li>
                                                 <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus(${p.id}, 'cancelado')">Cancelar</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus(${p.id}, 'cancelado'); return false;">Cancelar</a></li>
                                             </ul>
                                         </div>
                                     ` : ''}
@@ -459,10 +469,12 @@ $pageHeader = "Gestión de Pedidos";
                             </tr>
                         `;
                     });
+
                     renderPagination(data.total, itemsPerPage, page);
                 } else {
                     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
-                    document.getElementById('pedidoPagination').innerHTML = '';
+                    const nav = document.getElementById('pedidosPagination');
+                    if (nav) nav.innerHTML = '';
                 }
             } catch (e) {
                 console.error('Error fetching orders:', e);
@@ -471,25 +483,68 @@ $pageHeader = "Gestión de Pedidos";
 
         function renderPagination(total, limit, page) {
             const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('pedidoPagination');
+            const nav = document.getElementById('pedidosPagination');
+            if (!nav) return;
             nav.innerHTML = '';
             if (totalPages <= 1) return;
-            let html = '<ul class="pagination justify-content-center">';
+
+            let html = '<nav aria-label="Paginación de pedidos"><ul class="pagination justify-content-end mb-0">';
+
+            // Primera
+            const firstDisabled = page <= 1 ? ' disabled' : '';
+            html += `<li class="page-item${firstDisabled}"><a class="page-link" href="#" onclick="loadPedidos(1); return false;">Primera</a></li>`;
+
+            // Anterior
             const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page - 1}); return false;">&laquo;</a></li>`;
-            const maxVisible = 5;
-            let start = Math.max(1, page - Math.floor(maxVisible / 2));
-            let end = Math.min(totalPages, start + maxVisible - 1);
-            if (end - start < maxVisible - 1) {
-                start = Math.max(1, end - maxVisible + 1);
+            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page - 1}); return false;">Anterior</a></li>`;
+
+            // Páginas numeradas
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const active = i === page ? ' active' : '';
+                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadPedidos(${i}); return false;">${i}</a></li>`;
+                }
+            } else {
+                let startPage = Math.max(1, page - 2);
+                let endPage = Math.min(totalPages, page + 2);
+
+                if (page <= 3) {
+                    startPage = 1;
+                    endPage = 5;
+                } else if (page >= totalPages - 2) {
+                    startPage = totalPages - 4;
+                    endPage = totalPages;
+                }
+
+                if (startPage > 1) {
+                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadPedidos(1); return false;">1</a></li>`;
+                    if (startPage > 2) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const active = i === page ? ' active' : '';
+                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadPedidos(${i}); return false;">${i}</a></li>`;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                    }
+                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadPedidos(${totalPages}); return false;">${totalPages}</a></li>`;
+                }
             }
-            for (let i = start; i <= end; i++) {
-                const active = i === page ? ' active' : '';
-                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadPedidos(${i}); return false;">${i}</a></li>`;
-            }
+
+            // Siguiente
             const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page + 1}); return false;">&raquo;</a></li>`;
-            html += '</ul>';
+            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${page + 1}); return false;">Siguiente</a></li>`;
+
+            // Última
+            const lastDisabled = page >= totalPages ? ' disabled' : '';
+            html += `<li class="page-item${lastDisabled}"><a class="page-link" href="#" onclick="loadPedidos(${totalPages}); return false;">Última</a></li>`;
+
+            html += '</ul></nav>';
             nav.innerHTML = html;
         }
 
@@ -507,7 +562,7 @@ $pageHeader = "Gestión de Pedidos";
                     data.data.forEach(d => {
                         tbody.innerHTML += `
                             <tr>
-                                <td class="ps-3 fw-semibold">${d.producto_nombre}</td>
+                                <td class="ps-3 fw-semibold">${escapeHtml(d.producto_nombre || '')}</td>
                                 <td>${d.cantidad}</td>
                                 <td class="text-end pe-3">${formatCurrency(d.subtotal)}</td>
                             </tr>
@@ -540,17 +595,24 @@ $pageHeader = "Gestión de Pedidos";
             }
         }
 
-        function openEditPedidoModal(id, clienteNombre, fecha, hora) {
-            document.getElementById('editPedidoIdInput').value = id;
-            document.getElementById('editPedidoId').textContent = id;
-            document.getElementById('editPedidoFecha').value = fecha.split(' ')[0];
-            document.getElementById('editPedidoHora').value = hora || '';
+        function openEditPedidoModal(id) {
+            const p = pedidosData.find(x => x.id == id);
+            if (!p) return;
+
+            document.getElementById('editPedidoIdInput').value = p.id;
+            document.getElementById('editPedidoId').textContent = p.id;
+            document.getElementById('editPedidoFecha').value = (p.fecha_entrega || '').split(' ')[0];
+            document.getElementById('editPedidoHora').value = p.hora_entrega || '';
             const select = document.getElementById('editPedidoCliente');
-            let found = false;
-            for (let opt of select.options) {
-                if (opt.text === clienteNombre) { opt.selected = true; found = true; break; }
+            if (p.cliente_id) {
+                select.value = p.cliente_id;
+            } else {
+                let found = false;
+                for (let opt of select.options) {
+                    if (opt.text === p.cliente_nombre) { opt.selected = true; found = true; break; }
+                }
+                if (!found) select.value = '';
             }
-            if (!found) select.value = '';
             new bootstrap.Modal(document.getElementById('editPedidoModal')).show();
         }
 

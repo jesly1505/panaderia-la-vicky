@@ -19,20 +19,15 @@ class PedidoController {
 
     public function getAll() {
         header('Content-Type: application/json');
-        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
-
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+        if (isset($_GET['page']) && $limit !== null && $offset === null) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
         $pedidos = $this->pedidoModel->readAll($limit, $offset);
         $total = $this->pedidoModel->countAll();
-
-        echo json_encode([
-            'success' => true,
-            'data' => $pedidos,
-            'total' => $total,
-            'page' => $page,
-            'limit' => $limit
-        ]);
+        echo json_encode(['success' => true, 'data' => $pedidos, 'total' => $total]);
     }
 
     public function create() {

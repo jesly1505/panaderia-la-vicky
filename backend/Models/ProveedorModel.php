@@ -3,17 +3,20 @@ namespace App\Models;
 
 use PDO;
 
-class ProveedorModel {
+class ProveedorModel
+{
     private $conn;
     private $table_name = "proveedores";
 
-    public function __construct(PDO $db) {
+    public function __construct(PDO $db)
+    {
         $this->conn = $db;
     }
 
-    public function create($nombre, $contacto, $telefono, $email) {
+    public function create($nombre, $contacto, $telefono, $email)
+    {
         $query = "INSERT INTO " . $this->table_name . " (nombre, contacto, telefono, email, eliminado) 
-                  VALUES (:nombre, :contacto, :telefono, :email, false)";
+                  VALUES (:nombre, :contacto, :telefono, :email, 0)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":contacto", $contacto);
@@ -23,9 +26,10 @@ class ProveedorModel {
     }
 
     // Existing method unchanged
-    public function readAll() {
+    public function readAll()
+    {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE eliminado = false 
+                  WHERE eliminado = 0 
                   ORDER BY nombre ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -35,12 +39,13 @@ class ProveedorModel {
     /**
      * Get total count of non-deleted providers.
      */
-    public function countAll() {
-        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE eliminado = false";
+    public function countAll()
+    {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table_name . " WHERE eliminado = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row['total'] ?? 0;
+        return (int)($row['total'] ?? 0);
     }
 
     /**
@@ -48,22 +53,24 @@ class ProveedorModel {
      * @param int $limit Number of records per page.
      * @param int $offset Starting offset.
      */
-    public function readPaginated($limit, $offset) {
+    public function readPaginated($limit, $offset)
+    {
         $query = "SELECT * FROM " . $this->table_name . " 
-                  WHERE eliminado = false 
+                  WHERE eliminado = 0 
                   ORDER BY nombre ASC 
                   LIMIT :limit OFFSET :offset";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $nombre, $contacto, $telefono, $email) {
+    public function update($id, $nombre, $contacto, $telefono, $email)
+    {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre, contacto = :contacto, telefono = :telefono, email = :email 
-                  WHERE id = :id AND eliminado = false";
+                  WHERE id = :id AND eliminado = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":nombre", $nombre);
         $stmt->bindParam(":contacto", $contacto);
@@ -73,15 +80,17 @@ class ProveedorModel {
         return $stmt->execute();
     }
 
-    public function delete($id) {
-        $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
+    public function delete($id)
+    {
+        $query = "UPDATE " . $this->table_name . " SET eliminado = 1, deleted_at = NOW() WHERE id = :id AND eliminado = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
-    public function getById($id) {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
+    public function getById($id)
+    {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":id", $id);
         $stmt->execute();
