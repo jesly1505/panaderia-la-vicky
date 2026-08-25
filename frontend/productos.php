@@ -134,6 +134,21 @@ $pageHeader = "Catálogo y Recetas de Productos";
                     </button>
                 </div>
 
+                <!-- Buscador de Productos -->
+                <div class="row mb-4">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white border-end-0 text-muted">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" id="productoSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar producto..." oninput="handleProductoSearch()" autocomplete="off">
+                            <button class="btn btn-outline-secondary border-start-0 bg-white text-muted" type="button" id="btnClearProductSearch" onclick="clearProductoSearch()" title="Limpiar búsqueda" style="display: none;">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Product Grid -->
                 <div class="row g-4" id="productosCatalog">
                     <div class="col-12 text-center py-5 text-muted">
@@ -316,6 +331,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
         let allInsumos = [];
         let allProductos = [];
         let currentCategoria = '';
+        let currentSearch = '';
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadInsumos();
@@ -335,6 +351,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
         }
 
         async function loadProductos(categoria = '') {
+            currentCategoria = categoria;
             let url = '../backend/api.php?route=get_productos';
             if (categoria) {
                 url = `../backend/api.php?route=get_productos_by_categoria&categoria=${encodeURIComponent(categoria)}`;
@@ -343,90 +360,36 @@ $pageHeader = "Catálogo y Recetas de Productos";
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-                const container = document.getElementById('productosCatalog');
-                const countBadge = document.getElementById('productCount');
-                container.innerHTML = '';
-
-                if (data.success && data.data && data.data.length > 0) {
+                if (data.success && data.data) {
                     allProductos = data.data;
-                    countBadge.textContent = `Mostrando ${data.data.length} producto(s)`;
-
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
-                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('productos.eliminar') : true);
-
-                    data.data.forEach(p => {
-                        let catEmoji = '🍞';
-                        let catBg = 'bg-warning text-dark';
-                        if (p.categoria === 'Pan Salado') { catEmoji = '🥖'; catBg = 'bg-info text-white'; }
-                        if (p.categoria === 'Pastelería') { catEmoji = '🎂'; catBg = 'bg-danger text-white'; }
-                        if (p.categoria === 'Bebidas') { catEmoji = '☕'; catBg = 'bg-secondary text-white'; }
-
-                        let stockBadge = '<span class="badge bg-success">En Stock</span>';
-                        if (p.stock_actual <= 0) {
-                            stockBadge = '<span class="badge bg-danger">Agotado</span>';
-                        } else if (p.stock_actual <= p.stock_minimo) {
-                            stockBadge = '<span class="badge bg-warning text-dark">Stock Bajo</span>';
-                        }
-
-                        container.innerHTML += `
-                            <div class="col-12 col-sm-6 col-md-4 col-xl-3">
-                                <div class="card product-card h-100 position-relative">
-                                    <div class="card-body d-flex flex-column text-center">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="category-badge ${catBg}">${p.categoria}</span>
-                                            ${stockBadge}
-                                        </div>
-
-                                        <div class="product-icon-wrapper">
-                                            <span>${catEmoji}</span>
-                                        </div>
-
-                                        <h5 class="fw-bold text-dark mb-1">${p.nombre}</h5>
-                                        <p class="text-muted small text-truncate mb-3" style="max-height: 40px;">${p.descripcion || 'Sin descripción'}</p>
-
-                                        <div class="bg-light p-2 rounded mb-3 mt-auto">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <small class="text-muted">Precio Venta:</small>
-                                                <span class="fw-bold text-primary fs-5">${formatCurrency(p.precio_venta)}</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <small class="text-muted">Stock Disponible:</small>
-                                                <span class="fw-semibold text-dark">${p.stock_actual} unids</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex gap-2">
-                                            ${puedeGestionar ? `
-                                                <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')">
-                                                    <i class="fas fa-industry me-1"></i> Producir
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-primary" onclick="openEditProductoModal(${p.id})">
-                                                    <i class="fas fa-pen"></i>
-                                                </button>
-                                            ` : ''}
-                                            ${puedeEliminar ? `
-                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id}, '${escapeHtml(p.nombre)}')">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
                 } else {
-                    countBadge.textContent = '0 productos encontrados';
-                    container.innerHTML = `
-                        <div class="col-12 text-center py-5 text-muted">
-                            <i class="fas fa-box-open fs-1 mb-3 text-secondary"></i>
-                            <p>No se encontraron productos en esta categoría.</p>
-                        </div>
-                    `;
+                    allProductos = [];
                 }
+                renderProductosGrid();
             } catch (e) {
                 console.error('Error fetching products:', e);
             }
+        }
+
+        function handleProductoSearch() {
+            const input = document.getElementById('productoSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearProductSearch');
+            if (btnClear) {
+                btnClear.style.display = query.length > 0 ? 'inline-block' : 'none';
+            }
+            currentSearch = query;
+            renderProductosGrid();
+        }
+
+        function clearProductoSearch() {
+            const input = document.getElementById('productoSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearProductSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            currentSearch = '';
+            renderProductosGrid();
+            input.focus();
         }
 
         function filterCategoria(cat, btn) {
@@ -434,6 +397,96 @@ $pageHeader = "Catálogo y Recetas de Productos";
             document.querySelectorAll('#categoryFilters .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             loadProductos(cat);
+        }
+
+        function renderProductosGrid() {
+            const container = document.getElementById('productosCatalog');
+            const countBadge = document.getElementById('productCount');
+            container.innerHTML = '';
+
+            const query = currentSearch.toLowerCase();
+            const filtered = allProductos.filter(p => {
+                const matchesCat = !currentCategoria || p.categoria === currentCategoria;
+                const matchesName = !query || (p.nombre && p.nombre.toLowerCase().includes(query));
+                return matchesCat && matchesName;
+            });
+
+            if (filtered.length > 0) {
+                countBadge.textContent = `Mostrando ${filtered.length} producto(s)`;
+
+                const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
+                const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('productos.eliminar') : true);
+
+                filtered.forEach(p => {
+                    let catEmoji = '🍞';
+                    let catBg = 'bg-warning text-dark';
+                    if (p.categoria === 'Pan Salado') { catEmoji = '🥖'; catBg = 'bg-info text-white'; }
+                    if (p.categoria === 'Pastelería') { catEmoji = '🎂'; catBg = 'bg-danger text-white'; }
+                    if (p.categoria === 'Bebidas') { catEmoji = '☕'; catBg = 'bg-secondary text-white'; }
+
+                    let stockBadge = '<span class="badge bg-success">En Stock</span>';
+                    if (p.stock_actual <= 0) {
+                        stockBadge = '<span class="badge bg-danger">Agotado</span>';
+                    } else if (p.stock_actual <= p.stock_minimo) {
+                        stockBadge = '<span class="badge bg-warning text-dark">Stock Bajo</span>';
+                    }
+
+                    container.innerHTML += `
+                        <div class="col-12 col-sm-6 col-md-4 col-xl-3">
+                            <div class="card product-card h-100 position-relative">
+                                <div class="card-body d-flex flex-column text-center">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="category-badge ${catBg}">${p.categoria}</span>
+                                        ${stockBadge}
+                                    </div>
+
+                                    <div class="product-icon-wrapper">
+                                        <span>${catEmoji}</span>
+                                    </div>
+
+                                    <h5 class="fw-bold text-dark mb-1">${escapeHtml(p.nombre)}</h5>
+                                    <p class="text-muted small text-truncate mb-3" style="max-height: 40px;">${escapeHtml(p.descripcion || 'Sin descripción')}</p>
+
+                                    <div class="bg-light p-2 rounded mb-3 mt-auto">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <small class="text-muted">Precio Venta:</small>
+                                            <span class="fw-bold text-primary fs-5">${formatCurrency(p.precio_venta)}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">Stock Disponible:</small>
+                                            <span class="fw-semibold text-dark">${p.stock_actual} unids</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        ${puedeGestionar ? `
+                                            <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="openProducirModal(${p.id}, '${escapeHtml(p.nombre)}')">
+                                                <i class="fas fa-industry me-1"></i> Producir
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="openEditProductoModal(${p.id})">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+                                        ` : ''}
+                                        ${puedeEliminar ? `
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${p.id}, '${escapeHtml(p.nombre)}')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                countBadge.textContent = '0 productos encontrados';
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="fas fa-box-open fs-1 mb-3 text-secondary"></i>
+                        <p>No se encontraron productos.</p>
+                    </div>
+                `;
+            }
         }
 
         function addIngredienteRow() {
