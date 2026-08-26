@@ -555,7 +555,7 @@ $pageHeader = "Gestión de Pedidos";
                 const res = await fetch('../backend/api.php?route=update_pedido_estado', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pedido_id: pedidoId, estado: nuevoEstado })
+                    body: JSON.stringify({ id: pedidoId, pedido_id: pedidoId, estado: nuevoEstado })
                 });
                 const data = await res.json();
                 if (data.success) {
