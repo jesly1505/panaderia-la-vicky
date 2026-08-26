@@ -51,7 +51,7 @@ $pageHeader = "Gestión de Proveedores";
                                 <!-- Botón Nuevo Proveedor -->
                                 <?php if (tiene_permiso('proveedores.gestionar')): ?>
                                     <button class="btn btn-success shadow-sm fw-bold px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#addProveedorModal">
-                                        <i class="fas fa-plus me-1"></i> + Nuevo Proveedor
+                                        <i class="fas fa-plus me-1"></i>Nuevo Proveedor
                                     </button>
                                 <?php endif; ?>
                             </div>
@@ -231,7 +231,7 @@ $pageHeader = "Gestión de Proveedores";
                         `;
                     });
 
-                    renderPagination(data.total, itemsPerPage, page);
+                    renderPagination(data.total, itemsPerPage, page, 'proveedoresPagination', 'loadProveedores');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron proveedores.</td></tr>';
                     const nav = document.getElementById('proveedoresPagination');
@@ -240,73 +240,6 @@ $pageHeader = "Gestión de Proveedores";
             } catch (e) {
                 console.error(e);
             }
-        }
-
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('proveedoresPagination');
-            if (!nav) return;
-            nav.innerHTML = '';
-            if (totalPages <= 1) return;
-
-            let html = '<nav aria-label="Paginación de proveedores"><ul class="pagination justify-content-end mb-0">';
-            
-            // Primera
-            const firstDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${firstDisabled}"><a class="page-link" href="#" onclick="loadProveedores(1); return false;">Primera</a></li>`;
-
-            // Anterior
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page - 1}); return false;">Anterior</a></li>`;
-
-            // Páginas numeradas
-            if (totalPages <= 7) {
-                for (let i = 1; i <= totalPages; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadProveedores(${i}); return false;">${i}</a></li>`;
-                }
-            } else {
-                let startPage = Math.max(1, page - 2);
-                let endPage = Math.min(totalPages, page + 2);
-
-                if (page <= 3) {
-                    startPage = 1;
-                    endPage = 5;
-                } else if (page >= totalPages - 2) {
-                    startPage = totalPages - 4;
-                    endPage = totalPages;
-                }
-
-                if (startPage > 1) {
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadProveedores(1); return false;">1</a></li>`;
-                    if (startPage > 2) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadProveedores(${i}); return false;">${i}</a></li>`;
-                }
-
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadProveedores(${totalPages}); return false;">${totalPages}</a></li>`;
-                }
-            }
-
-            // Siguiente
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page + 1}); return false;">Siguiente</a></li>`;
-
-            // Última
-            const lastDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${lastDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${totalPages}); return false;">Última</a></li>`;
-
-            html += '</ul></nav>';
-            nav.innerHTML = html;
         }
 
         document.getElementById('addProveedorForm').addEventListener('submit', async (e) => {

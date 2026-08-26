@@ -540,7 +540,20 @@ $pageHeader = "Catálogo y Recetas de Productos";
                     `;
                 });
 
-                renderCatalogPagination(total, itemsPerPage, currentPage);
+                const info = document.getElementById('paginationInfo');
+                if (total > 0) {
+                    const totalPages = Math.ceil(total / itemsPerPage);
+                    if (totalPages <= 1) {
+                        if (info) info.textContent = `Mostrando ${total} de ${total} productos`;
+                    } else {
+                        const startItem = (currentPage - 1) * itemsPerPage + 1;
+                        const endItem = Math.min(currentPage * itemsPerPage, total);
+                        if (info) info.textContent = `Mostrando ${startItem}\u2013${endItem} de ${total} productos`;
+                    }
+                } else {
+                    if (info) info.textContent = '';
+                }
+                renderPagination(total, itemsPerPage, currentPage, 'catalogPagination', 'goToPage');
             } else {
                 countBadge.textContent = '0 productos encontrados';
                 container.innerHTML = `
@@ -554,76 +567,6 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 if (nav) nav.innerHTML = '';
                 if (info) info.textContent = '';
             }
-        }
-
-        function renderCatalogPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('catalogPagination');
-            const info = document.getElementById('paginationInfo');
-            if (!nav) return;
-
-            if (total === 0 || totalPages <= 1) {
-                nav.innerHTML = '';
-                if (info) info.textContent = total > 0 ? `Mostrando ${total} de ${total} productos` : '';
-                return;
-            }
-
-            const startItem = (page - 1) * limit + 1;
-            const endItem = Math.min(page * limit, total);
-            if (info) {
-                info.textContent = `Mostrando ${startItem}–${endItem} de ${total} productos`;
-            }
-
-            let html = '<ul class="pagination justify-content-center mb-0">';
-
-            // Anterior
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="goToPage(${page - 1}); return false;">Anterior</a></li>`;
-
-            // Páginas numeradas
-            if (totalPages <= 7) {
-                for (let i = 1; i <= totalPages; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
-                }
-            } else {
-                let startPage = Math.max(1, page - 2);
-                let endPage = Math.min(totalPages, page + 2);
-
-                if (page <= 3) {
-                    startPage = 1;
-                    endPage = 5;
-                } else if (page >= totalPages - 2) {
-                    startPage = totalPages - 4;
-                    endPage = totalPages;
-                }
-
-                if (startPage > 1) {
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(1); return false;">1</a></li>`;
-                    if (startPage > 2) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
-                }
-
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${totalPages}); return false;">${totalPages}</a></li>`;
-                }
-            }
-
-            // Siguiente
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="goToPage(${page + 1}); return false;">Siguiente</a></li>`;
-
-            html += '</ul>';
-            nav.innerHTML = html;
         }
 
         function addIngredienteRow() {

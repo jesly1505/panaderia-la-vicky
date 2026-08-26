@@ -82,7 +82,7 @@ $end_date = $_GET['end_date'] ?? '';
                                         </button>
                                         <?php if (tiene_permiso('ventas.gestionar')): ?>
                                             <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm text-nowrap" onclick="openClientSelectionModal()">
-                                                <i class="fas fa-plus me-1"></i> + Nueva Venta
+                                                <i class="fas fa-plus me-1"></i>Nueva Venta
                                             </button>
                                         <?php endif; ?>
                                     </div>
@@ -1167,7 +1167,7 @@ $end_date = $_GET['end_date'] ?? '';
                         document.getElementById('totalProfit').textContent = formatCurrency(data.totales_periodo.total_ganancias);
                     }
 
-                    renderPagination(data.total, itemsPerPage, page);
+                    renderPagination(data.total, itemsPerPage, page, 'salesPagination', 'loadSalesHistory');
                 } else {
                     tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No se encontraron ventas.</td></tr>`;
                     if (data.totales_periodo) {
@@ -1183,73 +1183,6 @@ $end_date = $_GET['end_date'] ?? '';
             } catch (e) {
                 console.error('Error fetching sales history:', e);
             }
-        }
-
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('salesPagination');
-            if (!nav) return;
-            nav.innerHTML = '';
-            if (totalPages <= 1) return;
-
-            let html = '<nav aria-label="Paginación de ventas"><ul class="pagination justify-content-end mb-0">';
-
-            // Primera
-            const firstDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${firstDisabled}"><a class="page-link" href="#" onclick="loadSalesHistory(1); return false;">Primera</a></li>`;
-
-            // Anterior
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadSalesHistory(${page - 1}); return false;">Anterior</a></li>`;
-
-            // Páginas numeradas
-            if (totalPages <= 7) {
-                for (let i = 1; i <= totalPages; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadSalesHistory(${i}); return false;">${i}</a></li>`;
-                }
-            } else {
-                let startPage = Math.max(1, page - 2);
-                let endPage = Math.min(totalPages, page + 2);
-
-                if (page <= 3) {
-                    startPage = 1;
-                    endPage = 5;
-                } else if (page >= totalPages - 2) {
-                    startPage = totalPages - 4;
-                    endPage = totalPages;
-                }
-
-                if (startPage > 1) {
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadSalesHistory(1); return false;">1</a></li>`;
-                    if (startPage > 2) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    const active = i === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadSalesHistory(${i}); return false;">${i}</a></li>`;
-                }
-
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    }
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadSalesHistory(${totalPages}); return false;">${totalPages}</a></li>`;
-                }
-            }
-
-            // Siguiente
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadSalesHistory(${page + 1}); return false;">Siguiente</a></li>`;
-
-            // Última
-            const lastDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${lastDisabled}"><a class="page-link" href="#" onclick="loadSalesHistory(${totalPages}); return false;">Última</a></li>`;
-
-            html += '</ul></nav>';
-            nav.innerHTML = html;
         }
 
         async function viewSaleDetails(id) {

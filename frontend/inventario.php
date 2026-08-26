@@ -55,7 +55,7 @@ $pageHeader = "Inventario";
                                             <i class="fas fa-shopping-cart me-1"></i> Registrar Compra
                                         </button>
                                         <button class="btn btn-sm btn-primary shadow-sm fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#addInsumoModal">
-                                            <i class="fas fa-plus me-1"></i> + Nuevo Insumo
+                                            <i class="fas fa-plus me-1"></i>Nuevo Insumo
                                         </button>
                                     <?php endif; ?>
                                 </div>
@@ -381,7 +381,7 @@ $pageHeader = "Inventario";
                             </tr>
                         `;
                     });
-                    renderPagination(data.total, itemsPerPage, page);
+                    renderPagination(data.total, itemsPerPage, page, 'insumosPagination', 'loadInsumos');
                 } else {
                     tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron insumos.</td></tr>`;
                     const paginationContainer = document.getElementById('insumosPagination');
@@ -390,66 +390,6 @@ $pageHeader = "Inventario";
             } catch (e) {
                 console.error('Error fetching insumos:', e);
             }
-        }
-
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const paginationContainer = document.getElementById('insumosPagination');
-            if (!paginationContainer) return;
-            if (totalPages <= 1) {
-                paginationContainer.innerHTML = '';
-                return;
-            }
-            let html = `<nav aria-label="Paginación de insumos"><ul class="pagination justify-content-end mb-0">`;
-            
-            // Primera
-            const firstDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${firstDisabled}"><a class="page-link" href="#" onclick="loadInsumos(1); return false;">Primera</a></li>`;
-
-            // Anterior
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page - 1}); return false;">Anterior</a></li>`;
-            
-            // Páginas numeradas
-            if (totalPages <= 7) {
-                for (let p = 1; p <= totalPages; p++) {
-                    const active = p === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadInsumos(${p}); return false;">${p}</a></li>`;
-                }
-            } else {
-                let startPage = Math.max(1, page - 2);
-                let endPage = Math.min(totalPages, page + 2);
-                if (page <= 3) {
-                    startPage = 1;
-                    endPage = 5;
-                } else if (page >= totalPages - 2) {
-                    startPage = totalPages - 4;
-                    endPage = totalPages;
-                }
-                if (startPage > 1) {
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadInsumos(1); return false;">1</a></li>`;
-                    if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                }
-                for (let p = startPage; p <= endPage; p++) {
-                    const active = p === page ? ' active' : '';
-                    html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadInsumos(${p}); return false;">${p}</a></li>`;
-                }
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-                    html += `<li class="page-item"><a class="page-link" href="#" onclick="loadInsumos(${totalPages}); return false;">${totalPages}</a></li>`;
-                }
-            }
-
-            // Siguiente
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page + 1}); return false;">Siguiente</a></li>`;
-
-            // Última
-            const lastDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${lastDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${totalPages}); return false;">Última</a></li>`;
-            
-            html += `</ul></nav>`;
-            paginationContainer.innerHTML = html;
         }
 
         async function loadProveedores() {

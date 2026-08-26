@@ -211,7 +211,7 @@ $pageHeader = "Ajustes del Sistema";
                             </tr>
                         `;
                     });
-                    renderPagination(data.total, itemsPerPage, page);
+                    renderPagination(data.total, itemsPerPage, page, 'employeePagination', 'loadEmployees');
                 } else {
                     tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No se encontraron empleados.</td></tr>';
                     document.getElementById('employeePagination').innerHTML = '';
@@ -219,30 +219,6 @@ $pageHeader = "Ajustes del Sistema";
             } catch (e) { 
                 console.error(e);
             }
-        }
-
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('employeePagination');
-            nav.innerHTML = '';
-            if (totalPages <= 1) return;
-            let html = '<ul class="pagination justify-content-center">';
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadEmployees(${page - 1}); return false;">&laquo;</a></li>`;
-            const maxVisible = 5;
-            let start = Math.max(1, page - Math.floor(maxVisible / 2));
-            let end = Math.min(totalPages, start + maxVisible - 1);
-            if (end - start < maxVisible - 1) {
-                start = Math.max(1, end - maxVisible + 1);
-            }
-            for (let i = start; i <= end; i++) {
-                const active = i === page ? ' active' : '';
-                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadEmployees(${i}); return false;">${i}</a></li>`;
-            }
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadEmployees(${page + 1}); return false;">&raquo;</a></li>`;
-            html += '</ul>';
-            nav.innerHTML = html;
         }
 
         async function loadEmployeeStats() {
