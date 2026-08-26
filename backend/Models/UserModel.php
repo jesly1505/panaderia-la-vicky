@@ -63,15 +63,33 @@ class UserModel {
         $stmt->execute();
     }
 
-    public function getAll() {
+    public function getAll($limit = null, $offset = null) {
         $query = "SELECT u.id, u.nombre, u.email, u.estado, u.rol_id, r.nombre as rol_nombre 
                   FROM " . $this->table_name . " u 
                   JOIN roles r ON u.rol_id = r.id
                   WHERE u.eliminado = false
                   ORDER BY u.nombre ASC";
+        if (is_int($limit) && $limit > 0) {
+            $query .= " LIMIT :limit";
+            if (is_int($offset) && $offset >= 0) {
+                $query .= " OFFSET :offset";
+            }
+        }
         $stmt = $this->conn->prepare($query);
+        if (is_int($limit) && $limit > 0) {
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            if (is_int($offset) && $offset >= 0) {
+                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            }
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function countAll() {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false");
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
     }
 
     public function create($nombre, $email, $password, $rol_id = 2) {

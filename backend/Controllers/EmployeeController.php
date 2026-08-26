@@ -3,25 +3,36 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Validator;
-use App\Models\RoleModel;
+use App\Models\PermisoModel;
 use App\Models\UserModel;
 
 class EmployeeController {
     private $userModel;
     private $audit;
-    private $roleModel;
+    private $permisoModel;
 
-    public function __construct(UserModel $userModel, AuditService $audit, RoleModel $roleModel) {
+    public function __construct(UserModel $userModel, AuditService $audit, PermisoModel $permisoModel) {
         $this->userModel = $userModel;
         $this->audit = $audit;
-        $this->roleModel = $roleModel;
+        $this->permisoModel = $permisoModel;
     }
-        // Duplicate constructor code removed
 
     public function getAll() {
         header('Content-Type: application/json');
-        $employees = $this->userModel->getAll();
-        echo json_encode(['success' => true, 'data' => $employees]);
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+        $limit = 10;
+        $offset = ($page - 1) * $limit;
+
+        $employees = $this->userModel->getAll($limit, $offset);
+        $total = $this->userModel->countAll();
+
+        echo json_encode([
+            'success' => true,
+            'data' => $employees,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ]);
     }
 
     public function create() {
@@ -31,33 +42,28 @@ class EmployeeController {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
         
-        if (!$data || empty($data['nombre']) || empty($data['email']) || empty($data['password']) || empty($data['telefono'])) {
+        if (!$data || empty($data['nombre']) || empty($data['email']) || empty($data['password'])) {
             echo json_encode(['success' => false, 'message' => 'Faltan campos obligatorios.']);
             return;
         }
 
-        $nombre   = $data['nombre'];
-        $email    = $data['email'];
-        $password = $data['password'];
-        $rol_id   = $data['rol_id'] ?? 2;
-        $telefono = $data['telefono'] ?? null;
+        $nombre   = trim($data['nombre'] ?? '');
+        $email    = trim($data['email'] ?? '');
+        $password = $data['password'] ?? '';
+        $rol_id   = isset($data['rol_id']) ? (int)$data['rol_id'] : 2;
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
             Validator::length($nombre, 100, 'Nombre'),
             Validator::required($email, 'Email'),
             Validator::email($email, 'Email'),
-            // Teléfono obligatorio y validaciones
-            Validator::required($telefono, 'Teléfono'),
-            Validator::numeric($telefono, 'Teléfono'),
-            Validator::length($telefono, 30, 'Teléfono', 0),
             Validator::required($password, 'Contraseña'),
             Validator::length($password, 255, 'Contraseña', 6),
             Validator::integer($rol_id, 'Rol'),
             Validator::greaterThan($rol_id, 0, 'Rol'),
         ]);
-        // Validate that the role exists and is allowed (prevent admin role)
-        if ($rol_id == 1 || !$this->roleModel->exists($rol_id)) {
+        // Validate that the role exists
+        if (!$this->permisoModel->rolExists($rol_id)) {
             echo json_encode(['success' => false, 'message' => 'Rol no válido o no autorizado.']);
             return;
         }
@@ -125,6 +131,11 @@ class EmployeeController {
         ]);
         if ($error) {
             echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        if (!$this->permisoModel->rolExists($rol_id)) {
+            echo json_encode(['success' => false, 'message' => 'Rol no válido o no autorizado.']);
             return;
         }
 

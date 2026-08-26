@@ -22,9 +22,34 @@ class VentaController {
         $filter = $_GET['filter'] ?? 'all';
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $estado = isset($_GET['estado']) ? trim($_GET['estado']) : '';
+        $tipoPago = isset($_GET['tipo_pago']) ? trim($_GET['tipo_pago']) : '';
+        $vendedor = isset($_GET['vendedor']) ? trim($_GET['vendedor']) : '';
 
-        $ventas = $this->ventaModel->readAll($filter, $startDate, $endDate);
-        echo json_encode(['success' => true, 'data' => $ventas], JSON_UNESCAPED_UNICODE);
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+        if (isset($_GET['page']) && $limit !== null && $offset === null) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
+
+        $ventas = $this->ventaModel->readAll($filter, $startDate, $endDate, $limit, $offset, $search, $estado, $tipoPago, $vendedor);
+        $total = $this->ventaModel->countAll($filter, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
+        $totals = $this->ventaModel->getTotals($filter, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
+
+        echo json_encode([
+            'success' => true, 
+            'data' => $ventas, 
+            'total' => $total, 
+            'totales_periodo' => $totals
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function getVendedores(): void {
+        header('Content-Type: application/json');
+        $vendedores = $this->ventaModel->getVendedores();
+        echo json_encode(['success' => true, 'data' => $vendedores], JSON_UNESCAPED_UNICODE);
     }
 
     public function createDirecta() {
@@ -43,6 +68,10 @@ class VentaController {
             Validator::numeric($data['total'] ?? 0, 'Total'),
             Validator::min($data['total'] ?? 0, 0, 'Total'),
         ];
+        if (isset($data['cliente_id']) && $data['cliente_id'] !== null && $data['cliente_id'] !== '') {
+            $errors[] = Validator::integer($data['cliente_id'], 'Cliente');
+            $errors[] = Validator::greaterThan((int)$data['cliente_id'], 0, 'Cliente');
+        }
         foreach ($data['detalles'] as $i => $d) {
             $pid = $d['producto_id'] ?? $d['id'] ?? 0;
             $errors[] = Validator::integer($pid, "Producto #" . ($i + 1));

@@ -23,18 +23,20 @@ class InsumoController
         // Pagination parameters
         header('Content-Type: application/json');
         $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int) $_GET['page'] : 1;
-        $limit = 10; // rows per page as requested
+        $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) && $_GET['limit'] > 0 ? (int) $_GET['limit'] : 10;
         $offset = ($page - 1) * $limit;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
         // Retrieve paginated data and total count
-        $insumos = $this->insumoModel->readAll($limit, $offset, true);
-        $total = $this->insumoModel->countAll(true);
+        $insumos = $this->insumoModel->readAll($limit, $offset, true, $search);
+        $total = $this->insumoModel->countAll(true, $search);
         echo json_encode([
             'success' => true,
             'data' => $insumos,
             'total' => $total,
             'page' => $page,
             'limit' => $limit
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     }
 
     public function add()

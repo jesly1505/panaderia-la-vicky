@@ -19,8 +19,16 @@ class PedidoController {
 
     public function getAll() {
         header('Content-Type: application/json');
-        $pedidos = $this->pedidoModel->readAll();
-        echo json_encode(['success' => true, 'data' => $pedidos]);
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        if (isset($_GET['page']) && $limit !== null && $offset === null) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
+        $pedidos = $this->pedidoModel->readAll($limit, $offset, $search);
+        $total = $this->pedidoModel->countAll($search);
+        echo json_encode(['success' => true, 'data' => $pedidos, 'total' => $total], JSON_UNESCAPED_UNICODE);
     }
 
     public function create() {
@@ -80,18 +88,21 @@ class PedidoController {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
 
+        $id = $data['id'] ?? $data['pedido_id'] ?? 0;
+        $estado = $data['estado'] ?? '';
+
         $error = Validator::firstError([
-            Validator::integer($data['id'] ?? 0, 'ID de pedido'),
-            Validator::greaterThan($data['id'] ?? 0, 0, 'ID de pedido'),
-            Validator::inList($data['estado'] ?? '', self::ESTADOS, 'Estado'),
+            Validator::integer($id, 'ID de pedido'),
+            Validator::greaterThan($id, 0, 'ID de pedido'),
+            Validator::inList($estado, self::ESTADOS, 'Estado'),
         ]);
         if ($error) {
             echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
         $hora_real = $data['hora_entrega_real'] ?? null;
-        if ($this->pedidoModel->updateEstado($data['id'], $data['estado'], $hora_real, $_SESSION['usuario_id'] ?? null)) {
-            $this->audit->log('Pedidos', 'Cambio de estado', "Pedido ID {$data['id']} -> estado '{$data['estado']}'");
+        if ($this->pedidoModel->updateEstado((int)$id, $estado, $hora_real, $_SESSION['usuario_id'] ?? null)) {
+            $this->audit->log('Pedidos', 'Cambio de estado', "Pedido ID {$id} -> estado '{$estado}'");
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar estado.']);
@@ -150,9 +161,11 @@ class PedidoController {
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
 
+        $id = $data['id'] ?? $data['pedido_id'] ?? 0;
+
         $error = Validator::firstError([
-            Validator::integer($data['id'] ?? 0, 'ID de pedido'),
-            Validator::greaterThan($data['id'] ?? 0, 'ID de pedido'),
+            Validator::integer($id, 'ID de pedido'),
+            Validator::greaterThan($id, 0, 'ID de pedido'),
             Validator::required($data['fecha_entrega'] ?? '', 'Fecha de entrega'),
             Validator::required($data['hora_entrega'] ?? '', 'Hora de entrega'),
         ]);

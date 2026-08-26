@@ -2,8 +2,8 @@
 namespace App\Core\Interfaces;
 
 interface InsumoRepositoryInterface {
-    public function readAll($limit = null, $offset = null, $onlyVisible = true);
-    public function countAll($onlyVisible = true);
+    public function readAll($limit = null, $offset = null, $onlyVisible = true, $search = '');
+    public function countAll($onlyVisible = true, $search = '');
     public function create($proveedor_id, $nombre, $unidad, $inicial, $minimo, $precio);
     public function update($id, $proveedor_id, $nombre, $unidad_medida, $stock_actual, $stock_minimo, $precio_costo);
     public function updateStock($id, $cantidad);

@@ -92,19 +92,20 @@ class ProveedorController {
         header('Content-Type: application/json');
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
         if ($page < 1) $page = 1;
         if ($limit < 1) $limit = 10;
         $offset = ($page - 1) * $limit;
         try {
-            $total = $this->proveedorModel->countAll();
-            $proveedores = $this->proveedorModel->readPaginated($limit, $offset);
+            $total = $this->proveedorModel->countAll($search);
+            $proveedores = $this->proveedorModel->readPaginated($limit, $offset, $search);
             echo json_encode([
                 'success' => true,
                 'data' => $proveedores,
                 'total' => $total,
                 'page' => $page,
                 'limit' => $limit
-            ]);
+            ], JSON_UNESCAPED_UNICODE);
         } catch (\Throwable $e) {
             error_log('getPaginated error: ' . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Error interno al obtener proveedores.']);

@@ -22,11 +22,19 @@ class ClienteController {
             echo json_encode(['success' => false, 'message' => 'Error interno del servidor al cargar clientes.']);
             return;
         }
-        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100; // default limit
-        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+        if (isset($_GET['page']) && $limit > 0 && $offset === null) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        } elseif ($offset === null) {
+            $offset = 0;
+        }
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
         try {
-            $clientes = $this->clienteModel->readAll($limit, $offset);
-            $total = $this->clienteModel->countAll();
+            $clientes = $this->clienteModel->readAll($limit, $offset, $search);
+            $total = $this->clienteModel->countAll($search);
             echo json_encode(['success' => true, 'data' => $clientes, 'total' => $total]);
         } catch (\Throwable $e) {
             Logger::error('Error fetching clientes: ' . $e->getMessage());

@@ -263,29 +263,8 @@ $pageHeader = "Registro de Producción Libre";
                 tbody.innerHTML = `<tr><td colspan="4" class="text-center py-5 text-muted">No hay registros de producción para el periodo seleccionado.</td></tr>`;
                 totalPages = 1;
             }
-            renderPagination();
+            renderPagination(data.total || 0, limit, page, 'paginationControls', 'goToPage');
         } catch (e) { console.error(e); }
-    }
-
-    function renderPagination() {
-        const container = document.getElementById('paginationControls');
-        if (!container) return;
-        let html = '<nav aria-label="Page navigation"><ul class="pagination justify-content-center">';
-        const disabledPrev = currentPage === 1;
-        const disabledNext = currentPage === totalPages;
-        html += `<li class="page-item ${disabledPrev ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage - 1})">Anterior</button></li>`;
-        const maxVisible = 5;
-        let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-        let end = Math.min(totalPages, start + maxVisible - 1);
-        if (end - start + 1 < maxVisible) {
-            start = Math.max(1, end - maxVisible + 1);
-        }
-        for (let i = start; i <= end; i++) {
-            html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" onclick="goToPage(${i})">${i}</button></li>`;
-        }
-        html += `<li class="page-item ${disabledNext ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage + 1})">Siguiente</button></li>`;
-        html += '</ul></nav>';
-        container.innerHTML = html;
     }
 
     function goToPage(page) {

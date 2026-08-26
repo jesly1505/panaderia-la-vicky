@@ -190,6 +190,7 @@ $pageHeader = "Reportes y Estadísticas";
                                                 </tr>
                                             </tbody>
                                         </table>
+                                        <div id="gastosPagination" class="mt-2"></div>
                                     </div>
                                 </div>
                             </div>
@@ -294,6 +295,8 @@ $pageHeader = "Reportes y Estadísticas";
         const currentFilter = urlParams.get('filter') || 'all';
         const currentStart = urlParams.get('start_date') || '';
         const currentEnd = urlParams.get('end_date') || '';
+        let gastosPage = 1;
+        const gastosLimit = 10;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadCategorias();
@@ -410,7 +413,7 @@ $pageHeader = "Reportes y Estadísticas";
             if (!tbody) return;
 
             try {
-                const res = await fetch(`../backend/api.php?route=get_gastos_by_date&start_date=${currentStart}&end_date=${currentEnd}`);
+                const res = await fetch(`../backend/api.php?route=get_gastos_by_date&start_date=${currentStart}&end_date=${currentEnd}&page=${gastosPage}&limit=${gastosLimit}`);
                 const data = await res.json();
                 tbody.innerHTML = '';
 
@@ -425,20 +428,18 @@ $pageHeader = "Reportes y Estadísticas";
                                 <td class="fw-bold text-danger">${formatCurrency(g.monto)}</td>
                                 ${puedeGestionar ? `
                                     <td>
-                                        <button class="btn btn-sm btn-link text-warning p-0 me-1" onclick="openEditGastoModal(${g.id}, '${escJs(g.fecha)}', '${escJs(g.categoria)}', ${parseFloat(g.monto)}, '${escJs(g.descripcion || '')}')" title="Editar">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteGasto(${g.id})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        ${TA.edit(`openEditGastoModal(${g.id}, '${escJs(g.fecha)}', '${escJs(g.categoria)}', ${parseFloat(g.monto)}, '${escJs(g.descripcion || '')}')`)}
+                                        ${TA.remove(`deleteGasto(${g.id})`, 'Eliminar gasto')}
                                     </td>
                                 ` : ''}
                             </tr>
                         `;
                     });
+                    renderPagination(data.pagination.total, gastosLimit, gastosPage, 'gastosPagination', 'goGastosPage');
                 } else {
                     const cols = (typeof tienePermiso === 'function' && tienePermiso('gastos.gestionar')) ? 5 : 4;
                     tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-4 text-muted">No hay gastos registrados para el periodo seleccionado.</td></tr>`;
+                    document.getElementById('gastosPagination').innerHTML = '';
                 }
             } catch (e) { console.error(e); }
         }
@@ -525,6 +526,11 @@ $pageHeader = "Reportes y Estadísticas";
                 console.error(err);
             }
         });
+
+        function goGastosPage(p) {
+            gastosPage = p;
+            loadGastosTable();
+        }
     </script>
 </body>
 </html>

@@ -128,6 +128,7 @@ $router->register('update_pedido', PedidoController::class, 'update', true, null
 
 // Ventas
 $router->register('get_ventas', VentaController::class, 'getAll', true, null, ['GET'], 'ventas.ver');
+$router->register('get_vendedores', VentaController::class, 'getVendedores', true, null, ['GET'], 'ventas.ver');
 $router->register('add_venta_directa', VentaController::class, 'createDirecta', true, null, ['POST'], 'ventas.gestionar');
 $router->register('get_top_products', VentaController::class, 'getTopProducts', true, null, ['GET'], 'ventas.ver');
 $router->register('get_revenue_chart', VentaController::class, 'getRevenueChart', true, null, ['GET'], 'ventas.ver');
@@ -159,7 +160,7 @@ $router->register('backup_db', CmmiController::class, 'backupDatabase', false, n
 
 // Permisos de roles (RBAC)
 $router->register('get_permisos', PermisoController::class, 'getPermisos', true, null, ['GET'], 'permisos.gestionar');
-$router->register('get_roles', PermisoController::class, 'getRoles', true, null, ['GET'], 'permisos.gestionar');
+$router->register('get_roles', PermisoController::class, 'getRoles', true, [], ['GET']);
 $router->register('get_permisos_rol', PermisoController::class, 'getPermisosRol', true, null, ['GET'], 'permisos.gestionar');
 $router->register('set_permisos_rol', PermisoController::class, 'setPermisosRol', true, null, ['POST'], 'permisos.gestionar');
 $router->register('crear_rol', PermisoController::class, 'crearRol', true, null, ['POST'], 'permisos.gestionar');
