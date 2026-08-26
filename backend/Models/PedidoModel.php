@@ -56,7 +56,11 @@ class PedidoModel {
         }
     }
 
-    public function readAll($limit = null, $offset = null) {
+    public function readAll($limit = null, $offset = null, $search = '') {
+        $where = " p.eliminado = false ";
+        if (!empty($search)) {
+            $where .= " AND (c.nombre LIKE :search OR p.id LIKE :search2) ";
+        }
         $query = "SELECT p.*, c.nombre as cliente_nombre, u.nombre as vendedor,
                     (SELECT GROUP_CONCAT(CONCAT(pr.nombre, ' x', dp.cantidad) SEPARATOR ', ')
                      FROM detalle_pedido dp
@@ -65,30 +69,45 @@ class PedidoModel {
                   FROM pedidos p 
                   LEFT JOIN clientes c ON p.cliente_id = c.id
                   LEFT JOIN usuarios u ON p.usuario_id = u.id
-                  WHERE p.eliminado = false
+                  WHERE $where
                   ORDER BY p.fecha_pedido DESC";
-        if (is_int($limit) && $limit > 0) {
-            $query .= " LIMIT :limit";
-            if (is_int($offset) && $offset >= 0) {
-                $query .= " OFFSET :offset";
-            }
+        if ($limit !== null && $offset !== null) {
+            $query .= " LIMIT :limit OFFSET :offset";
         }
         $stmt = $this->conn->prepare($query);
-        if (is_int($limit) && $limit > 0) {
-            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            if (is_int($offset) && $offset >= 0) {
-                $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
-            }
+        if (!empty($search)) {
+            $term = "%" . $search . "%";
+            $stmt->bindValue(':search', $term);
+            $stmt->bindValue(':search2', $term);
+        }
+        if ($limit !== null && $offset !== null) {
+            $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         }
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public function countAll() {
-        $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM pedidos WHERE eliminado = false");
-        $stmt->execute();
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        return $row ? (int)$row['total'] : 0;
+    public function countAll($search = '') {
+        try {
+            $where = " p.eliminado = false ";
+            if (!empty($search)) {
+                $where .= " AND (c.nombre LIKE :search OR p.id LIKE :search2) ";
+            }
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " p 
+                      LEFT JOIN clientes c ON p.cliente_id = c.id
+                      WHERE $where";
+            $stmt = $this->conn->prepare($query);
+            if (!empty($search)) {
+                $term = "%" . $search . "%";
+                $stmt->bindValue(':search', $term);
+                $stmt->bindValue(':search2', $term);
+            }
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+        } catch (Exception $e) {
+            return 0;
+        }
     }
 
     public function updateEstado($pedido_id, $estado, $hora_real = null, ?int $usuario_id = null) {

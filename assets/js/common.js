@@ -105,6 +105,29 @@ function logout() {
     });
 }
 
+function renderPagination(total, limit, page, containerId, callback) {
+    const totalPages = Math.ceil(total / limit);
+    const nav = document.getElementById(containerId);
+    if (!nav) return;
+    nav.innerHTML = '';
+    if (totalPages <= 1) return;
+    const maxVisible = 5;
+    let html = '<ul class="pagination justify-content-center mb-0">';
+    const prevDisabled = page <= 1 ? ' disabled' : '';
+    html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="${callback}(${page - 1}); return false;">&laquo;</a></li>`;
+    let start = Math.max(1, page - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+    for (let i = start; i <= end; i++) {
+        const active = i === page ? ' active' : '';
+        html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="${callback}(${i}); return false;">${i}</a></li>`;
+    }
+    const nextDisabled = page >= totalPages ? ' disabled' : '';
+    html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="${callback}(${page + 1}); return false;">&raquo;</a></li>`;
+    html += '</ul>';
+    nav.innerHTML = html;
+}
+
 // Funciones globales de Interfaz (Alertas y Confirmaciones)
 window.showAlert = function(message, type = 'info', title = null) {
     return new Promise((resolve) => {

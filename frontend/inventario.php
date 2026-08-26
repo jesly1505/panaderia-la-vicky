@@ -33,17 +33,33 @@ $pageHeader = "Inventario";
                 <div id="lowStockAlertContainer" class="mb-4"></div>
 
                 <div class="card shadow-sm border-0">
-                    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 bg-white py-3">
-                        <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-boxes me-2 text-primary"></i>Lista de Insumos y Materias Primas</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <?php if (tiene_permiso('inventario.gestionar')): ?>
-                                <button class="btn btn-sm btn-warning shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#registrarCompraModal">
-                                    <i class="fas fa-shopping-basket me-1"></i> Registrar Compra
-                                </button>
-                                <button class="btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addInsumoModal">
-                                    <i class="fas fa-plus me-1"></i> Nuevo Insumo
-                                </button>
-                            <?php endif; ?>
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-boxes me-2 text-primary"></i>Lista de Insumos y Materias Primas</h5>
+                            <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                                <!-- Buscador de Insumos -->
+                                <div class="input-group input-group-sm" style="min-width: 250px; max-width: 320px;">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" id="insumoSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar insumo..." oninput="handleInsumoSearch()" autocomplete="off">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" id="btnClearSearch" onclick="clearInsumoSearch()" title="Limpiar búsqueda" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Botones de Acción -->
+                                <div class="d-flex gap-2">
+                                    <?php if (tiene_permiso('inventario.gestionar')): ?>
+                                        <button class="btn btn-sm btn-warning shadow-sm text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#registrarCompraModal">
+                                            <i class="fas fa-shopping-cart me-1"></i> Registrar Compra
+                                        </button>
+                                        <button class="btn btn-sm btn-primary shadow-sm fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#addInsumoModal">
+                                            <i class="fas fa-plus me-1"></i>Nuevo Insumo
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -51,12 +67,12 @@ $pageHeader = "Inventario";
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th>Insumo</th>
+                                        <th class="ps-4">Insumo</th>
                                         <th>Proveedor</th>
                                         <th>Cantidad</th>
                                         <th>Mínimo</th>
                                         <th>Costo Unit.</th>
-                                        <th class="text-end">Acciones</th>
+                                        <th class="text-end pe-4">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="insumosTableBody">
@@ -68,8 +84,9 @@ $pageHeader = "Inventario";
                                     </tr>
                                 </tbody>
                             </table>
-        <div id="insumosPagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
+                        <!-- Paginación de Insumos -->
+                        <div id="insumosPagination" class="p-3 border-top d-flex justify-content-end"></div>
                     </div>
                 </div>
             </div>
@@ -218,6 +235,7 @@ $pageHeader = "Inventario";
                                 <option value="Unidades">Unidades</option>
                                 <option value="Kg">Kg</option>
                                 <option value="Litros">Litros</option>
+                                <option value="Gramos">Gramos</option>
                                 <option value="Metros">Metros</option>
                             </select>
                         </div>
@@ -257,11 +275,43 @@ $pageHeader = "Inventario";
     <!-- Scripts -->
     <?php include 'includes/footer.php'; ?>
     <script>
+        let insumosData = [];
+        let currentPage = 1;
+        let currentSearch = '';
+        let searchTimeout = null;
+        const itemsPerPage = 10;
+
         document.addEventListener('DOMContentLoaded', async () => {
-            await loadInsumos();
+            await loadInsumos(1);
             await loadProveedores();
+            await loadInsumosSelectCompra();
             await loadAlerts();
         });
+
+        function handleInsumoSearch() {
+            const input = document.getElementById('insumoSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) {
+                btnClear.style.display = input.value.length > 0 ? 'inline-block' : 'none';
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = query;
+                loadInsumos(1);
+            }, 250);
+        }
+
+        function clearInsumoSearch() {
+            const input = document.getElementById('insumoSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            currentSearch = '';
+            loadInsumos(1);
+            input.focus();
+        }
 
         async function loadAlerts() {
             try {
@@ -269,7 +319,7 @@ $pageHeader = "Inventario";
                 const data = await res.json();
                 const container = document.getElementById('lowStockAlertContainer');
                 if (data.success && data.data && data.data.length > 0) {
-                    let items = data.data.map(i => `<b>${i.nombre}</b> (${i.stock_actual} ${i.unidad_medida})`).join(', ');
+                    let items = data.data.map(i => `<b>${escapeHtml(i.nombre)}</b> (${i.stock_actual} ${escapeHtml(i.unidad_medida)})`).join(', ');
                     container.innerHTML = `
                         <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-0">
                             <i class="fas fa-exclamation-triangle fs-4 me-3 text-warning"></i>
@@ -288,14 +338,13 @@ $pageHeader = "Inventario";
         }
 
         async function loadInsumos(page = 1) {
-            const limit = 10;
+            currentPage = page;
             try {
-                const res = await fetch(`../backend/api.php?route=get_insumos&page=${page}&limit=${limit}`);
+                const searchParam = encodeURIComponent(currentSearch);
+                const res = await fetch(`../backend/api.php?route=get_insumos&page=${page}&limit=${itemsPerPage}&search=${searchParam}`);
                 const data = await res.json();
                 const tbody = document.getElementById('insumosTableBody');
-                const selectCompra = document.getElementById('insumoSelectCompra');
                 tbody.innerHTML = '';
-                if (selectCompra) selectCompra.innerHTML = '<option value="" disabled selected>Seleccione...</option>';
                 insumosData = (data.success && data.data) ? data.data : [];
 
                 if (data.success && data.data && data.data.length > 0) {
@@ -303,10 +352,6 @@ $pageHeader = "Inventario";
                     const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('inventario.eliminar') : true);
 
                     data.data.forEach(i => {
-                        if (selectCompra) {
-                            selectCompra.innerHTML += `<option value="${i.id}">${i.nombre}</option>`;
-                        }
-
                         let stockClass = 'text-dark fw-bold';
                         let badge = '';
                         if (parseFloat(i.stock_actual) <= parseFloat(i.stock_minimo)) {
@@ -316,52 +361,35 @@ $pageHeader = "Inventario";
 
                         tbody.innerHTML += `
                             <tr>
-                                <td class="fw-semibold">${i.nombre}</td>
-                                <td>${i.proveedor_nombre || '<span class="text-muted small">No asignado</span>'}</td>
-                                <td><span class="${stockClass}">${parseFloat(i.stock_actual).toFixed(2)} ${i.unidad_medida}</span> ${badge}</td>
-                                <td><span class="text-muted small">${parseFloat(i.stock_minimo).toFixed(2)} ${i.unidad_medida}</span></td>
-                                <td>${formatCurrency(i.precio_costo)}</td>
-                                <td class="text-end">
-                                    ${puedeGestionar ? TA.edit(`openEditInsumoModal(${i.id})`, 'Editar insumo') : ''}
-                                    ${puedeEliminar ? TA.remove(`deleteInsumo(${i.id})`, 'Eliminar insumo') : ''}
+                                <td class="ps-4 fw-semibold text-dark">${escapeHtml(i.nombre)}</td>
+                                <td>${i.proveedor_nombre ? escapeHtml(i.proveedor_nombre) : '<span class="text-muted small">No asignado</span>'}</td>
+                                <td><span class="${stockClass}">${parseFloat(i.stock_actual).toFixed(2)} ${escapeHtml(i.unidad_medida)}</span> ${badge}</td>
+                                <td><span class="text-muted small">${parseFloat(i.stock_minimo).toFixed(2)} ${escapeHtml(i.unidad_medida)}</span></td>
+                                <td class="fw-semibold">${formatCurrency(i.precio_costo)}</td>
+                                <td class="text-end pe-4">
+                                    ${puedeGestionar ? `
+                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInsumoModal(${i.id})" title="Editar insumo">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    ` : ''}
+                                    ${puedeEliminar ? `
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInsumo(${i.id})" title="Eliminar insumo">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    ` : ''}
                                 </td>
                             </tr>
                         `;
                     });
-                    renderPagination(data.total, limit, page);
+                    renderPagination(data.total, itemsPerPage, page, 'insumosPagination', 'loadInsumos');
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No hay insumos registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron insumos.</td></tr>`;
+                    const paginationContainer = document.getElementById('insumosPagination');
+                    if (paginationContainer) paginationContainer.innerHTML = '';
                 }
             } catch (e) {
                 console.error('Error fetching insumos:', e);
             }
-        }
-
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const paginationContainer = document.getElementById('insumosPagination');
-            if (!paginationContainer) return;
-            if (totalPages <= 1) {
-                paginationContainer.innerHTML = '';
-                return;
-            }
-            let html = `<nav aria-label="Paginación de insumos"><ul class="pagination justify-content-center">`;
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page - 1}); return false;">&laquo;</a></li>`;
-            const maxVisible = 5;
-            let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-            if (endPage - startPage < maxVisible - 1) {
-                startPage = Math.max(1, endPage - maxVisible + 1);
-            }
-            for (let p = startPage; p <= endPage; p++) {
-                const active = p === page ? ' active' : '';
-                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadInsumos(${p}); return false;">${p}</a></li>`;
-            }
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadInsumos(${page + 1}); return false;">&raquo;</a></li>`;
-            html += `</ul></nav>`;
-            paginationContainer.innerHTML = html;
         }
 
         async function loadProveedores() {
@@ -373,10 +401,26 @@ $pageHeader = "Inventario";
                     select.innerHTML = '<option value="">Seleccione proveedor...</option>';
                     if (data.success && data.data) {
                         data.data.forEach(p => {
-                            select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
+                            select.innerHTML += `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`;
                         });
                     }
                 });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadInsumosSelectCompra() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_insumos&limit=500');
+                const data = await res.json();
+                const selectCompra = document.getElementById('insumoSelectCompra');
+                if (selectCompra && data.success && data.data) {
+                    selectCompra.innerHTML = '<option value="" disabled selected>Seleccione insumo...</option>';
+                    data.data.forEach(i => {
+                        selectCompra.innerHTML += `<option value="${i.id}">${escapeHtml(i.nombre)} (${escapeHtml(i.unidad_medida)})</option>`;
+                    });
+                }
             } catch (e) {
                 console.error(e);
             }
@@ -397,7 +441,8 @@ $pageHeader = "Inventario";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addInsumoModal')).hide();
                     e.target.reset();
-                    await loadInsumos();
+                    await loadInsumos(1);
+                    await loadInsumosSelectCompra();
                     await loadAlerts();
                     showAlert('Insumo registrado correctamente', 'success');
                 } else {
@@ -423,7 +468,7 @@ $pageHeader = "Inventario";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('registrarCompraModal')).hide();
                     e.target.reset();
-                    await loadInsumos();
+                    await loadInsumos(currentPage);
                     await loadAlerts();
                     showAlert('Compra registrada correctamente', 'success');
                 } else {
@@ -481,7 +526,8 @@ $pageHeader = "Inventario";
                 const data = await res.json();
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editInsumoModal')).hide();
-                    await loadInsumos();
+                    await loadInsumos(currentPage);
+                    await loadInsumosSelectCompra();
                     await loadAlerts();
                     showAlert('Insumo actualizado correctamente', 'success');
                 } else {
@@ -507,7 +553,7 @@ $pageHeader = "Inventario";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('adjustStockModal')).hide();
                     e.target.reset();
-                    await loadInsumos();
+                    await loadInsumos(currentPage);
                     await loadAlerts();
                     showAlert('Stock ajustado correctamente', 'success');
                 } else {
@@ -528,7 +574,8 @@ $pageHeader = "Inventario";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    await loadInsumos();
+                    await loadInsumos(currentPage);
+                    await loadInsumosSelectCompra();
                     await loadAlerts();
                     showAlert('Insumo eliminado correctamente', 'success');
                 } else {
@@ -541,7 +588,12 @@ $pageHeader = "Inventario";
 
         function escapeHtml(text) {
             if (!text) return '';
-            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>

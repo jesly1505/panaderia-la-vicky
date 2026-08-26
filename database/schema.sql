@@ -413,6 +413,7 @@ DROP TABLE IF EXISTS `ventas`;
 CREATE TABLE `ventas` (
   `id` int NOT NULL AUTO_INCREMENT,
   `pedido_id` int DEFAULT NULL,
+  `cliente_id` int DEFAULT NULL,
   `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
   `impuestos` decimal(10,2) NOT NULL DEFAULT '0.00',
   `descuento` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -427,8 +428,10 @@ CREATE TABLE `ventas` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `pedido_id` (`pedido_id`),
   KEY `usuario_id` (`usuario_id`),
+  KEY `idx_ventas_cliente` (`cliente_id`),
   CONSTRAINT `ventas_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
+  CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ventas_cliente` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `catalogos`;

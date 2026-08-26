@@ -30,16 +30,32 @@ $pageHeader = "Gestión de Proveedores";
 
             <div class="container-fluid p-4 animate-fade-in">
                 <div class="card shadow-sm border-0 border-top border-4 border-success">
-                    <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 gap-3">
-                        <div>
-                            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-truck me-2 text-success"></i>Directorio de Proveedores</h5>
-                            <p class="text-muted small mb-0">Proveedores de materias primas e insumos</p>
+                    <div class="card-header bg-white py-3">
+                        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                            <div>
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-truck me-2 text-success"></i>Directorio de Proveedores</h5>
+                                <p class="text-muted small mb-0">Proveedores de materias primas e insumos</p>
+                            </div>
+                            <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                                <!-- Buscador de Proveedores -->
+                                <div class="input-group input-group-sm" style="min-width: 260px; max-width: 340px;">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" id="proveedorSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar proveedor..." oninput="handleProveedorSearch()" autocomplete="off">
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" id="btnClearSearch" onclick="clearProveedorSearch()" title="Limpiar búsqueda" style="display: none;">
+                                        <i class="fas fa-times me-1"></i> Limpiar
+                                    </button>
+                                </div>
+
+                                <!-- Botón Nuevo Proveedor -->
+                                <?php if (tiene_permiso('proveedores.gestionar')): ?>
+                                    <button class="btn btn-success shadow-sm fw-bold px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#addProveedorModal">
+                                        <i class="fas fa-plus me-1"></i>Nuevo Proveedor
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <?php if (tiene_permiso('proveedores.gestionar')): ?>
-                            <button class="btn btn-success shadow-sm fw-bold px-4" data-bs-toggle="modal" data-bs-target="#addProveedorModal">
-                                <i class="fas fa-plus me-2"></i>NUEVO PROVEEDOR
-                            </button>
-                        <?php endif; ?>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -63,8 +79,8 @@ $pageHeader = "Gestión de Proveedores";
                                 </tbody>
                             </table>
                         </div>
-                        <!-- Pagination container -->
-                        <div id="clientPagination" class="my-3 d-flex justify-content-center"></div>
+                        <!-- Paginación de Proveedores -->
+                        <div id="proveedoresPagination" class="p-3 border-top d-flex justify-content-end"></div>
                     </div>
                 </div>
             </div>
@@ -151,15 +167,45 @@ $pageHeader = "Gestión de Proveedores";
     <?php include 'includes/footer.php'; ?>
     <script>
         let proveedoresData = [];
+        let currentPage = 1;
+        let currentSearch = '';
+        let searchTimeout = null;
+        const itemsPerPage = 10;
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadProveedores();
+            loadProveedores(1);
         });
 
+        function handleProveedorSearch() {
+            const input = document.getElementById('proveedorSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) {
+                btnClear.style.display = input.value.length > 0 ? 'inline-block' : 'none';
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = query;
+                loadProveedores(1);
+            }, 250);
+        }
+
+        function clearProveedorSearch() {
+            const input = document.getElementById('proveedorSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            currentSearch = '';
+            loadProveedores(1);
+            input.focus();
+        }
+
         async function loadProveedores(page = 1) {
+            currentPage = page;
             try {
-                const limit = 10;
-                const res = await fetch(`../backend/api.php?route=get_proveedores_paginated&page=${page}&limit=${limit}`);
+                const searchParam = encodeURIComponent(currentSearch);
+                const res = await fetch(`../backend/api.php?route=get_proveedores_paginated&page=${page}&limit=${itemsPerPage}&search=${searchParam}`);
                 const data = await res.json();
                 const tbody = document.getElementById('proveedoresTableBody');
                 tbody.innerHTML = '';
@@ -167,7 +213,7 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success && data.data && data.data.length > 0) {
                     proveedoresData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.gestionar') : true);
-                    const offset = (page - 1) * limit;
+                    const offset = (page - 1) * itemsPerPage;
 
                     data.data.forEach((p, index) => {
                         const rowNumber = offset + index + 1;
@@ -175,8 +221,8 @@ $pageHeader = "Gestión de Proveedores";
                             <tr>
                                 <td class="ps-4 text-muted fw-bold">${rowNumber}</td>
                                 <td class="fw-bold text-dark">${escapeHtml(p.nombre)}</td>
-                                <td class="small">${escapeHtml(p.contacto || '<span class="text-muted">N/A</span>')}</td>
-                                <td class="small">${escapeHtml(p.telefono || '<span class="text-muted">N/A</span>')}</td>
+                                <td class="small">${escapeHtml(p.contacto || 'N/A')}</td>
+                                <td class="small">${escapeHtml(p.telefono || 'N/A')}</td>
                                 <td class="small text-muted">${escapeHtml(p.email || 'Sin email')}</td>
                                 <td class="text-end pe-4">
                                     ${puedeGestionar ? TA.edit(`openEditModal(${p.id})`) + TA.remove(`deleteProveedor(${p.id})`) : ''}
@@ -185,38 +231,15 @@ $pageHeader = "Gestión de Proveedores";
                         `;
                     });
 
-                    // Render pagination using shared function
-                    renderPagination(data.total, data.limit, page);
+                    renderPagination(data.total, itemsPerPage, page, 'proveedoresPagination', 'loadProveedores');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No hay proveedores registrados.</td></tr>';
-                    document.getElementById('clientPagination').innerHTML = '';
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No se encontraron proveedores.</td></tr>';
+                    const nav = document.getElementById('proveedoresPagination');
+                    if (nav) nav.innerHTML = '';
                 }
-            } catch (e) { console.error(e); }
-        }
-
-        // Render pagination (shared with clientes)
-        function renderPagination(total, limit, page) {
-            const totalPages = Math.ceil(total / limit);
-            const nav = document.getElementById('clientPagination');
-            nav.innerHTML = '';
-            if (totalPages <= 1) return;
-            let html = '<ul class="pagination justify-content-center">';
-            const prevDisabled = page <= 1 ? ' disabled' : '';
-            html += `<li class="page-item${prevDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page - 1}); return false;">&laquo;</a></li>`;
-            const maxVisible = 5;
-            let start = Math.max(1, page - Math.floor(maxVisible / 2));
-            let end = Math.min(totalPages, start + maxVisible - 1);
-            if (end - start < maxVisible - 1) {
-                start = Math.max(1, end - maxVisible + 1);
+            } catch (e) {
+                console.error(e);
             }
-            for (let i = start; i <= end; i++) {
-                const active = i === page ? ' active' : '';
-                html += `<li class="page-item${active}"><a class="page-link" href="#" onclick="loadProveedores(${i}); return false;">${i}</a></li>`;
-            }
-            const nextDisabled = page >= totalPages ? ' disabled' : '';
-            html += `<li class="page-item${nextDisabled}"><a class="page-link" href="#" onclick="loadProveedores(${page + 1}); return false;">&raquo;</a></li>`;
-            html += '</ul>';
-            nav.innerHTML = html;
         }
 
         document.getElementById('addProveedorForm').addEventListener('submit', async (e) => {
@@ -238,7 +261,7 @@ $pageHeader = "Gestión de Proveedores";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addProveedorModal')).hide();
                     e.target.reset();
-                    loadProveedores();
+                    loadProveedores(1);
                     showAlert('Proveedor registrado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al guardar.', 'error');
@@ -276,7 +299,7 @@ $pageHeader = "Gestión de Proveedores";
                 const data = await res.json();
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editProveedorModal')).hide();
-                    loadProveedores();
+                    loadProveedores(currentPage);
                     showAlert('Proveedor actualizado correctamente', 'success');
                 } else {
                     showAlert(data.message || 'Error al actualizar.', 'error');
@@ -293,9 +316,22 @@ $pageHeader = "Gestión de Proveedores";
                     body: JSON.stringify({ id: id })
                 });
                 const data = await res.json();
-                if (data.success) { loadProveedores(); showAlert('Proveedor eliminado correctamente', 'success'); }
+                if (data.success) { 
+                    loadProveedores(currentPage); 
+                    showAlert('Proveedor eliminado correctamente', 'success'); 
+                }
                 else showAlert(data.message || 'Error al eliminar.', 'error');
             } catch (e) { console.error(e); }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
