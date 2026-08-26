@@ -16,9 +16,7 @@ $mainNav = [
     'pedidos'           => ['pedidos.php',            'fa-cart-shopping',        'Pedidos',       ['pedidos.ver']],
     'ventas'            => ['ventas.php',             'fa-chart-line',           'Ventas',        ['ventas.ver']],
     'clientes'          => ['clientes.php',           'fa-users',                'Clientes',      ['clientes.ver']],
-    'factura'           => ['factura.php',            'fa-file-invoice',         'Facturación',   ['ventas.ver']],
     'reportes'          => ['reportes.php',           'fa-chart-pie',            'Reportes',      ['reportes.ver']],
-    'caja'              => ['ventas.php',             'fa-cash-register',        'Caja',          ['ventas.ver']],
     'bitacora'          => ['bitacora.php',           'fa-clipboard-list',       'Bitácora',      ['auditoria.ver']],
     'incidencias'       => ['incidencias.php',        'fa-triangle-exclamation', 'Incidencias',   ['dashboard.ver', 'auditoria.ver'], 'incidencias'],
 ];
