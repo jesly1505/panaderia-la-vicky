@@ -18,9 +18,11 @@ $pageHeader = "Datos del Negocio";
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <?php include 'includes/head.php'; ?>
 </head>
+
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
@@ -35,18 +37,23 @@ $pageHeader = "Datos del Negocio";
 
                         <div class="card border-0 shadow-sm border-top border-4 border-primary">
                             <div class="card-header bg-white py-3">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-store me-2 text-primary"></i>Perfil de la Panadería</h5>
-                                <p class="text-muted small mb-0">Información que se muestra en facturas y que rige los cálculos de impuestos.</p>
+                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-store me-2 text-primary"></i>Perfil
+                                    de la Panadería</h5>
+                                <p class="text-muted small mb-0">Información que se muestra en facturas y que rige los
+                                    cálculos de impuestos.</p>
                             </div>
                             <div class="card-body p-4">
                                 <form id="perfilForm">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Nombre del Negocio <span class="text-danger">*</span></label>
-                                            <input type="text" name="nombre" class="form-control py-2" maxlength="100" required placeholder="Panadería La Vicky">
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Nombre del
+                                                Negocio <span class="text-danger">*</span></label>
+                                            <input type="text" name="nombre" class="form-control py-2" maxlength="100"
+                                                required placeholder="Panadería La Vicky">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Moneda <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Moneda
+                                                <span class="text-danger">*</span></label>
                                             <select name="moneda" class="form-select py-2" required>
                                                 <option value="USD">USD - Dólar ($)</option>
                                                 <option value="NIO">NIO - Córdoba (C$)</option>
@@ -55,28 +62,38 @@ $pageHeader = "Datos del Negocio";
                                             </select>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Descripción</label>
-                                            <input type="text" name="descripcion" class="form-control py-2" maxlength="255" placeholder="Ej. Panadería &amp; Pastelería">
+                                            <label
+                                                class="form-label fw-bold small text-uppercase text-muted">Descripción</label>
+                                            <input type="text" name="descripcion" class="form-control py-2"
+                                                maxlength="255" placeholder="Ej. Panadería &amp; Pastelería">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Dirección</label>
-                                            <input type="text" name="direccion" class="form-control py-2" maxlength="255" placeholder="Av. Principal calle 5">
+                                            <label
+                                                class="form-label fw-bold small text-uppercase text-muted">Dirección</label>
+                                            <input type="text" name="direccion" class="form-control py-2"
+                                                maxlength="255" placeholder="Av. Principal calle 5">
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Teléfono</label>
-                                            <input type="tel" name="telefono" class="form-control py-2" maxlength="30" placeholder="1234-5678">
+                                            <label
+                                                class="form-label fw-bold small text-uppercase text-muted">Teléfono</label>
+                                            <input type="tel" name="telefono" class="form-control py-2" maxlength="30"
+                                                placeholder="1234-5678">
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">RUC / NIT</label>
+                                            <label class="form-label fw-bold small text-uppercase text-muted">RUC /
+                                                NIT</label>
                                             <input type="text" name="ruc" class="form-control py-2" maxlength="30">
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label fw-bold small text-uppercase text-muted">Tasa de Impuesto (%) <span class="text-danger">*</span></label>
+                                            <label class="form-label fw-bold small text-uppercase text-muted">Tasa de
+                                                Impuesto (%) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" name="tasa_impuesto" class="form-control py-2" min="0" max="100" step="0.01" required placeholder="15">
+                                                <input type="number" name="tasa_impuesto" class="form-control py-2"
+                                                    min="0" max="100" step="0.01" required placeholder="15">
                                                 <span class="input-group-text">%</span>
                                             </div>
-                                            <div class="form-text">Se aplica al subtotal de cada venta (ej. IVA 15%).</div>
+                                            <div class="form-text">Se aplica al subtotal de cada venta (ej. IVA 15%).
+                                            </div>
                                         </div>
                                     </div>
 
@@ -160,4 +177,5 @@ $pageHeader = "Datos del Negocio";
         document.addEventListener('DOMContentLoaded', loadPerfil);
     </script>
 </body>
+
 </html>

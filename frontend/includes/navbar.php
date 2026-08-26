@@ -1,5 +1,8 @@
 <?php
 // frontend/includes/navbar.php
+$userRol = $_SESSION['rol'] ?? $_SESSION['rol_nombre'] ?? '';
+$userRolId = (int)($_SESSION['rol_id'] ?? 0);
+$esAdminUser = (strtolower($userRol) === 'administrador' || $userRolId === 1 || (function_exists('tiene_permiso') && tiene_permiso('perfil.gestionar')));
 ?>
 <header class="top-navbar">
     <div class="d-flex align-items-center">
@@ -31,8 +34,10 @@
                 <span class="d-none d-md-inline fw-medium user-name-display"><?php echo htmlspecialchars($_SESSION['usuario'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                <li><a class="dropdown-item" href="perfil.php"><i class="fas fa-store me-2 text-muted"></i> Mi Perfil</a></li>
-                <li><hr class="dropdown-divider"></li>
+                <?php if ($esAdminUser): ?>
+                    <li><a class="dropdown-item" href="perfil.php"><i class="fas fa-store me-2 text-muted"></i> Mi Perfil</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                <?php endif; ?>
                 <li><a class="dropdown-item text-danger" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
             </ul>
         </div>
