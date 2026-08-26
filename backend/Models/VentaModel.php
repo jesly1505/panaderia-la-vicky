@@ -2,6 +2,8 @@
 namespace App\Models;
 
 use PDO;
+use Exception;
+use Throwable;
 use App\Core\Money;
 use App\Utils\InventoryLogic;
 
@@ -277,8 +279,12 @@ class VentaModel {
     }
 
     public function createFromPedido($pedido_id, $data = [], ?int $usuario_id = null) {
+        $startedTransaction = false;
         try {
-            $this->conn->beginTransaction();
+            if (!$this->conn->inTransaction()) {
+                $this->conn->beginTransaction();
+                $startedTransaction = true;
+            }
 
             // 1. Obtener datos del pedido
             $qP = "SELECT total FROM pedidos WHERE id = :id";
@@ -342,10 +348,14 @@ class VentaModel {
             // 5. Descontar Inventario
             $this->inventoryLogic->descontarVarios($detalles);
 
-            $this->conn->commit();
+            if ($startedTransaction && $this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
             return $venta_id;
         } catch (Exception $e) {
-            if ($this->conn->inTransaction()) $this->conn->rollBack();
+            if ($startedTransaction && $this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             error_log("Error en createFromPedido: " . $e->getMessage());
             return false;
         }
