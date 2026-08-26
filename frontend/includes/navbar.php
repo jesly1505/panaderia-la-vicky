@@ -3,11 +3,21 @@
 ?>
 <header class="top-navbar">
     <div class="d-flex align-items-center">
-        <button class="btn btn-link d-lg-none me-3 p-0 text-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
-            <i class="fas fa-bars fs-4"></i>
+        <!-- Mobile hamburger toggle -->
+        <button class="btn btn-hamburger d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-label="Abrir menú" title="Menú lateral">
+            <span class="hamburger-lines">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </span>
         </button>
-        <button class="btn btn-link d-none d-lg-flex me-3 p-0 text-dark align-items-center" type="button" id="sidebarToggleBtn" title="Colapsar / Expandir menú">
-            <i class="fas fa-bars fs-5"></i>
+        <!-- Desktop sidebar collapse toggle -->
+        <button class="btn btn-hamburger d-none d-lg-flex me-3" type="button" id="sidebarToggleBtn" aria-label="Colapsar / Expandir menú" title="Colapsar / Expandir menú">
+            <span class="hamburger-lines">
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+            </span>
         </button>
         <h4 class="m-0 fw-bold text-dark d-none d-sm-block"><?php echo isset($pageHeader) ? $pageHeader : "Panel de Administración"; ?></h4>
         <h5 class="m-0 fw-bold text-dark d-block d-sm-none"><?php echo isset($pageHeader) ? $pageHeader : "La Vicky"; ?></h5>
