@@ -9,14 +9,25 @@ use App\Utils\Logger;
 use PDO;
 
 class CmmiController {
+    /** @var CmmiModel */
     private CmmiModel $model;
+    /** @var AuditService */
     private AuditService $audit;
 
+    /**
+     * @param CmmiModel    $model Modelo de incidencias/auditoría.
+     * @param AuditService $audit Servicio de auditoría.
+     */
     public function __construct(CmmiModel $model, AuditService $audit) {
         $this->model = $model;
         $this->audit = $audit;
     }
 
+    /**
+     * Devuelve incidencias filtradas por rango de fechas.
+     *
+     * @return void Emite JSON con la lista de incidencias.
+     */
     public function getAll(): void {
         header('Content-Type: application/json');
         $filter = $_GET['filter'] ?? 'all';
@@ -27,6 +38,11 @@ class CmmiController {
         echo json_encode(['success' => true, 'data' => $incidencias], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Registra una nueva incidencia reportada por un usuario.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function registrarIncidencia(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -53,6 +69,11 @@ class CmmiController {
         }
     }
 
+    /**
+     * Marca una incidencia como resuelta.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function resolverIncidencia(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -76,6 +97,12 @@ class CmmiController {
         }
     }
 
+    /**
+     * Genera y descarga un respaldo de la base de datos (.sql).
+     * Intenta mysqldump CLI; si falla, usa backup nativo en PHP.
+     *
+     * @return void Emite archivo SQL o redirige en caso de error.
+     */
     public function backupDatabase(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();

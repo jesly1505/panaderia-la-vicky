@@ -154,7 +154,7 @@ $router->register('get_datos_empresa', EmpresaController::class, 'getPerfil', tr
 $router->register('get_bitacora', AuditController::class, 'getBitacora', true, null, ['GET'], 'auditoria.ver');
 $router->register('get_accesos_denegados', AuditController::class, 'getDenied', true, null, ['GET'], 'auditoria.ver');
 $router->register('get_incidencias', CmmiController::class, 'getAll', true, null, ['GET'], 'auditoria.ver');
-$router->register('registrar_incidencia', CmmiController::class, 'registrarIncidencia', false, [], ['POST']);
+$router->register('registrar_incidencia', CmmiController::class, 'registrarIncidencia', false, null, ['POST'], 'auditoria.ver');
 $router->register('resolver_incidencia', CmmiController::class, 'resolverIncidencia', false, null, ['GET', 'POST'], 'auditoria.ver');
 $router->register('backup_db', CmmiController::class, 'backupDatabase', false, null, ['GET'], 'permisos.gestionar');
 

@@ -15,6 +15,13 @@ class ProductoController
     private $insumoModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de productos.
+     *
+     * @param  ProductoModel              $productoModel  Modelo de productos.
+     * @param  InsumoRepositoryInterface  $insumoModel    Repositorio de insumos.
+     * @param  AuditService               $audit          Servicio de auditoría.
+     */
     public function __construct(ProductoModel $productoModel, InsumoRepositoryInterface $insumoModel, AuditService $audit)
     {
         $this->productoModel = $productoModel;
@@ -22,6 +29,11 @@ class ProductoController
         $this->audit = $audit;
     }
 
+    /**
+     * Devuelve la lista de todos los productos.
+     *
+     * @return void  Responde con JSON con la lista de productos.
+     */
     public function getAll()
     {
         header('Content-Type: application/json');
@@ -29,6 +41,13 @@ class ProductoController
         echo json_encode(['success' => true, 'data' => $productos]);
     }
 
+    /**
+     * Crea un nuevo producto a partir de datos JSON enviados por POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     *
+     * @throws \Exception  Si ocurre un error al procesar la receta (ingredientes).
+     */
     public function add()
     {
         header('Content-Type: application/json');
@@ -115,6 +134,11 @@ class ProductoController
         }
     }
 
+    /**
+     * Actualiza un producto existente a partir de datos JSON enviados por POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function update()
     {
         header('Content-Type: application/json');
@@ -163,6 +187,11 @@ class ProductoController
         }
     }
 
+    /**
+     * Devuelve los productos pertenecientes a una categoría. GET ?categoria=N.
+     *
+     * @return void  Responde con JSON con la lista de productos de la categoría.
+     */
     public function getByCategoria()
     {
         header('Content-Type: application/json');
@@ -175,6 +204,11 @@ class ProductoController
         echo json_encode(['success' => true, 'data' => $productos]);
     }
 
+    /**
+     * Elimina un producto por su ID. POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function delete()
     {
         header('Content-Type: application/json');
@@ -202,8 +236,11 @@ class ProductoController
 
 
     /**
-     * POST JSON { "producto_id": N, "cantidad": N }
-     * Llama a ProductoModel::producir() y responde con JSON
+     * Procesa la producción de un producto consumiendo insumos de su receta.
+     * POST JSON { "producto_id": N, "cantidad": N }.
+     * Llama a ProductoModel::producir() y responde con JSON.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
      */
     public function producir()
     {

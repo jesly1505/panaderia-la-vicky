@@ -7,11 +7,25 @@ use Throwable;
 use App\Core\Money;
 use App\Utils\InventoryLogic;
 
+/**
+ * Modelo de acceso a datos para la entidad Venta.
+ *
+ * Encargado de ejecutar todas las consultas SQL relacionadas con ventas,
+ * incluyendo lectura, creación, cancelación, historial, reportes y
+ * obtención de detalles con pagos e inventario.
+ */
 class VentaModel {
     private $conn;
     private $inventoryLogic;
     private $productoModel;
 
+    /**
+     * Inyección de dependencias del modelo.
+     *
+     * @param PDO             $db             Conexión PDO a la base de datos.
+     * @param InventoryLogic  $inventoryLogic Lógica de gestión de inventario para descontar/revertir stock.
+     * @param ProductoModel   $productoModel  Modelo de acceso a datos de productos para obtener costos.
+     */
     public function __construct(PDO $db, InventoryLogic $inventoryLogic, ProductoModel $productoModel) {
         $this->conn = $db;
         $this->inventoryLogic = $inventoryLogic;
@@ -66,6 +80,21 @@ class VentaModel {
         return ['sql' => $whereSql, 'params' => $params];
     }
 
+    /**
+     * Retorna la lista de ventas aplicando filtros de fecha, búsqueda, estado,
+     * método de pago y vendedor, con soporte de paginación.
+     *
+     * @param string   $filterType Tipo de filtro temporal (all, today, week, month, year, custom).
+     * @param string   $startDate  Fecha de inicio del rango personalizado (formato YYYY-MM-DD).
+     * @param string   $endDate    Fecha de fin del rango personalizado (formato YYYY-MM-DD).
+     * @param int|null $limit      Cantidad máxima de registros por página, o null para traer todos.
+     * @param int|null $offset     Desplazamiento para paginación, o null para traer todos.
+     * @param string   $search     Término de búsqueda que coincide con nombre de cliente, vendedor o ID.
+     * @param string   $estado     Filtro por estado de la venta (completado, cancelado, pendiente).
+     * @param string   $tipoPago   Filtro por método de pago (efectivo, tarjeta, transferencia, otro).
+     * @param string   $vendedor   Filtro por nombre o ID del vendedor.
+     * @return array<int, array<string, mixed>> Array de ventas con datos asociados.
+     */
     public function readAll(string $filterType = 'all', string $startDate = '', string $endDate = '', ?int $limit = null, ?int $offset = null, string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = '') {
         $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
         $query = "SELECT v.*, p.estado as estado_pedido, u.nombre as vendedor,
@@ -92,6 +121,18 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Cuenta el total de ventas que coinciden con los filtros indicados.
+     *
+     * @param string $filterType Tipo de filtro temporal (all, today, week, month, year, custom).
+     * @param string $startDate  Fecha de inicio del rango personalizado (formato YYYY-MM-DD).
+     * @param string $endDate    Fecha de fin del rango personalizado (formato YYYY-MM-DD).
+     * @param string $search     Término de búsqueda por nombre de cliente, vendedor o ID.
+     * @param string $estado     Filtro por estado de la venta.
+     * @param string $tipoPago   Filtro por método de pago.
+     * @param string $vendedor   Filtro por nombre o ID del vendedor.
+     * @return int Cantidad total de ventas que coinciden con los filtros.
+     */
     public function countAll(string $filterType = 'all', string $startDate = '', string $endDate = '', string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = ''): int {
         try {
             $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
@@ -113,6 +154,19 @@ class VentaModel {
         }
     }
 
+    /**
+     * Calcula los totales agregados de ingresos y ganancias del periodo filtrado,
+     * excluyendo ventas canceladas.
+     *
+     * @param string $filterType Tipo de filtro temporal (all, today, week, month, year, custom).
+     * @param string $startDate  Fecha de inicio del rango personalizado (formato YYYY-MM-DD).
+     * @param string $endDate    Fecha de fin del rango personalizado (formato YYYY-MM-DD).
+     * @param string $search     Término de búsqueda por nombre de cliente, vendedor o ID.
+     * @param string $estado     Filtro por estado de la venta.
+     * @param string $tipoPago   Filtro por método de pago.
+     * @param string $vendedor   Filtro por nombre o ID del vendedor.
+     * @return array{total_ingresos: float, total_ganancias: float} Totales del periodo.
+     */
     public function getTotals(string $filterType = 'all', string $startDate = '', string $endDate = '', string $search = '', string $estado = '', string $tipoPago = '', string $vendedor = ''): array {
         try {
             $where = $this->buildWhereClause($filterType, $startDate, $endDate, $search, $estado, $tipoPago, $vendedor);
@@ -139,6 +193,12 @@ class VentaModel {
         }
     }
 
+    /**
+     * Retorna la lista de usuarios vendedores activos (no eliminados) ordenados
+     * alfabéticamente por nombre.
+     *
+     * @return array<int, array{id: int, nombre: string}> Lista de vendedores con su ID y nombre.
+     */
     public function getVendedores(): array {
         try {
             $query = "SELECT DISTINCT u.id, u.nombre 
@@ -153,6 +213,18 @@ class VentaModel {
         }
     }
 
+    /**
+     * Registra una venta directa (sin pedido previo), insertando la venta, sus
+     * detalles, los pagos asociados y descontando el inventario de cada producto.
+     *
+     * Calcula las ganancias reales restando el costo de los insumos al total vendido.
+     * Toda la operación se ejecuta dentro de una transacción de base de datos.
+     *
+     * @param array<string, mixed> $data       Datos de la venta: subtotal, impuestos, descuento,
+     *                                         total, cliente_id, detalles (array) y pagos (array).
+     * @param int|null             $usuario_id ID del usuario vendedor que realiza la venta.
+     * @return int|false El ID de la venta creada, o false si ocurrió un error.
+     */
     public function createDirecta($data, ?int $usuario_id = null) {
         try {
             $this->conn->beginTransaction();
@@ -232,6 +304,14 @@ class VentaModel {
         }
     }
 
+    /**
+     * Cancela una venta existente, revierte el inventario de cada producto vendido,
+     * actualiza el estado de la venta a 'cancelado' y marca los pagos como 'fallido'.
+     *
+     * @param int $id Identificador de la venta a cancelar.
+     * @return bool true si la cancelación fue exitosa, false si ocurrió un error
+     *              o la venta no existe / ya está cancelada.
+     */
     public function cancelarVenta($id) {
         try {
             $this->conn->beginTransaction();
@@ -278,6 +358,18 @@ class VentaModel {
         }
     }
 
+    /**
+     * Crea una venta a partir de un pedido existente cuando este se marca como 'entregado'.
+     *
+     * Obtiene los datos y detalles del pedido, calcula las ganancias restando el
+     * costo de los insumos, inserta la venta, el detalle, el pago y descuenta el
+     * inventario. La transacción es externa si ya existe una activa.
+     *
+     * @param int                $pedido_id  Identificador del pedido source.
+     * @param array<string, mixed> $data     Datos opcionales adicionales (tipo_pago, metodo_pago).
+     * @param int|null           $usuario_id ID del usuario vendedor.
+     * @return int|false El ID de la venta creada, o false si ocurrió un error.
+     */
     public function createFromPedido($pedido_id, $data = [], ?int $usuario_id = null) {
         $startedTransaction = false;
         try {
@@ -361,6 +453,12 @@ class VentaModel {
         }
     }
 
+    /**
+     * Retorna el historial de ventas más recientes con el nombre del vendedor.
+     *
+     * @param int $limit Cantidad máxima de registros a retornar (por defecto 50).
+     * @return array<int, array<string, mixed>> Array de ventas ordenadas por fecha descendente.
+     */
     public function getSalesHistory($limit = 50) {
         $query = "SELECT v.*, u.nombre as vendedor 
                   FROM ventas v 
@@ -372,6 +470,13 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Retorna el ranking de productos más vendidos (por cantidad total vendida),
+     * excluyendo las ventas canceladas.
+     *
+     * @param int $limit Cantidad máxima de productos a retornar (por defecto 5).
+     * @return array<int, array{nombre: string, total_vendido: int}> Productos ordenados por ventas descendentes.
+     */
     public function getTopProducts($limit = 5) {
         $query = "SELECT p.nombre, SUM(dv.cantidad) as total_vendido 
                   FROM detalle_venta dv 
@@ -385,6 +490,12 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Retorna los datos de ingresos diarios de los últimos 7 días para
+     * renderizar el gráfico de ingresos del dashboard.
+     *
+     * @return array<int, array{fecha: string, total_dia: float}> Serie temporal de ingresos por día.
+     */
     public function getRevenueChartData() {
         $query = "SELECT DATE(fecha_venta) as fecha, SUM(total) as total_dia 
                   FROM ventas 
@@ -396,6 +507,14 @@ class VentaModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene una venta por su ID junto con sus detalles (productos vendidos)
+     * y los pagos asociados.
+     *
+     * @param int $id Identificador de la venta.
+     * @return array|null Array con los datos de la venta, incluyendo claves
+     *                    'detalles' y 'pagos', o null si la venta no existe.
+     */
     public function getVentaConDetalles($id) {
         $query = "SELECT v.*, u.nombre as vendedor, 
                          COALESCE(c.nombre, cp.nombre) as cliente_nombre, 

@@ -1,12 +1,6 @@
 <?php
 // frontend/clientes.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('clientes.ver')) {
     header("Location: index.php");
@@ -303,16 +297,6 @@ $pageHeader = "Gestión de Clientes";
             } catch (e) {
                 console.error(e);
             }
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
 
         async function viewHistory(id) {

@@ -7,16 +7,29 @@ use App\Models\PermisoModel;
 use App\Models\UserModel;
 
 class EmployeeController {
+    /** @var UserModel */
     private $userModel;
+    /** @var AuditService */
     private $audit;
+    /** @var PermisoModel */
     private $permisoModel;
 
+    /**
+     * @param UserModel    $userModel    Modelo de usuarios.
+     * @param AuditService $audit        Servicio de auditoría.
+     * @param PermisoModel $permisoModel Modelo de permisos/roles.
+     */
     public function __construct(UserModel $userModel, AuditService $audit, PermisoModel $permisoModel) {
         $this->userModel = $userModel;
         $this->audit = $audit;
         $this->permisoModel = $permisoModel;
     }
 
+    /**
+     * Lista empleados paginados.
+     *
+     * @return void Emite JSON con data, total, page y limit.
+     */
     public function getAll() {
         header('Content-Type: application/json');
         $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
@@ -35,6 +48,11 @@ class EmployeeController {
         ]);
     }
 
+    /**
+     * Crea un nuevo empleado (usuario del sistema).
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function create() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -80,6 +98,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Elimina un empleado (borrado lógico). No permite eliminar el admin principal.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function delete() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -106,6 +129,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Actualiza nombre, email y rol de un empleado.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function update() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -147,6 +175,11 @@ class EmployeeController {
         }
     }
 
+    /**
+     * Devuelve estadísticas de ganancias por empleado.
+     *
+     * @return void Emite JSON con la lista de ganancias.
+     */
     public function getStats() {
         header('Content-Type: application/json');
         $stats = $this->userModel->getProfitsByUser();

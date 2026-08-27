@@ -6,25 +6,43 @@ use App\Models\ReporteModel;
 class ReporteController {
     private ReporteModel $model;
 
+    /**
+     * Constructor del controlador de reportes.
+     *
+     * @param  ReporteModel  $model  Modelo de reportes.
+     */
     public function __construct(ReporteModel $model) {
         $this->model = $model;
     }
 
-    /** GET ?route=get_ventas_semanales */
+    /**
+     * Devuelve el reporte de ventas semanales. GET ?route=get_ventas_semanales.
+     *
+     * @return void  Responde con JSON con los datos de ventas semanales.
+     */
     public function getVentasSemanales(): void {
         header('Content-Type: application/json');
         $data = $this->model->getVentasSemanales();
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=get_ventas_mensuales */
+    /**
+     * Devuelve el reporte de ventas mensuales. GET ?route=get_ventas_mensuales.
+     *
+     * @return void  Responde con JSON con los datos de ventas mensuales.
+     */
     public function getVentasMensuales(): void {
         header('Content-Type: application/json');
         $data = $this->model->getVentasMensuales();
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=get_ventas_stats_reporte */
+    /**
+     * Devuelve las estadísticas de ventas para el rango de fechas indicado.
+     * GET ?route=get_ventas_stats_reporte.
+     *
+     * @return void  Responde con JSON con las estadísticas de ventas.
+     */
     public function getVentasStats(): void {
         header('Content-Type: application/json');
         $startDate = $_GET['start_date'] ?? '';
@@ -34,7 +52,11 @@ class ReporteController {
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=export_ventas_csv */
+    /**
+     * Exporta el reporte de ventas a CSV. GET ?route=export_ventas_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportVentasCSV(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
@@ -66,7 +88,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_insumos_csv */
+    /**
+     * Exporta el reporte de insumos a CSV. GET ?route=export_insumos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportInsumosCSV(): void {
         $data = $this->model->getExportInsumos();
         $filename = "reporte_insumos_" . date('Ymd_His') . ".csv";
@@ -92,7 +118,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_productos_csv */
+    /**
+     * Exporta el reporte de productos a CSV. GET ?route=export_productos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportProductosCSV(): void {
         $data = $this->model->getExportProductos();
         $filename = "reporte_productos_" . date('Ymd_His') . ".csv";
@@ -119,7 +149,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_gastos_csv */
+    /**
+     * Exporta el reporte de gastos a CSV. GET ?route=export_gastos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportGastosCSV(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
@@ -172,7 +206,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_ventas_pdf */
+    /**
+     * Exporta el reporte de ventas a PDF. GET ?route=export_ventas_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
     public function exportVentasPDF(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
@@ -198,7 +236,11 @@ class ReporteController {
         $this->renderPdfHtml('Reporte de Ventas', $headers, $rows);
     }
 
-    /** GET ?route=export_insumos_pdf */
+    /**
+     * Exporta el reporte de insumos a PDF. GET ?route=export_insumos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
     public function exportInsumosPDF(): void {
         $data = $this->model->getExportInsumos();
 
@@ -215,7 +257,11 @@ class ReporteController {
         $this->renderPdfHtml('Reporte de Insumos', $headers, $rows);
     }
 
-    /** GET ?route=export_productos_pdf */
+    /**
+     * Exporta el reporte de productos a PDF. GET ?route=export_productos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
     public function exportProductosPDF(): void {
         $data = $this->model->getExportProductos();
 
@@ -233,7 +279,11 @@ class ReporteController {
         $this->renderPdfHtml('Reporte de Productos', $headers, $rows);
     }
 
-    /** GET ?route=export_gastos_pdf */
+    /**
+     * Exporta el reporte de gastos a PDF. GET ?route=export_gastos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
     public function exportGastosPDF(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';

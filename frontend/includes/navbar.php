@@ -22,8 +22,8 @@ $esAdminUser = (strtolower($userRol) === 'administrador' || $userRolId === 1 || 
                 <span class="hamburger-line"></span>
             </span>
         </button>
-        <h4 class="m-0 fw-bold text-dark d-none d-sm-block"><?php echo isset($pageHeader) ? $pageHeader : "Panel de Administración"; ?></h4>
-        <h5 class="m-0 fw-bold text-dark d-block d-sm-none"><?php echo isset($pageHeader) ? $pageHeader : "La Vicky"; ?></h5>
+        <h4 class="m-0 fw-bold text-dark d-none d-sm-block"><?php echo htmlspecialchars($pageHeader ?? "Panel de Administración", ENT_QUOTES, 'UTF-8'); ?></h4>
+        <h5 class="m-0 fw-bold text-dark d-block d-sm-none"><?php echo htmlspecialchars($pageHeader ?? "La Vicky", ENT_QUOTES, 'UTF-8'); ?></h5>
     </div>
     <div class="d-flex align-items-center">
         <div class="dropdown">

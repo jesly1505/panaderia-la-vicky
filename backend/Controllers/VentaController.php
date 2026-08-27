@@ -5,6 +5,12 @@ use App\Core\AuditService;
 use App\Core\Validator;
 use App\Models\VentaModel;
 
+/**
+ * Controlador encargado de gestionar las operaciones relacionadas con ventas.
+ *
+ * Provee endpoints para listar, crear, cancelar ventas directas, obtener
+ * detalles de una venta y datos agregados para reportes y dashboards.
+ */
 class VentaController {
     private $ventaModel;
     private $audit;
@@ -12,11 +18,25 @@ class VentaController {
     /** Métodos de pago permitidos. */
     private const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia', 'otro'];
 
+    /**
+     * Inyección de dependencias del controller.
+     *
+     * @param VentaModel   $ventaModel Modelo de acceso a datos de ventas.
+     * @param AuditService $audit      Servicio de auditoría para registrar acciones.
+     */
     public function __construct(VentaModel $ventaModel, AuditService $audit) {
         $this->ventaModel = $ventaModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Obtiene la lista paginada de ventas con filtros y totales del periodo.
+     *
+     * Responde con JSON que contiene el array de ventas, el total de registros
+     * y los totales de ingresos y ganancias del periodo filtrado.
+     *
+     * @return void Salida directa en formato JSON.
+     */
     public function getAll(): void {
         header('Content-Type: application/json');
         $filter = $_GET['filter'] ?? 'all';
@@ -46,12 +66,26 @@ class VentaController {
         ], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Retorna la lista de vendedores (usuarios) registrados en el sistema.
+     *
+     * @return void Salida directa en formato JSON con la lista de vendedores.
+     */
     public function getVendedores(): void {
         header('Content-Type: application/json');
         $vendedores = $this->ventaModel->getVendedores();
         echo json_encode(['success' => true, 'data' => $vendedores], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Registra una venta directa (sin pedido previo) a partir de los datos enviados
+     * en el body de la petición POST.
+     *
+     * Valida los campos obligatorios del carrito y los pagos, crea la venta en
+     * base de datos, descuenta el inventario y registra la auditoría.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function createDirecta() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -104,13 +138,22 @@ class VentaController {
         }
     }
 
+    /**
+     * Cancela una venta existente, revierte el inventario asociado y actualiza
+     * los estados de la venta y sus pagos.
+     *
+     * Espera un body JSON con el campo "id" correspondiente al identificador
+     * de la venta a cancelar.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function cancel() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
-        $id = $data['id'] ?? null;
+        $data = json_decode($json, true) ?: [];
+        $id = $data['venta_id'] ?? $data['id'] ?? ($_POST['venta_id'] ?? $_POST['id'] ?? null);
 
         $error = Validator::firstError([
             Validator::integer($id, 'ID de venta'),
@@ -129,18 +172,37 @@ class VentaController {
         }
     }
 
+    /**
+     * Obtiene el ranking de productos más vendidos.
+     *
+     * @return void Salida directa en formato JSON con los productos más vendidos.
+     */
     public function getTopProducts() {
         header('Content-Type: application/json');
         $data = $this->ventaModel->getTopProducts();
         echo json_encode(['success' => true, 'data' => $data]);
     }
 
+    /**
+     * Obtiene los datos de ingresos diarios de los últimos 7 días para el gráfico
+     * de ingresos del dashboard.
+     *
+     * @return void Salida directa en formato JSON con las series temporales de ingresos.
+     */
     public function getRevenueChart() {
         header('Content-Type: application/json');
         $data = $this->ventaModel->getRevenueChartData();
         echo json_encode(['success' => true, 'data' => $data]);
     }
 
+    /**
+     * Obtiene los detalles completos de una venta por su identificador,
+     * incluyendo los ítems vendidos y los pagos asociados.
+     *
+     * Espera el parámetro "id" en la query string de la petición GET.
+     *
+     * @return void Salida directa en formato JSON con la venta y sus detalles.
+     */
     public function getDetalles() {
         header('Content-Type: application/json');
         $id = $_GET['id'] ?? null;

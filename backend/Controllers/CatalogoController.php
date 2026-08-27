@@ -6,9 +6,15 @@ use App\Core\Validator;
 use App\Models\CatalogoModel;
 
 class CatalogoController {
+    /** @var CatalogoModel */
     private CatalogoModel $model;
+    /** @var AuditService */
     private AuditService $audit;
 
+    /**
+     * @param CatalogoModel $model Modelo de catálogos.
+     * @param AuditService  $audit Servicio de auditoría.
+     */
     public function __construct(CatalogoModel $model, AuditService $audit) {
         $this->model = $model;
         $this->audit = $audit;

@@ -1,12 +1,6 @@
 <?php
 // frontend/productos.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('productos.ver')) {
     header("Location: index.php");
@@ -762,11 +756,6 @@ $pageHeader = "Catálogo y Recetas de Productos";
                 console.error(e);
                 showAlert('Error de conexión.', 'error');
             }
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
     </script>
 </body>

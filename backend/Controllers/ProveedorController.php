@@ -9,17 +9,33 @@ class ProveedorController {
     private $proveedorModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de proveedores.
+     *
+     * @param  ProveedorModel  $proveedorModel  Modelo de proveedores.
+     * @param  AuditService    $audit           Servicio de auditoría.
+     */
     public function __construct(ProveedorModel $proveedorModel, AuditService $audit) {
         $this->proveedorModel = $proveedorModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Devuelve la lista de todos los proveedores.
+     *
+     * @return void  Responde con JSON con la lista de proveedores.
+     */
     public function getAll() {
         header('Content-Type: application/json');
         $proveedores = $this->proveedorModel->readAll();
         echo json_encode(['success' => true, 'data' => $proveedores]);
     }
 
+    /**
+     * Registra un nuevo proveedor. POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function add() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -52,6 +68,11 @@ class ProveedorController {
         }
     }
 
+    /**
+     * Actualiza un proveedor existente. POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function update() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -88,6 +109,13 @@ class ProveedorController {
         }
     }
 
+    /**
+     * Devuelve una lista paginada de proveedores con búsqueda opcional. GET.
+     *
+     * @return void  Responde con JSON con proveedores y datos de paginación.
+     *
+     * @throws \Throwable  Si ocurre un error al obtener los proveedores (es capturado internamente).
+     */
     public function getPaginated() {
         header('Content-Type: application/json');
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -112,6 +140,11 @@ class ProveedorController {
         }
     }
 
+    /**
+     * Elimina un proveedor por su ID. POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function delete() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -7,17 +7,37 @@ use App\Core\Money;
 use App\Core\Validator;
 use App\Utils\Logger;
 
+/**
+ * Controlador encargado de gestionar las operaciones de inventario de insumos.
+ *
+ * Provee endpoints para listar, crear, actualizar, ajustar stock, eliminar
+ * insumos, cambiar su visibilidad, registrar compras y obtener alertas de
+ * stock bajo.
+ */
 class InsumoController
 {
     private $insumoModel;
     private $audit;
 
+    /**
+     * Inyección de dependencias del controller.
+     *
+     * @param InsumoRepositoryInterface $insumoModel Repositorio de acceso a datos de insumos.
+     * @param AuditService              $audit       Servicio de auditoría para registrar acciones.
+     */
     public function __construct(InsumoRepositoryInterface $insumoModel, AuditService $audit)
     {
         $this->insumoModel = $insumoModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Retorna la lista paginada de insumos visibles, con opción de búsqueda por nombre.
+     *
+     * Acepta los parámetros page, limit y search en la query string.
+     *
+     * @return void Salida directa en formato JSON con los insumos, total y metadatos de paginación.
+     */
     public function getAll()
     {
         // Pagination parameters
@@ -39,6 +59,15 @@ class InsumoController
         ], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Crea un nuevo insumo en el inventario a partir de los datos del body POST.
+     *
+     * Valida campos obligatorios, redondea valores monetarios y registra
+     * la auditoría correspondiente.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     * @throws \Exception Si ocurre un error inesperado al insertar en la base de datos.
+     */
     public function add()
     {
         header('Content-Type: application/json');
@@ -92,6 +121,14 @@ class InsumoController
 
     }
 
+    /**
+     * Actualiza los datos de un insumo existente a partir del body POST.
+     *
+     * Valida el ID y los campos obligatorios, redondea valores monetarios y
+     * registra la auditoría correspondiente.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function update()
     {
         header('Content-Type: application/json');
@@ -142,6 +179,14 @@ class InsumoController
         }
     }
 
+    /**
+     * Ajusta el stock de un insumo sumando o restando la cantidad indicada.
+     *
+     * La cantidad puede ser negativa para decrementar stock o positiva para
+     * incrementarlo. Valida el ID y la cantidad antes de aplicar el ajuste.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function adjustStock()
     {
         header('Content-Type: application/json');
@@ -171,6 +216,11 @@ class InsumoController
         }
     }
 
+    /**
+     * Elimina (soft delete) un insumo del inventario por su identificador.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function delete()
     {
         header('Content-Type: application/json');
@@ -192,6 +242,11 @@ class InsumoController
         }
     }
 
+    /**
+     * Cambia la visibilidad de un insumo (visible/oculto) por su identificador.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function toggleVisibility()
     {
         header('Content-Type: application/json');
@@ -214,6 +269,11 @@ class InsumoController
         }
     }
 
+    /**
+     * Obtiene la lista de insumos cuyo stock actual es igual o inferior al stock mínimo.
+     *
+     * @return void Salida directa en formato JSON con los insumos en estado de alerta.
+     */
     public function getLowStock()
     {
         header('Content-Type: application/json');
@@ -221,6 +281,14 @@ class InsumoController
         echo json_encode(['success' => true, 'data' => $insumos]);
     }
 
+    /**
+     * Registra una compra de insumo, incrementa el stock y guarda el historial
+     * de compra con el proveedor.
+     *
+     * Valida el ID del insumo, del proveedor, la cantidad y el precio de compra.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
     public function registrarCompra()
     {
         header('Content-Type: application/json');

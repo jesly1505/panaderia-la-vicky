@@ -1,8 +1,14 @@
 <?php
 // frontend/includes/head.php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once __DIR__ . '/../../backend/Core/CsrfToken.php';
+$csrfToken = \App\Core\CsrfToken::get();
 ?>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
 <title><?php echo isset($pageTitle) ? htmlspecialchars($pageTitle) . " - La Vicky" : "Sistema La Vicky"; ?></title>
 
 <!-- Fonts -->

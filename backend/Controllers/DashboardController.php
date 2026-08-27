@@ -5,12 +5,21 @@ use App\Models\DashboardModel;
 use App\Utils\Logger;
 
 class DashboardController {
+    /** @var DashboardModel */
     private DashboardModel $model;
 
+    /**
+     * @param DashboardModel $model Modelo del dashboard.
+     */
     public function __construct(DashboardModel $model) {
         $this->model = $model;
     }
 
+    /**
+     * Devuelve el resumen completo del dashboard (KPIs, pedidos, alertas).
+     *
+     * @return void Emite JSON con datos del resumen.
+     */
     public function getResumen(): void {
         header('Content-Type: application/json');
         try {

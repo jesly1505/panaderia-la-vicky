@@ -23,6 +23,11 @@ class Security {
 
     /** True si el usuario actual posee el permiso indicado. */
     public function hasPermiso(string $permiso): bool {
+        $rol = $_SESSION['rol'] ?? '';
+        $rolId = (int)($_SESSION['rol_id'] ?? 0);
+        if ($rol === 'Administrador' || $rolId === 1) {
+            return true;
+        }
         return in_array($permiso, $_SESSION['permisos'] ?? [], true);
     }
 
