@@ -5,30 +5,81 @@ use App\Core\AuditService;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Core\Money;
 use App\Core\Validator;
+use App\Utils\Logger;
 
-class InsumoController {
+/**
+ * Controlador encargado de gestionar las operaciones de inventario de insumos.
+ *
+ * Provee endpoints para listar, crear, actualizar, ajustar stock, eliminar
+ * insumos, cambiar su visibilidad, registrar compras y obtener alertas de
+ * stock bajo.
+ */
+class InsumoController
+{
     private $insumoModel;
     private $audit;
 
-    public function __construct(InsumoRepositoryInterface $insumoModel, AuditService $audit) {
+    /**
+     * Inyección de dependencias del controller.
+     *
+     * @param InsumoRepositoryInterface $insumoModel Repositorio de acceso a datos de insumos.
+     * @param AuditService              $audit       Servicio de auditoría para registrar acciones.
+     */
+    public function __construct(InsumoRepositoryInterface $insumoModel, AuditService $audit)
+    {
         $this->insumoModel = $insumoModel;
         $this->audit = $audit;
     }
 
-    public function getAll() {
-        $insumos = $this->insumoModel->readAll();
-        echo json_encode(['success' => true, 'data' => $insumos]);
+    /**
+     * Retorna la lista paginada de insumos visibles, con opción de búsqueda por nombre.
+     *
+     * Acepta los parámetros page, limit y search en la query string.
+     *
+     * @return void Salida directa en formato JSON con los insumos, total y metadatos de paginación.
+     */
+    public function getAll()
+    {
+        // Pagination parameters
+        header('Content-Type: application/json');
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int) $_GET['page'] : 1;
+        $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) && $_GET['limit'] > 0 ? (int) $_GET['limit'] : 10;
+        $offset = ($page - 1) * $limit;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+        // Retrieve paginated data and total count
+        $insumos = $this->insumoModel->readAll($limit, $offset, true, $search);
+        $total = $this->insumoModel->countAll(true, $search);
+        echo json_encode([
+            'success' => true,
+            'data' => $insumos,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit
+        ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function add() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
-        $proveedor_id = !empty($_POST['proveedor_id']) ? $_POST['proveedor_id'] : null;
-        $nombre = trim($_POST['nombre'] ?? '');
-        $unidad = trim($_POST['unidad_medida'] ?? '');
-        $inicial = !empty($_POST['stock_inicial']) ? $_POST['stock_inicial'] : 0;
-        $minimo = !empty($_POST['stock_minimo']) ? $_POST['stock_minimo'] : 0;
-        $precio = !empty($_POST['precio_costo']) ? $_POST['precio_costo'] : 0;
+    /**
+     * Crea un nuevo insumo en el inventario a partir de los datos del body POST.
+     *
+     * Valida campos obligatorios, redondea valores monetarios y registra
+     * la auditoría correspondiente.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     * @throws \Exception Si ocurre un error inesperado al insertar en la base de datos.
+     */
+    public function add()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $proveedor_id = !empty(Validator::input('proveedor_id')) ? Validator::input('proveedor_id') : null;
+        $nombre = trim(Validator::input('nombre'));
+        $unidad = trim(Validator::input('unidad_medida'));
+        $inicial = !empty(Validator::input('stock_inicial')) ? Validator::input('stock_inicial') : 0;
+        $minimo = !empty(Validator::input('stock_minimo')) ? Validator::input('stock_minimo') : 0;
+        $precio = !empty(Validator::input('precio_costo')) ? Validator::input('precio_costo') : 0;
 
         $error = Validator::firstError([
             Validator::required($nombre, 'Nombre'),
@@ -49,8 +100,8 @@ class InsumoController {
         }
 
         $inicial = Money::round($inicial);
-        $minimo  = Money::round($minimo);
-        $precio  = Money::round($precio);
+        $minimo = Money::round($minimo);
+        $precio = Money::round($precio);
 
         try {
             if ($this->insumoModel->create($proveedor_id, $nombre, $unidad, $inicial, $minimo, $precio)) {
@@ -59,16 +110,91 @@ class InsumoController {
             } else {
                 echo json_encode(['success' => false, 'message' => 'No se pudo guardar el insumo en la base de datos. Verifique si el nombre ya existe.']);
             }
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error de base de datos: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al crear el insumo.']);
+            return;
+        }
+
+        // Pagination container will be rendered after the table
+        // (HTML added in inventario.php)
+
+    }
+
+    /**
+     * Actualiza los datos de un insumo existente a partir del body POST.
+     *
+     * Valida el ID y los campos obligatorios, redondea valores monetarios y
+     * registra la auditoría correspondiente.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
+    public function update()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $id = Validator::input('id', 0);
+        $proveedor_id = !empty(Validator::input('proveedor_id')) ? Validator::input('proveedor_id') : null;
+        $nombre = trim(Validator::input('nombre'));
+        $unidad = trim(Validator::input('unidad_medida'));
+        $minimo = !empty(Validator::input('stock_minimo')) ? Validator::input('stock_minimo') : 0;
+        $stock = !empty(Validator::input('stock_actual')) ? Validator::input('stock_actual') : 0;
+        $precio = !empty(Validator::input('precio_costo')) ? Validator::input('precio_costo') : 0;
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::required($nombre, 'Nombre'),
+            Validator::length($nombre, 100, 'Nombre'),
+            Validator::required($unidad, 'Unidad de medida'),
+            Validator::length($unidad, 30, 'Unidad de medida'),
+            Validator::numeric($minimo, 'Stock mínimo'),
+            Validator::min($minimo, 0, 'Stock mínimo'),
+            Validator::numeric($stock, 'Stock actual'),
+            Validator::min($stock, 0, 'Stock actual'),
+            Validator::numeric($precio, 'Precio de costo'),
+            Validator::greaterThan($precio, 0, 'Precio de costo'),
+        ]);
+
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $minimo = Money::round($minimo);
+        $stock = Money::round($stock);
+        $precio = Money::round($precio);
+
+        try {
+            if ($this->insumoModel->update($id, $proveedor_id, $nombre, $unidad, $stock, $minimo, $precio)) {
+                $this->audit->log('Inventario', 'Edición de insumo', "Insumo ID {$id} actualizado: {$nombre} ({$unidad})");
+                echo json_encode(['success' => true, 'message' => 'Insumo actualizado correctamente.']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el insumo en la base de datos. Verifique si el nombre ya existe.']);
+            }
+        } catch (\Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el insumo.']);
         }
     }
-    
-    public function adjustStock() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
-        $id = $_POST['id'] ?? 0;
-        $cantidad = $_POST['cantidad'] ?? 0; // puede ser negativo
+
+    /**
+     * Ajusta el stock de un insumo sumando o restando la cantidad indicada.
+     *
+     * La cantidad puede ser negativa para decrementar stock o positiva para
+     * incrementarlo. Valida el ID y la cantidad antes de aplicar el ajuste.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
+    public function adjustStock()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $id = Validator::input('insumo_id', 0);
+        $cantidad = Validator::input('cantidad', 0); // puede ser negativo
 
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
@@ -90,11 +216,19 @@ class InsumoController {
         }
     }
 
-    public function delete() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
-        $id = $_POST['id'] ?? 0;
-        
+    /**
+     * Elimina (soft delete) un insumo del inventario por su identificador.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
+    public function delete()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $id = Validator::input('id', 0);
+
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de insumo no proporcionado.']);
             return;
@@ -108,12 +242,20 @@ class InsumoController {
         }
     }
 
-    public function toggleVisibility() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
-        $id = $_POST['id'] ?? 0;
-        $visible = $_POST['visible'] ?? 1;
-        
+    /**
+     * Cambia la visibilidad de un insumo (visible/oculto) por su identificador.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
+    public function toggleVisibility()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $id = Validator::input('id', 0);
+        $visible = Validator::input('visible', 1);
+
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de insumo no proporcionado.']);
             return;
@@ -127,18 +269,36 @@ class InsumoController {
         }
     }
 
-    public function getLowStock() {
+    /**
+     * Obtiene la lista de insumos cuyo stock actual es igual o inferior al stock mínimo.
+     *
+     * @return void Salida directa en formato JSON con los insumos en estado de alerta.
+     */
+    public function getLowStock()
+    {
+        header('Content-Type: application/json');
         $insumos = $this->insumoModel->getLowStock();
         echo json_encode(['success' => true, 'data' => $insumos]);
     }
 
-    public function registrarCompra() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        
-        $insumo_id = $_POST['insumo_id'] ?? 0;
-        $proveedor_id = $_POST['proveedor_id'] ?? 0;
-        $cantidad = $_POST['cantidad'] ?? 0;
-        $precio = $_POST['precio_compra'] ?? 0;
+    /**
+     * Registra una compra de insumo, incrementa el stock y guarda el historial
+     * de compra con el proveedor.
+     *
+     * Valida el ID del insumo, del proveedor, la cantidad y el precio de compra.
+     *
+     * @return void Salida directa en formato JSON con el resultado de la operación.
+     */
+    public function registrarCompra()
+    {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST')
+            return;
+
+        $insumo_id = Validator::input('insumo_id', 0);
+        $proveedor_id = Validator::input('proveedor_id', 0);
+        $cantidad = Validator::input('cantidad', 0);
+        $precio = Validator::input('costo_unitario', 0);
 
         $error = Validator::firstError([
             Validator::integer($insumo_id, 'Insumo'),
@@ -156,7 +316,7 @@ class InsumoController {
         }
 
         $cantidad = Money::round($cantidad);
-        $precio   = Money::round($precio);
+        $precio = Money::round($precio);
 
         if ($this->insumoModel->registrarCompra($insumo_id, $proveedor_id, $cantidad, $precio)) {
             $this->audit->log('Inventario', 'Compra de insumo', "Compra de {$cantidad} unidades del insumo ID {$insumo_id}");

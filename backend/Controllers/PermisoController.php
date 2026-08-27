@@ -9,25 +9,46 @@ class PermisoController {
     private $permisoModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de permisos.
+     *
+     * @param  PermisoModel  $permisoModel  Modelo de permisos.
+     * @param  AuditService  $audit         Servicio de auditoría.
+     */
     public function __construct(PermisoModel $permisoModel, AuditService $audit) {
         $this->permisoModel = $permisoModel;
         $this->audit = $audit;
     }
 
-    /** Catálogo de permisos (para la UI de configuración). */
+    /**
+     * Devuelve el catálogo de permisos para la UI de configuración.
+     *
+     * @return void  Responde con JSON con la lista de permisos.
+     */
     public function getPermisos() {
+        header('Content-Type: application/json');
         $permisos = $this->permisoModel->getAll();
         echo json_encode(['success' => true, 'data' => $permisos]);
     }
 
-    /** Roles existentes. */
+    /**
+     * Devuelve los roles existentes.
+     *
+     * @return void  Responde con JSON con la lista de roles.
+     */
     public function getRoles() {
+        header('Content-Type: application/json');
         $roles = $this->permisoModel->getRoles();
         echo json_encode(['success' => true, 'data' => $roles]);
     }
 
-    /** Permisos asignados a un rol (GET ?rol_id=N). */
+    /**
+     * Devuelve los permisos asignados a un rol. GET ?rol_id=N.
+     *
+     * @return void  Responde con JSON con la lista de permisos del rol.
+     */
     public function getPermisosRol() {
+        header('Content-Type: application/json');
         $rol_id = $_GET['rol_id'] ?? 0;
         $error = Validator::firstError([
             Validator::integer($rol_id, 'Rol'),
@@ -41,8 +62,13 @@ class PermisoController {
         echo json_encode(['success' => true, 'data' => $permisos]);
     }
 
-    /** Asigna permisos a un rol (POST JSON { rol_id, permisos: [codigos] }). */
+    /**
+     * Asigna permisos a un rol. POST JSON { rol_id, permisos: [codigos] }.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function setPermisosRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
@@ -80,7 +106,11 @@ class PermisoController {
         }
     }
 
-    /** Crea un rol (POST JSON { nombre, descripcion }). */
+    /**
+     * Crea un nuevo rol. POST JSON { nombre, descripcion }.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function crearRol() {
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
@@ -111,8 +141,13 @@ class PermisoController {
         echo json_encode(['success' => true, 'message' => 'Rol creado correctamente.', 'id' => $id]);
     }
 
-    /** Actualiza un rol (POST JSON { id, nombre, descripcion }). */
+    /**
+     * Actualiza un rol existente. POST JSON { id, nombre, descripcion }.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function editarRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);
@@ -148,8 +183,13 @@ class PermisoController {
         }
     }
 
-    /** Elimina un rol (POST JSON { id }). Protege Administrador y roles en uso. */
+    /**
+     * Elimina un rol. POST JSON { id }. Protege el rol Administrador y los roles en uso.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function eliminarRol() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);

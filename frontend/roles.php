@@ -1,12 +1,6 @@
 <?php
 // frontend/roles.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('permisos.gestionar')) {
     header("Location: index.php");
@@ -151,10 +145,6 @@ $pageHeader = "Gestión de Roles";
     <script>
         let rolPermisosActual = null;
 
-        function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
         function mostrarAlerta(tipo, html) {
             const el = document.getElementById('resultAlert');
             el.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;
@@ -259,13 +249,13 @@ $pageHeader = "Gestión de Roles";
                     body: JSON.stringify({ rol_id: rolPermisosActual, permisos: permisos })
                 });
                 const json = await res.json();
-                mostrarAlerta(json.success ? 'success' : 'danger', json.message || 'Error al guardar permisos.');
+                showAlert(json.message || 'Error al guardar permisos.', json.success ? 'success' : 'error');
                 if (json.success) {
                     bootstrap.Modal.getInstance(document.getElementById('permisosRolModal')).hide();
                     loadRoles();
                 }
             } catch (e) {
-                mostrarAlerta('danger', 'Error de conexión con el servidor.');
+                showAlert('Error de conexión con el servidor.', 'error');
             }
         }
 
@@ -280,13 +270,13 @@ $pageHeader = "Gestión de Roles";
                     body: JSON.stringify({ nombre: form.nombre.value, descripcion: form.descripcion.value })
                 });
                 const json = await res.json();
-                mostrarAlerta(json.success ? 'success' : 'danger', json.message || 'Error al crear el rol.');
+                showAlert(json.message || 'Error al crear el rol.', json.success ? 'success' : 'error');
                 if (json.success) {
                     bootstrap.Modal.getInstance(document.getElementById('crearRolModal')).hide();
                     form.reset();
                     loadRoles();
                 }
-            } catch (err) { mostrarAlerta('danger', 'Error de conexión con el servidor.'); }
+            } catch (err) { showAlert('Error de conexión con el servidor.', 'error'); }
         });
 
         function openEditarModal(id, nombre, descripcion) {
@@ -307,16 +297,16 @@ $pageHeader = "Gestión de Roles";
                     body: JSON.stringify({ id: form.id.value, nombre: form.nombre.value, descripcion: form.descripcion.value })
                 });
                 const json = await res.json();
-                mostrarAlerta(json.success ? 'success' : 'danger', json.message || 'Error al actualizar el rol.');
+                showAlert(json.message || 'Error al actualizar el rol.', json.success ? 'success' : 'error');
                 if (json.success) {
                     bootstrap.Modal.getInstance(document.getElementById('editarRolModal')).hide();
                     loadRoles();
                 }
-            } catch (err) { mostrarAlerta('danger', 'Error de conexión con el servidor.'); }
+            } catch (err) { showAlert('Error de conexión con el servidor.', 'error'); }
         });
 
         async function eliminarRol(id, nombre) {
-            if (!confirm(`¿Eliminar el rol "${nombre}"?\nEsta acción es irreversible.`)) return;
+            if (!(await showConfirm(`¿Eliminar el rol "${nombre}"?\nEsta acción es irreversible.`))) return;
             try {
                 const res = await fetch('../backend/api.php?route=eliminar_rol', {
                     method: 'POST',
@@ -324,9 +314,9 @@ $pageHeader = "Gestión de Roles";
                     body: JSON.stringify({ id: id })
                 });
                 const json = await res.json();
-                mostrarAlerta(json.success ? 'success' : 'danger', json.message || 'Error al eliminar el rol.');
+                showAlert(json.message || 'Error al eliminar el rol.', json.success ? 'success' : 'error');
                 if (json.success) loadRoles();
-            } catch (err) { mostrarAlerta('danger', 'Error de conexión con el servidor.'); }
+            } catch (err) { showAlert('Error de conexión con el servidor.', 'error'); }
         }
 
         document.addEventListener('DOMContentLoaded', loadRoles);

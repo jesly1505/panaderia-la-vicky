@@ -255,6 +255,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/common.js"></script>
     <script>
         document.getElementById('forgotForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -263,6 +264,11 @@
             
             if (!email) {
                 showToast('Error', 'Por favor ingrese su correo.', 'bg-danger');
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast('Error', 'Por favor ingrese un correo válido.', 'bg-danger');
                 return;
             }
 
@@ -285,12 +291,6 @@
                 if (data.success) {
                     document.getElementById('forgotForm').style.display = 'none';
                     document.getElementById('successMsg').style.display = 'block';
-                    
-                    // Solo para propósitos de prueba local sin envío de correos
-                    if(data.dev_token) {
-                        const testLink = `reset_password.php?token=${data.dev_token}`;
-                        document.getElementById('successMsg').innerHTML += `<br><br><small><i>Modo local: <a href="${testLink}">Enlace de restablecimiento de prueba</a></i></small>`;
-                    }
                 } else {
                     btnSubmit.disabled = false;
                     showToast('Error', data.message, 'bg-danger');
@@ -302,20 +302,6 @@
                 showToast('Error', 'Error de conexión con el servidor.', 'bg-danger');
             });
         });
-
-        function showToast(title, message, bgClass) {
-            const toastEl = document.getElementById('loginToast');
-            const toastHeader = document.getElementById('toastHeader');
-            const toastTitle = document.getElementById('toastTitle');
-            const toastBody = document.getElementById('toastBody');
-            
-            toastHeader.className = `toast-header text-white ${bgClass}`;
-            toastTitle.innerText = title;
-            toastBody.innerText = message;
-            
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
-        }
     </script>
 </body>
 </html>

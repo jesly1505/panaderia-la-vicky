@@ -1,12 +1,6 @@
 <?php
 // frontend/pedidos.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('pedidos.ver')) {
     header("Location: index.php");
@@ -29,91 +23,50 @@ $pageHeader = "Gestión de Pedidos";
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
-
-        <div class="main-content">
+          <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
 
             <div class="container-fluid p-4 animate-fade-in">
                 <div class="row g-4">
-                    <!-- POS View (New Order) -->
-                    <div class="col-12 col-lg-4">
-                        <div class="card shadow-sm border-0 sticky-top" style="top: 90px; z-index: 10;">
-                            <div class="card-header bg-primary text-white border-0 py-3">
-                                <h5 class="mb-0 fw-bold"><i class="fas fa-cart-plus me-2"></i>Nuevo Pedido Especial</h5>
-                            </div>
-                            <div class="card-body p-4">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted">Cliente</label>
-                                    <select id="clienteSelect" class="form-select py-2">
-                                        <option value="">Consumidor Final</option>
-                                    </select>
-                                </div>
-
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold small text-uppercase text-muted">Fecha Entrega</label>
-                                        <input type="date" id="fechaEntrega" class="form-control py-2">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold small text-uppercase text-muted">Hora Entrega</label>
-                                        <input type="time" id="horaEntrega" class="form-control py-2">
-                                    </div>
-                                </div>
-
-                                <hr class="my-4 opacity-10">
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted">Añadir Producto</label>
-                                    <div class="input-group">
-                                        <select id="productoSelect" class="form-select py-2">
-                                            <option value="" disabled selected>Cargando productos...</option>
-                                        </select>
-                                        <button class="btn btn-primary px-3" type="button" onclick="addToCart()">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-semibold small text-uppercase text-muted d-block mb-2">Carrito</label>
-                                    <div class="bg-light rounded p-2" style="max-height: 250px; overflow-y: auto;">
-                                        <ul class="list-group list-group-flush border-0" id="cartList">
-                                            <li class="list-group-item bg-transparent text-muted text-center py-4 small">El carrito está vacío</li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-primary bg-opacity-10 rounded text-primary">
-                                    <span class="fw-bold text-uppercase small">Total a Pagar:</span>
-                                    <h3 class="mb-0 fw-bold" id="cartTotal">$0.00</h3>
-                                </div>
-
-                                <button class="btn btn-primary w-100 py-3 fw-bold shadow-sm" id="btnProcesarPedido" onclick="procesarPedido()">
-                                    <i class="fas fa-check-circle me-2"></i>FINALIZAR PEDIDO
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Orders History -->
-                    <div class="col-12 col-lg-8">
+                    <div class="col-12">
                         <div class="card shadow-sm border-0">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="loadPedidos()">
-                                    <i class="fas fa-sync-alt"></i> Actualizar
-                                </button>
+                            <div class="card-header bg-white py-3">
+                                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-primary"></i>Historial de Pedidos</h5>
+                                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                                        <!-- Buscador de Pedidos -->
+                                        <div class="input-group input-group-sm" style="min-width: 240px; max-width: 320px;">
+                                            <span class="input-group-text bg-light border-end-0 text-muted">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" id="pedidoSearchInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="Buscar pedido..." oninput="handlePedidoSearch()" autocomplete="off">
+                                            <button class="btn btn-outline-secondary border-start-0 text-muted" type="button" id="btnClearPedidoSearch" onclick="clearPedidoSearch()" title="Limpiar búsqueda" style="display: none;">
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-secondary shadow-sm text-nowrap" onclick="loadPedidos(currentPage)">
+                                                <i class="fas fa-sync-alt me-1"></i> Actualizar
+                                            </button>
+                                            <button class="btn btn-sm btn-primary shadow-sm text-nowrap" id="btnNuevoPedidoEspecial"><i class="fas fa-plus me-1"></i> Nuevo Pedido Especial</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th>Ref / Fecha</th>
+                                                <th class="ps-4">N.º / Fecha</th>
                                                 <th>Cliente</th>
                                                 <th>Estado</th>
                                                 <th>Total</th>
-                                                <th class="text-end">Acciones</th>
+                                                <th class="text-end pe-4">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="pedidosTableBody">
@@ -126,7 +79,9 @@ $pageHeader = "Gestión de Pedidos";
                                         </tbody>
                                     </table>
                                 </div>
+                                <div id="pedidosPagination" class="p-3 d-flex justify-content-end"></div>
                             </div>
+                            <div id="pedidoPagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
                     </div>
                 </div>
@@ -135,6 +90,98 @@ $pageHeader = "Gestión de Pedidos";
     </div>
 
     <!-- Modals -->
+    <!-- New Order Modal -->
+    <div class="modal fade" id="nuevoPedidoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-cart-plus me-2"></i>Nuevo Pedido Especial</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Cliente</label>
+                        <select id="clienteSelect" class="form-select py-2" required>
+                            <option value="" disabled selected>Seleccione un cliente</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Fecha Entrega</label>
+                            <input type="date" id="fechaEntrega" class="form-control py-2" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Hora Entrega</label>
+                            <input type="time" id="horaEntrega" class="form-control py-2" required>
+                        </div>
+                    </div>
+                    <hr class="my-4 opacity-10">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted">Añadir Producto</label>
+                        <div class="input-group">
+                            <select id="productoSelect" class="form-select py-2">
+                                <option value="" disabled selected>Cargando productos...</option>
+                            </select>
+                            <button class="btn btn-primary px-3" type="button" onclick="addToCart()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small text-uppercase text-muted d-block mb-2">Carrito</label>
+                        <div class="bg-light rounded p-2" style="max-height: 250px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush border-0" id="cartList">
+                                <li class="list-group-item bg-transparent text-muted text-center py-4 small">El carrito está vacío</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-primary bg-opacity-10 rounded text-primary">
+                        <span class="fw-bold text-uppercase small">Total a Pagar:</span>
+                        <h3 class="mb-0 fw-bold" id="cartTotal">$0.00</h3>
+                    </div>
+                    <button class="btn btn-primary w-100 py-3 fw-bold shadow-sm" id="btnProcesarPedido" onclick="procesarPedido()">
+                        <i class="fas fa-check-circle me-2"></i>FINALIZAR PEDIDO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="editPedidoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-pen me-2"></i>Editar Pedido #<span id="editPedidoId"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editPedidoForm">
+                    <input type="hidden" id="editPedidoIdInput">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Cliente</label>
+                            <select id="editPedidoCliente" class="form-select py-2" required>
+                                <option value="" disabled selected>Seleccione un cliente</option>
+                            </select>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold small">Fecha Entrega</label>
+                                <input type="date" id="editPedidoFecha" class="form-control py-2" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold small">Hora Entrega</label>
+                                <input type="time" id="editPedidoHora" class="form-control py-2" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary fw-bold"><i class="fas fa-save me-1"></i>Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="detallePedidoModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -171,12 +218,30 @@ $pageHeader = "Gestión de Pedidos";
     <?php include 'includes/footer.php'; ?>
     <script>
         let availableProducts = [];
+        let pedidosData = [];
+        let currentPage = 1;
+        let currentSearch = '';
+        let searchTimeout = null;
+        const itemsPerPage = 10;
         let cart = [];
+
+        // Open new order modal handler
+        document.getElementById('btnNuevoPedidoEspecial')?.addEventListener('click', () => {
+            // Reset form fields and cart
+            document.getElementById('clienteSelect').value = '';
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('fechaEntrega').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('horaEntrega').value = '10:00';
+            cart = [];
+            renderCart();
+            new bootstrap.Modal(document.getElementById('nuevoPedidoModal')).show();
+        });
 
         document.addEventListener('DOMContentLoaded', async () => {
             await loadClientes();
             await loadProductos();
-            await loadPedidos();
+            await loadPedidos(1);
 
             // Set default delivery date to tomorrow
             const tomorrow = new Date();
@@ -195,9 +260,11 @@ $pageHeader = "Gestión de Pedidos";
                 const res = await fetch('../backend/api.php?route=get_clientes');
                 const data = await res.json();
                 const select = document.getElementById('clienteSelect');
+                const editSelect = document.getElementById('editPedidoCliente');
                 if (data.success && data.data) {
                     data.data.forEach(c => {
                         select.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+                        editSelect.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
                     });
                 }
             } catch (e) {
@@ -214,7 +281,7 @@ $pageHeader = "Gestión de Pedidos";
                 if (data.success && data.data) {
                     availableProducts = data.data;
                     data.data.forEach(p => {
-                        select.innerHTML += `<option value="${p.id}">${p.nombre} - $${parseFloat(p.precio_venta).toFixed(2)}</option>`;
+                        select.innerHTML += `<option value="${p.id}">${p.nombre} - ${formatCurrency(p.precio_venta)}</option>`;
                     });
                 }
             } catch (e) {
@@ -274,7 +341,7 @@ $pageHeader = "Gestión de Pedidos";
                         <li class="list-group-item bg-white d-flex justify-content-between align-items-center mb-1 rounded cart-item p-2">
                             <div>
                                 <div class="fw-semibold small text-dark">${item.nombre}</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">$${item.precio.toFixed(2)} c/u</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">${formatCurrency(item.precio)} c/u</div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="input-group input-group-sm" style="width: 80px;">
@@ -291,17 +358,17 @@ $pageHeader = "Gestión de Pedidos";
                 });
             }
 
-            document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('cartTotal').textContent = formatCurrency(total);
         }
 
         async function procesarPedido() {
             if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.gestionar')) {
-                alert('No dispone de permisos para registrar pedidos.');
+                showAlert('No dispone de permisos para registrar pedidos.', 'warning');
                 return;
             }
 
             if (cart.length === 0) {
-                alert('Debe añadir al menos un producto al carrito');
+                showAlert('Debe añadir al menos un producto al carrito', 'warning');
                 return;
             }
 
@@ -309,15 +376,20 @@ $pageHeader = "Gestión de Pedidos";
             const fecha = document.getElementById('fechaEntrega').value;
             const hora = document.getElementById('horaEntrega').value;
 
+            if (!clienteId) {
+                showAlert('Debe seleccionar un cliente para el pedido', 'warning');
+                return;
+            }
+
             if (!fecha || !hora) {
-                alert('Debe seleccionar fecha y hora de entrega');
+                showAlert('Debe seleccionar fecha y hora de entrega', 'warning');
                 return;
             }
 
             const total = cart.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
             const payload = {
-                cliente_id: clienteId ? parseInt(clienteId) : null,
+                cliente_id: parseInt(clienteId),
                 fecha_entrega: `${fecha} ${hora}:00`,
                 total: total,
                 detalles: cart.map(i => ({
@@ -336,30 +408,60 @@ $pageHeader = "Gestión de Pedidos";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Pedido registrado exitosamente');
+                    showAlert('Pedido registrado exitosamente', 'success');
                     cart = [];
                     renderCart();
-                    await loadPedidos();
+                    await loadPedidos(1);
                 } else {
-                    alert(data.message || 'Error al procesar el pedido');
+                    showAlert(data.message || 'Error al procesar el pedido', 'error');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión');
+                showAlert('Error de conexión', 'error');
             }
         }
 
-        async function loadPedidos() {
+        function handlePedidoSearch() {
+            const input = document.getElementById('pedidoSearchInput');
+            const query = (input.value || '').trim();
+            const btnClear = document.getElementById('btnClearPedidoSearch');
+            if (btnClear) {
+                btnClear.style.display = query.length > 0 ? 'inline-block' : 'none';
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = query;
+                loadPedidos(1);
+            }, 250);
+        }
+
+        function clearPedidoSearch() {
+            const input = document.getElementById('pedidoSearchInput');
+            input.value = '';
+            const btnClear = document.getElementById('btnClearPedidoSearch');
+            if (btnClear) btnClear.style.display = 'none';
+            currentSearch = '';
+            loadPedidos(1);
+            input.focus();
+        }
+
+        async function loadPedidos(page = 1) {
+            currentPage = page;
             try {
-                const res = await fetch('../backend/api.php?route=get_pedidos');
+                const offset = (page - 1) * itemsPerPage;
+                const searchParam = encodeURIComponent(currentSearch);
+                const res = await fetch(`../backend/api.php?route=get_pedidos&limit=${itemsPerPage}&offset=${offset}&search=${searchParam}`);
                 const data = await res.json();
                 const tbody = document.getElementById('pedidosTableBody');
                 tbody.innerHTML = '';
 
                 if (data.success && data.data && data.data.length > 0) {
+                    pedidosData = data.data;
                     const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.gestionar') : true);
 
-                    data.data.forEach(p => {
+                    data.data.forEach((p, index) => {
+                        const rowNumber = offset + index + 1;
                         let badge = 'bg-secondary';
                         let estadoTexto = p.estado;
                         if (p.estado === 'pendiente') { badge = 'bg-warning text-dark'; estadoTexto = 'Pendiente'; }
@@ -369,27 +471,32 @@ $pageHeader = "Gestión de Pedidos";
 
                         tbody.innerHTML += `
                             <tr>
-                                <td>
-                                    <div class="fw-bold text-dark">#${p.id}</div>
-                                    <small class="text-muted"><i class="far fa-clock me-1"></i>${p.fecha_entrega}</small>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">${rowNumber}</div>
+                                    <small class="text-muted"><i class="far fa-clock me-1"></i>${escapeHtml(p.fecha_entrega || '')}</small>
                                 </td>
-                                <td>${p.cliente_nombre || '<span class="text-muted">Consumidor Final</span>'}</td>
+                                <td>${escapeHtml(p.cliente_nombre || 'Consumidor Final')}</td>
                                 <td><span class="badge ${badge} badge-status">${estadoTexto}</span></td>
-                                <td class="fw-bold text-dark">$${parseFloat(p.total).toFixed(2)}</td>
-                                <td class="text-end">
+                                <td class="fw-bold text-dark">${formatCurrency(p.total)}</td>
+                                <td class="text-end pe-4">
                                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewDetails(${p.id}, ${p.total})" title="Detalles">
                                         <i class="fas fa-eye"></i>
                                     </button>
+                                    ${p.estado === 'pendiente' && puedeGestionar ? `
+                                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditPedidoModal(${p.id})" title="Editar">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    ` : ''}
                                     ${p.estado !== 'entregado' && p.estado !== 'cancelado' && puedeGestionar ? `
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                                                 Estado
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
-                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'en_proceso')">En Proceso</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'entregado')">Entregado</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'en_proceso'); return false;">En Proceso</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="updateStatus(${p.id}, 'entregado'); return false;">Entregado</a></li>
                                                 <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus(${p.id}, 'cancelado')">Cancelar</a></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus(${p.id}, 'cancelado'); return false;">Cancelar</a></li>
                                             </ul>
                                         </div>
                                     ` : ''}
@@ -397,8 +504,12 @@ $pageHeader = "Gestión de Pedidos";
                             </tr>
                         `;
                     });
+
+                    renderPagination(data.total, itemsPerPage, page, 'pedidosPagination', 'loadPedidos');
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos registrados.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted">No se encontraron pedidos.</td></tr>`;
+                    const nav = document.getElementById('pedidosPagination');
+                    if (nav) nav.innerHTML = '';
                 }
             } catch (e) {
                 console.error('Error fetching orders:', e);
@@ -413,15 +524,15 @@ $pageHeader = "Gestión de Pedidos";
                 tbody.innerHTML = '';
 
                 document.getElementById('detPedidoId').textContent = pedidoId;
-                document.getElementById('detPedidoTotal').textContent = `$${parseFloat(total).toFixed(2)}`;
+                document.getElementById('detPedidoTotal').textContent = formatCurrency(total);
 
                 if (data.success && data.data) {
                     data.data.forEach(d => {
                         tbody.innerHTML += `
                             <tr>
-                                <td class="ps-3 fw-semibold">${d.producto_nombre}</td>
+                                <td class="ps-3 fw-semibold">${escapeHtml(d.producto_nombre || '')}</td>
                                 <td>${d.cantidad}</td>
-                                <td class="text-end pe-3">$${parseFloat(d.subtotal).toFixed(2)}</td>
+                                <td class="text-end pe-3">${formatCurrency(d.subtotal)}</td>
                             </tr>
                         `;
                     });
@@ -438,18 +549,74 @@ $pageHeader = "Gestión de Pedidos";
                 const res = await fetch('../backend/api.php?route=update_pedido_estado', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pedido_id: pedidoId, estado: nuevoEstado })
+                    body: JSON.stringify({ id: pedidoId, pedido_id: pedidoId, estado: nuevoEstado })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    await loadPedidos();
+                    await loadPedidos(currentPage);
+                    showAlert('Estado del pedido actualizado', 'success');
                 } else {
-                    alert(data.message || 'Error al actualizar el estado');
+                    showAlert(data.message || 'Error al actualizar el estado', 'error');
                 }
             } catch (e) {
                 console.error(e);
             }
         }
+
+        function openEditPedidoModal(id) {
+            const p = pedidosData.find(x => x.id == id);
+            if (!p) return;
+
+            document.getElementById('editPedidoIdInput').value = p.id;
+            document.getElementById('editPedidoId').textContent = p.id;
+            document.getElementById('editPedidoFecha').value = (p.fecha_entrega || '').split(' ')[0];
+            document.getElementById('editPedidoHora').value = p.hora_entrega || '';
+            const select = document.getElementById('editPedidoCliente');
+            if (p.cliente_id) {
+                select.value = p.cliente_id;
+            } else {
+                let found = false;
+                for (let opt of select.options) {
+                    if (opt.text === p.cliente_nombre) { opt.selected = true; found = true; break; }
+                }
+                if (!found) select.value = '';
+            }
+            new bootstrap.Modal(document.getElementById('editPedidoModal')).show();
+        }
+
+        document.getElementById('editPedidoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editPedidoIdInput').value);
+            const cliente_id = document.getElementById('editPedidoCliente').value;
+            const fecha = document.getElementById('editPedidoFecha').value;
+            const hora = document.getElementById('editPedidoHora').value;
+            if (!cliente_id) { showAlert('Debe seleccionar un cliente', 'warning'); return; }
+            if (!fecha || !hora) { showAlert('Complete fecha y hora de entrega', 'warning'); return; }
+
+            try {
+                const res = await fetch('../backend/api.php?route=update_pedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: id,
+                        cliente_id: parseInt(cliente_id),
+                        fecha_entrega: fecha,
+                        hora_entrega: hora
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editPedidoModal')).hide();
+                    await loadPedidos(currentPage);
+                    showAlert('Pedido actualizado correctamente', 'success');
+                } else {
+                    showAlert(data.message || 'Error al actualizar pedido', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('Error de conexión', 'error');
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿-- =============================================================
+-- =============================================================
 -- Schema de "Panadería La Vicky"
 -- Generado con mysqldump (estructura sin datos).
 -- Importar antes que database/seed.sql
@@ -85,6 +85,7 @@ CREATE TABLE `clientes` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `dni` varchar(20) DEFAULT NULL,
   `telefono` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `direccion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `puntos_fidelidad` int DEFAULT '0',
@@ -185,6 +186,7 @@ CREATE TABLE `gastos` (
   `descripcion` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `monto` decimal(10,2) NOT NULL,
   `fecha` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `categoria` varchar(100) DEFAULT 'General',
   `eliminado` tinyint(1) NOT NULL DEFAULT '0',
   `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -411,12 +413,14 @@ DROP TABLE IF EXISTS `ventas`;
 CREATE TABLE `ventas` (
   `id` int NOT NULL AUTO_INCREMENT,
   `pedido_id` int DEFAULT NULL,
+  `cliente_id` int DEFAULT NULL,
   `subtotal` decimal(10,2) NOT NULL DEFAULT '0.00',
   `impuestos` decimal(10,2) NOT NULL DEFAULT '0.00',
   `descuento` decimal(10,2) NOT NULL DEFAULT '0.00',
   `total` decimal(10,2) NOT NULL,
   `monto_pagado` decimal(10,2) DEFAULT NULL,
   `cambio` decimal(10,2) DEFAULT NULL,
+  `tipo_pago` varchar(30) DEFAULT 'efectivo',
   `ganancias` decimal(10,2) NOT NULL DEFAULT '0.00',
   `usuario_id` int DEFAULT NULL,
   `estado` enum('completado','cancelado') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'completado',
@@ -424,9 +428,29 @@ CREATE TABLE `ventas` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `pedido_id` (`pedido_id`),
   KEY `usuario_id` (`usuario_id`),
+  KEY `idx_ventas_cliente` (`cliente_id`),
   CONSTRAINT `ventas_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
+  CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_ventas_cliente` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `catalogos`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `catalogos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tipo` varchar(50) NOT NULL,
+  `valor` varchar(100) NOT NULL,
+  `etiqueta` varchar(150) NOT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `eliminado` tinyint(1) NOT NULL DEFAULT 0,
+  `deleted_at` datetime DEFAULT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_catalogo_tipo_valor` (`tipo`,`valor`),
+  KEY `idx_cat_tipo` (`tipo`),
+  KEY `idx_cat_elim` (`eliminado`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

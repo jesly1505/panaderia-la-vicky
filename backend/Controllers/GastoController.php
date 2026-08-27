@@ -10,25 +10,52 @@ class GastoController {
     private $model;
     private $audit;
 
+    /**
+     * Constructor del controlador de gastos.
+     *
+     * @param  GastoModel    $model  Modelo de gastos.
+     * @param  AuditService  $audit  Servicio de auditoría.
+     */
     public function __construct(GastoModel $model, AuditService $audit) {
         $this->model = $model;
         $this->audit = $audit;
     }
 
-    /** GET ?route=get_gastos_by_date&fecha=YYYY-MM-DD */
+    /**
+     * Obtiene los gastos filtrados por fecha de forma paginada.
+     * GET ?route=get_gastos_by_date&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+     *
+     * @return void  Responde con JSON de gastos y datos de paginación.
+     */
     public function getByDate() {
-        $fecha = $_GET['fecha'] ?? date('Y-m-d');
-        $gastos = $this->model->getByDate($fecha);
-        echo json_encode(['success' => true, 'data' => $gastos]);
+        header('Content-Type: application/json');
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate   = $_GET['end_date'] ?? '';
+        $page      = max(1, (int)($_GET['page'] ?? 1));
+        $limit     = min(20, max(5, (int)($_GET['limit'] ?? 10)));
+        $offset    = ($page - 1) * $limit;
+        $total     = $this->model->countByDate($startDate, $endDate);
+        $gastos    = $this->model->getByDate($startDate, $endDate, $limit, $offset);
+        echo json_encode([
+            'success'    => true,
+            'data'       => $gastos,
+            'pagination' => ['page' => $page, 'limit' => $limit, 'total' => $total]
+        ]);
     }
 
-    /** POST route=add_gasto */
+    /**
+     * Registra un nuevo gasto. POST route=add_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function add() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
 
-        $descripcion = trim($_POST['descripcion'] ?? '');
-        $monto       = $_POST['monto'] ?? 0;
-        $fecha       = $_POST['fecha'] ?? date('Y-m-d');
+        $descripcion = trim(Validator::input('descripcion'));
+        $monto       = Validator::input('monto', 0);
+        $fecha       = Validator::input('fecha', date('Y-m-d'));
+        $categoria   = trim(Validator::input('categoria')) ?: 'General';
 
         $error = Validator::firstError([
             Validator::required($descripcion, 'Descripción'),
@@ -45,18 +72,23 @@ class GastoController {
 
         $monto = Money::round($monto);
 
-        if ($this->model->create($descripcion, $monto, $fecha)) {
-            $this->audit->log('Gastos', 'Registro de gasto', "Gasto de \${$monto} - {$descripcion} ({$fecha})");
+        if ($this->model->create($descripcion, $monto, $fecha, $categoria)) {
+            $this->audit->log('Gastos', 'Registro de gasto', "Gasto de \${$monto} - {$descripcion} ({$fecha}) [{$categoria}]");
             echo json_encode(['success' => true, 'message' => 'Gasto registrado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al registrar el gasto.']);
         }
     }
 
-    /** POST route=delete_gasto */
+    /**
+     * Elimina un gasto por su ID. POST route=delete_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function delete() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
-        $id = $_POST['id'] ?? 0;
+        $id = Validator::input('id', 0);
         $error = Validator::firstError([
             Validator::integer($id, 'ID'),
             Validator::greaterThan($id, 0, 'ID'),
@@ -70,6 +102,47 @@ class GastoController {
             echo json_encode(['success' => true, 'message' => 'Gasto eliminado.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al eliminar el gasto.']);
+        }
+    }
+
+    /**
+     * Actualiza un gasto existente. POST route=update_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
+    public function update() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+
+        $id          = Validator::input('id', 0);
+        $descripcion = trim(Validator::input('descripcion'));
+        $monto       = Validator::input('monto', 0);
+        $fecha       = Validator::input('fecha', date('Y-m-d'));
+        $categoria   = trim(Validator::input('categoria'));
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID'),
+            Validator::greaterThan($id, 0, 'ID'),
+            Validator::required($descripcion, 'Descripción'),
+            Validator::length($descripcion, 255, 'Descripción'),
+            Validator::numeric($monto, 'Monto'),
+            Validator::greaterThan($monto, 0, 'Monto'),
+            Validator::date($fecha, 'Fecha'),
+            Validator::required($categoria, 'Categoría'),
+        ]);
+
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $monto = Money::round($monto);
+
+        if ($this->model->update($id, $descripcion, $monto, $fecha, $categoria)) {
+            $this->audit->log('Gastos', 'Actualización de gasto', "Gasto ID {$id} actualizado: \${$monto} - {$descripcion} ({$fecha})");
+            echo json_encode(['success' => true, 'message' => 'Gasto actualizado.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar el gasto.']);
         }
     }
 }

@@ -4,29 +4,82 @@ namespace App\Models;
 use PDO;
 
 class GastoModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla. */
     private $table = "gastos";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
-    /** Gastos de un día específico (YYYY-MM-DD) */
-    public function getByDate($fecha) {
-        $query = "SELECT * FROM {$this->table} WHERE DATE(fecha) = :fecha AND eliminado = false ORDER BY fecha DESC";
+    /** Gastos filtrados por rango de fechas (opcional) */
+    public function getByDate($startDate = '', $endDate = '', $limit = 10, $offset = 0) {
+        $where = "WHERE eliminado = 0";
+        $params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $where .= " AND DATE(fecha) BETWEEN :start AND :end";
+            $params[':start'] = $startDate;
+            $params[':end'] = $endDate;
+        } elseif (!empty($startDate)) {
+            $where .= " AND DATE(fecha) >= :start";
+            $params[':start'] = $startDate;
+        } elseif (!empty($endDate)) {
+            $where .= " AND DATE(fecha) <= :end";
+            $params[':end'] = $endDate;
+        }
+        $query = "SELECT * FROM {$this->table} $where ORDER BY fecha DESC LIMIT :limit OFFSET :offset";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':fecha', $fecha);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Cuenta el total de gastos en el período dado.
+     *
+     * @param  string $startDate Fecha inicio.
+     * @param  string $endDate   Fecha fin.
+     * @return int    Cantidad de gastos.
+     */
+    public function countByDate($startDate = '', $endDate = '') {
+        $where = "WHERE eliminado = 0";
+        $params = [];
+        if (!empty($startDate) && !empty($endDate)) {
+            $where .= " AND DATE(fecha) BETWEEN :start AND :end";
+            $params[':start'] = $startDate;
+            $params[':end'] = $endDate;
+        } elseif (!empty($startDate)) {
+            $where .= " AND DATE(fecha) >= :start";
+            $params[':start'] = $startDate;
+        } elseif (!empty($endDate)) {
+            $where .= " AND DATE(fecha) <= :end";
+            $params[':end'] = $endDate;
+        }
+        $query = "SELECT COUNT(*) FROM {$this->table} $where";
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
     /** Registrar un nuevo gasto */
-    public function create($descripcion, $monto, $fecha) {
-        $query = "INSERT INTO {$this->table} (descripcion, monto, fecha, eliminado) VALUES (:descripcion, :monto, :fecha, false)";
+    public function create($descripcion, $monto, $fecha, $categoria = 'General') {
+        $query = "INSERT INTO {$this->table} (descripcion, monto, fecha, categoria, eliminado) VALUES (:descripcion, :monto, :fecha, :categoria, false)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':descripcion', $descripcion);
         $stmt->bindParam(':monto', $monto);
         $stmt->bindParam(':fecha', $fecha);
+        $stmt->bindParam(':categoria', $categoria);
         return $stmt->execute();
     }
 
@@ -35,6 +88,18 @@ class GastoModel {
         $query = "UPDATE {$this->table} SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
+        return $stmt->execute() && $stmt->rowCount() > 0;
+    }
+
+    /** Actualizar un gasto existente */
+    public function update($id, $descripcion, $monto, $fecha, $categoria) {
+        $query = "UPDATE {$this->table} SET descripcion = :descripcion, monto = :monto, fecha = :fecha, categoria = :categoria WHERE id = :id AND eliminado = 0";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':descripcion', $descripcion);
+        $stmt->bindParam(':monto', $monto);
+        $stmt->bindParam(':fecha', $fecha);
+        $stmt->bindParam(':categoria', $categoria);
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 }

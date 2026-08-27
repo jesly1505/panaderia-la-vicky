@@ -87,6 +87,15 @@ class Logger {
             error_log("Error en Logger::logAlert - " . $e->getMessage());
         }
     }
+
+    /**
+     * Registra un mensaje de error técnico en la bitácora de alertas.
+     * Utiliza el nivel de alerta "error" y módulo "General".
+     */
+    public static function error(string $message) {
+        // Usa logAlert para guardar el mensaje de error técnico.
+        self::logAlert('error', 'General', $message);
+    }
 }
 
 // Alias global para compatibilidad

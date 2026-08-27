@@ -1,12 +1,6 @@
 <?php
 // frontend/index.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('dashboard.ver')) {
     header("Location: ventas.php");
@@ -34,7 +28,7 @@ $pageHeader = "Panel de Control";
         <div class="main-content">
             <?php include 'includes/navbar.php'; ?>
 
-            <div class="container-fluid p-4 animate-fade-in">
+            <div id="dashboardContent" class="container-fluid p-4 animate-fade-in">
                 
                 <!-- Filtro de fechas -->
                 <?php echo \App\Helpers\DateFilterHelper::getFilterUI($filter, $startDate, $endDate, 'index.php'); ?>
@@ -165,7 +159,7 @@ $pageHeader = "Panel de Control";
                                     <table class="table table-hover align-middle mb-0">
                                         <thead>
                                             <tr>
-                                                <th>ID</th>
+                                                <th>N.º</th>
                                                 <th>Cliente</th>
                                                 <th>Fecha</th>
                                                 <th>Estado</th>

@@ -3,25 +3,31 @@ namespace App\Controllers;
 
 use App\Core\AuditService;
 use App\Core\Database;
+use App\Core\Validator;
 use App\Models\CmmiModel;
 use App\Utils\Logger;
 use PDO;
 
 class CmmiController {
+    /** @var CmmiModel */
     private CmmiModel $model;
+    /** @var AuditService */
     private AuditService $audit;
 
-    public function __construct(?CmmiModel $model = null, ?AuditService $audit = null) {
-        if ($model !== null && $audit !== null) {
-            $this->model = $model;
-            $this->audit = $audit;
-        } else {
-            $db = (new Database())->getConnection();
-            $this->model = $model ?? new CmmiModel($db);
-            $this->audit = $audit ?? new AuditService($db);
-        }
+    /**
+     * @param CmmiModel    $model Modelo de incidencias/auditoría.
+     * @param AuditService $audit Servicio de auditoría.
+     */
+    public function __construct(CmmiModel $model, AuditService $audit) {
+        $this->model = $model;
+        $this->audit = $audit;
     }
 
+    /**
+     * Devuelve incidencias filtradas por rango de fechas.
+     *
+     * @return void Emite JSON con la lista de incidencias.
+     */
     public function getAll(): void {
         header('Content-Type: application/json');
         $filter = $_GET['filter'] ?? 'all';
@@ -32,20 +38,21 @@ class CmmiController {
         echo json_encode(['success' => true, 'data' => $incidencias], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Registra una nueva incidencia reportada por un usuario.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function registrarIncidencia(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        $modulo = trim($_POST['modulo'] ?? 'General');
-        $descripcion = trim($_POST['descripcion'] ?? '');
+        $modulo = trim(Validator::input('modulo', 'General'));
+        $descripcion = trim(Validator::input('descripcion'));
         $usuario_id = $_SESSION['user_id'] ?? ($_SESSION['usuario_id'] ?? null);
 
         if (empty($descripcion)) {
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?error=empty_desc");
-                exit();
-            }
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'La descripción es obligatoria']);
             return;
@@ -53,34 +60,27 @@ class CmmiController {
 
         $ok = $this->model->registrarIncidencia($modulo, $descripcion, $usuario_id);
         if ($ok) {
-            $this->audit->logAction('Incidencias', 'Incidencia registrada', "Módulo: $modulo");
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?success=1");
-                exit();
-            }
+            $this->audit->log('Incidencias', 'Incidencia registrada', "Módulo: $modulo");
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'message' => 'Incidencia registrada']);
         } else {
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?error=db_error");
-                exit();
-            }
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Error al registrar la incidencia']);
         }
     }
 
+    /**
+     * Marca una incidencia como resuelta.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function resolverIncidencia(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+        $id = (int)(Validator::input('id', $_GET['id'] ?? 0));
         if ($id <= 0) {
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?error=invalid_id");
-                exit();
-            }
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'ID inválido']);
             return;
@@ -88,23 +88,21 @@ class CmmiController {
 
         $ok = $this->model->resolverIncidencia($id);
         if ($ok) {
-            $this->audit->logAction('Incidencias', 'Incidencia resuelta', "ID: $id");
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?success=resolved");
-                exit();
-            }
+            $this->audit->log('Incidencias', 'Incidencia resuelta', "ID: $id");
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'message' => 'Incidencia resuelta']);
         } else {
-            if (isset($_GET['action'])) {
-                header("Location: ../../frontend/incidencias.php?error=1");
-                exit();
-            }
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Error al resolver incidencia']);
         }
     }
 
+    /**
+     * Genera y descarga un respaldo de la base de datos (.sql).
+     * Intenta mysqldump CLI; si falla, usa backup nativo en PHP.
+     *
+     * @return void Emite archivo SQL o redirige en caso de error.
+     */
     public function backupDatabase(): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -132,7 +130,7 @@ class CmmiController {
         exec($command, $output, $result);
 
         if ($result == 0 && file_exists($temp_file) && filesize($temp_file) > 0) {
-            $this->audit->logAction('Sistema', 'Respaldo de Base de Datos generado');
+            $this->audit->log('Sistema', 'Respaldo de Base de Datos generado');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename="' . basename($temp_file) . '"');
             header('Content-Length: ' . filesize($temp_file));
@@ -183,40 +181,17 @@ class CmmiController {
             }
             $sql .= "SET FOREIGN_KEY_CHECKS=1;\n";
 
-            $this->audit->logAction('Sistema', 'Respaldo de Base de Datos generado (PHP Nativo)');
+            $this->audit->log('Sistema', 'Respaldo de Base de Datos generado (PHP Nativo)');
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             header('Content-Length: ' . strlen($sql));
             echo $sql;
             exit();
         } catch (\Throwable $e) {
-            $this->audit->logAction('Error', 'Respaldo fallido', $e->getMessage());
+            Logger::error($e->getMessage());
             header("Location: ../../frontend/respaldo.php?error=dump_failed");
             exit();
         }
     }
 
-    public function handleRequest(): void {
-        $action = $_GET['action'] ?? '';
-        switch ($action) {
-            case 'registrar_incidencia':
-                $this->registrarIncidencia();
-                break;
-            case 'resolver_incidencia':
-                $this->resolverIncidencia();
-                break;
-            case 'backup_db':
-                $this->backupDatabase();
-                break;
-            default:
-                header("Location: ../../frontend/index.php");
-                break;
-        }
-    }
-}
-
-// Punto de entrada si se llama directamente a través de action
-if (isset($_GET['action'])) {
-    $controller = new CmmiController();
-    $controller->handleRequest();
 }

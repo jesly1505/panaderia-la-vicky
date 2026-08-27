@@ -4,13 +4,29 @@ namespace App\Models;
 use PDO;
 
 class UserModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla principal. */
     private $table_name = "usuarios";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
+    /** Returns the underlying PDO connection for internal use. */
+    public function getConnection(): PDO {
+        return $this->conn;
+    }
+
+    /**
+     * Busca un usuario por email (para login).
+     *
+     * @param  string      $email Correo electrónico.
+     * @return array|false Fila del usuario con datos de rol, o false si no existe.
+     */
     public function findByEmail($email) {
         $query = "SELECT u.id, u.rol_id, u.nombre, u.email, u.password_hash, u.estado, u.intentos_fallidos, u.bloqueado_hasta, u.ultimo_acceso, r.nombre as rol_nombre 
                   FROM " . $this->table_name . " u 
@@ -58,17 +74,56 @@ class UserModel {
         $stmt->execute();
     }
 
-    public function getAll() {
+    /**
+     * Lista usuarios activos con paginación.
+     *
+     * @param  int|null $limit  Registros por página.
+     * @param  int|null $offset Offset de inicio.
+     * @return array    Lista de usuarios con nombre de rol.
+     */
+    public function getAll($limit = null, $offset = null) {
         $query = "SELECT u.id, u.nombre, u.email, u.estado, u.rol_id, r.nombre as rol_nombre 
                   FROM " . $this->table_name . " u 
                   JOIN roles r ON u.rol_id = r.id
                   WHERE u.eliminado = false
                   ORDER BY u.nombre ASC";
+        if (is_int($limit) && $limit > 0) {
+            $query .= " LIMIT :limit";
+            if (is_int($offset) && $offset >= 0) {
+                $query .= " OFFSET :offset";
+            }
+        }
         $stmt = $this->conn->prepare($query);
+        if (is_int($limit) && $limit > 0) {
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            if (is_int($offset) && $offset >= 0) {
+                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            }
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Cuenta el total de usuarios activos.
+     *
+     * @return int
+     */
+    public function countAll() {
+        $stmt = $this->conn->prepare("SELECT COUNT(*) FROM " . $this->table_name . " WHERE eliminado = false");
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Crea un nuevo usuario con contraseña hasheada.
+     *
+     * @param  string $nombre   Nombre del usuario.
+     * @param  string $email    Correo electrónico.
+     * @param  string $password Contraseña en texto plano.
+     * @param  int    $rol_id   ID del rol (default: Cajero = 2).
+     * @return bool
+     */
     public function create($nombre, $email, $password, $rol_id = 2) {
         $query = "INSERT INTO " . $this->table_name . " 
                   (nombre, email, password_hash, rol_id, estado, eliminado) 
@@ -82,6 +137,12 @@ class UserModel {
         return $stmt->execute();
     }
 
+    /**
+     * Elimina un usuario (borrado lógico). No permite eliminar el admin principal (ID 1).
+     *
+     * @param  int  $id ID del usuario.
+     * @return bool
+     */
     public function delete($id) {
         if ($id == 1) return false; // Prevent deleting main admin
         $query = "UPDATE " . $this->table_name . " SET eliminado = true, deleted_at = NOW() WHERE id = :id AND eliminado = false";
@@ -90,6 +151,33 @@ class UserModel {
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
+    /**
+     * Actualiza nombre, email y rol de un usuario. No permite modificar el admin principal.
+     *
+     * @param  int    $id      ID del usuario.
+     * @param  string $nombre  Nuevo nombre.
+     * @param  string $email   Nuevo email.
+     * @param  int    $rol_id  Nuevo rol.
+     * @return bool
+     */
+    public function update($id, $nombre, $email, $rol_id) {
+        if ($id == 1) return false; // Prevent modifying main admin
+        $query = "UPDATE " . $this->table_name . "
+                  SET nombre = :nombre, email = :email, rol_id = :rol_id
+                  WHERE id = :id AND eliminado = false";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':nombre', $nombre);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':rol_id', $rol_id);
+        return $stmt->execute() && $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Obtiene las ganancias totales agrupadas por usuario vendedor.
+     *
+     * @return array Lista de [nombre, total_ganado].
+     */
     public function getProfitsByUser() {
         $query = "SELECT u.nombre, SUM(v.ganancias) as total_ganado 
                   FROM ventas v 

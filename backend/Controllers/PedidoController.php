@@ -18,11 +18,21 @@ class PedidoController {
     }
 
     public function getAll() {
-        $pedidos = $this->pedidoModel->readAll();
-        echo json_encode(['success' => true, 'data' => $pedidos]);
+        header('Content-Type: application/json');
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+        $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        if (isset($_GET['page']) && $limit !== null && $offset === null) {
+            $page = max(1, (int)$_GET['page']);
+            $offset = ($page - 1) * $limit;
+        }
+        $pedidos = $this->pedidoModel->readAll($limit, $offset, $search);
+        $total = $this->pedidoModel->countAll($search);
+        echo json_encode(['success' => true, 'data' => $pedidos, 'total' => $total], JSON_UNESCAPED_UNICODE);
     }
 
     public function create() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -33,16 +43,21 @@ class PedidoController {
             return;
         }
 
+        $cliente_id = $data['cliente_id'] ?? null;
         $errors = [
-            Validator::integer($data['cliente_id'] ?? 0, 'Cliente'),
-            Validator::greaterThan($data['cliente_id'] ?? 0, 0, 'Cliente'),
             Validator::numeric($data['total'] ?? 0, 'Total'),
             Validator::min($data['total'] ?? 0, 0, 'Total'),
             Validator::date($data['fecha_entrega'] ?? null, 'Fecha de entrega'),
         ];
+        if ($cliente_id === null || $cliente_id === '' || (int)$cliente_id <= 0) {
+            $errors[] = 'El campo Cliente es obligatorio.';
+        } else {
+            $errors[] = Validator::integer($cliente_id, 'Cliente');
+            $errors[] = Validator::greaterThan((int)$cliente_id, 0, 'Cliente');
+        }
         foreach ($data['detalles'] as $i => $d) {
-            $errors[] = Validator::integer($d['id'] ?? 0, "Producto #" . ($i + 1));
-            $errors[] = Validator::greaterThan($d['id'] ?? 0, 0, "Producto #" . ($i + 1));
+            $errors[] = Validator::integer($d['producto_id'] ?? $d['id'] ?? 0, "Producto #" . ($i + 1));
+            $errors[] = Validator::greaterThan($d['producto_id'] ?? $d['id'] ?? 0, 0, "Producto #" . ($i + 1));
             $errors[] = Validator::numeric($d['cantidad'] ?? 0, "Cantidad del producto #" . ($i + 1));
             $errors[] = Validator::greaterThan($d['cantidad'] ?? 0, 0, "Cantidad del producto #" . ($i + 1));
         }
@@ -54,13 +69,12 @@ class PedidoController {
 
         // La sesión ya fue iniciada por el Router; nunca asignar un usuario por defecto.
         $usuario_id = $_SESSION['usuario_id'] ?? null;
-        $cliente_id = $data['cliente_id'] ?? null;
         $total = $data['total'] ?? 0;
         $detalles = $data['detalles'];
         $fecha_entrega = $data['fecha_entrega'] ?? null;
         $hora_entrega = $data['hora_entrega'] ?? null;
 
-        if ($this->pedidoModel->create($cliente_id, $usuario_id, $total, $detalles, $fecha_entrega, $hora_entrega)) {
+        if ($this->pedidoModel->create($cliente_id, $usuario_id, $fecha_entrega, $hora_entrega, $detalles, $total)) {
             $this->audit->log('Pedidos', 'Registro de pedido', "Pedido registrado por \$" . number_format($total, 2));
             echo json_encode(['success' => true, 'message' => 'Pedido registrado exitosamente.']);
         } else {
@@ -69,22 +83,26 @@ class PedidoController {
     }
 
     public function updateEstado() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
 
+        $id = $data['id'] ?? $data['pedido_id'] ?? 0;
+        $estado = $data['estado'] ?? '';
+
         $error = Validator::firstError([
-            Validator::integer($data['id'] ?? 0, 'ID de pedido'),
-            Validator::greaterThan($data['id'] ?? 0, 0, 'ID de pedido'),
-            Validator::inList($data['estado'] ?? '', self::ESTADOS, 'Estado'),
+            Validator::integer($id, 'ID de pedido'),
+            Validator::greaterThan($id, 0, 'ID de pedido'),
+            Validator::inList($estado, self::ESTADOS, 'Estado'),
         ]);
         if ($error) {
             echo json_encode(['success' => false, 'message' => $error]);
             return;
         }
         $hora_real = $data['hora_entrega_real'] ?? null;
-        if ($this->pedidoModel->updateEstado($data['id'], $data['estado'], $hora_real, $_SESSION['usuario_id'] ?? null)) {
-            $this->audit->log('Pedidos', 'Cambio de estado', "Pedido ID {$data['id']} -> estado '{$data['estado']}'");
+        if ($this->pedidoModel->updateEstado((int)$id, $estado, $hora_real, $_SESSION['usuario_id'] ?? null)) {
+            $this->audit->log('Pedidos', 'Cambio de estado', "Pedido ID {$id} -> estado '{$estado}'");
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al actualizar estado.']);
@@ -92,6 +110,7 @@ class PedidoController {
     }
 
     public function getDetalles() {
+        header('Content-Type: application/json');
         $id = $_GET['id'] ?? null;
         $error = Validator::firstError([
             Validator::integer($id, 'ID de pedido'),
@@ -106,6 +125,7 @@ class PedidoController {
     }
 
     public function delete() {
+        header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
         $json = file_get_contents('php://input');
@@ -132,6 +152,37 @@ class PedidoController {
             echo json_encode(['success' => true, 'message' => 'Pedido eliminado correctamente.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al eliminar pedido.']);
+        }
+    }
+
+    public function update() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $id = $data['id'] ?? $data['pedido_id'] ?? 0;
+
+        $error = Validator::firstError([
+            Validator::integer($id, 'ID de pedido'),
+            Validator::greaterThan($id, 0, 'ID de pedido'),
+            Validator::required($data['fecha_entrega'] ?? '', 'Fecha de entrega'),
+            Validator::required($data['hora_entrega'] ?? '', 'Hora de entrega'),
+        ]);
+        if ($error) {
+            echo json_encode(['success' => false, 'message' => $error]);
+            return;
+        }
+
+        $cliente_id = $data['cliente_id'] ?? null;
+        $fecha_entrega = $data['fecha_entrega'];
+        $hora_entrega = $data['hora_entrega'];
+
+        if ($this->pedidoModel->update($data['id'], $cliente_id, $fecha_entrega, $hora_entrega)) {
+            $this->audit->log('Pedidos', 'Edición de pedido', "Pedido ID {$data['id']} actualizado.");
+            echo json_encode(['success' => true, 'message' => 'Pedido actualizado correctamente.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar pedido.']);
         }
     }
 }

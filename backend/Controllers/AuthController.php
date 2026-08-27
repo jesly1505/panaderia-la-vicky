@@ -6,24 +6,48 @@ use App\Models\PermisoModel;
 use App\Models\UserModel;
 
 class AuthController {
+    /** @var UserModel */
     private UserModel $userModel;
+    /** @var PermisoModel */
     private PermisoModel $permisoModel;
+    /** @var AuditService */
     private AuditService $audit;
 
+    /**
+     * @param UserModel    $userModel    Modelo de usuarios.
+     * @param PermisoModel $permisoModel Modelo de permisos/roles.
+     * @param AuditService $audit        Servicio de auditoría.
+     */
     public function __construct(UserModel $userModel, PermisoModel $permisoModel, AuditService $audit) {
         $this->userModel = $userModel;
         $this->permisoModel = $permisoModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Procesa el login vía petición AJAX (devuelve JSON).
+     *
+     * @return void
+     */
     public function login(): void {
         $this->handleLogin(false);
     }
 
+    /**
+     * Procesa el login con redirección (formulario clásico).
+     *
+     * @return void
+     */
     public function loginRedirect(): void {
         $this->handleLogin(true);
     }
 
+    /**
+     * Lógica compartida de login con opción de redirect o JSON.
+     *
+     * @param  bool $redirect Si true, redirige; si false, devuelve JSON.
+     * @return void
+     */
     private function handleLogin(bool $redirect = false): void {
         $email = trim($_POST['email'] ?? '');
         $password = trim($_POST['password'] ?? '');
@@ -96,6 +120,11 @@ class AuthController {
         }
     }
 
+    /**
+     * Cierra la sesión del usuario actual.
+     *
+     * @return void Emite JSON con confirmación.
+     */
     public function logout(): void {
         $this->audit->log('Seguridad', 'Cierre de sesión', "Cierre de sesión de: " . ($_SESSION['usuario'] ?? ''));
         session_unset();
@@ -103,6 +132,11 @@ class AuthController {
         echo json_encode(['success' => true, 'message' => 'Sesión cerrada exitosamente'], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Verifica el estado de la sesión y devuelve datos del usuario.
+     *
+     * @return void Emite JSON con estado de sesión, usuario y permisos.
+     */
     public function checkSession(): void {
         echo json_encode([
             'logged_in' => isset($_SESSION['usuario_id']),
@@ -116,6 +150,11 @@ class AuthController {
         ], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Genera token de recuperación de contraseña y lo registra.
+     *
+     * @return void Emite JSON con mensaje (siempre exitoso por seguridad).
+     */
     public function forgotPassword(): void {
         $email = trim($_POST['email'] ?? '');
         if (empty($email)) {
@@ -133,8 +172,7 @@ class AuthController {
 
             echo json_encode([
                 'success' => true,
-                'message' => 'Si el correo está registrado, se han generado las instrucciones de recuperación.',
-                'dev_token' => $token
+                'message' => 'Si el correo está registrado, se han generado las instrucciones de recuperación.'
             ], JSON_UNESCAPED_UNICODE);
         } else {
             echo json_encode([
@@ -144,6 +182,11 @@ class AuthController {
         }
     }
 
+    /**
+     * Restablece la contraseña usando un token de recuperación válido.
+     *
+     * @return void Emite JSON con resultado de la operación.
+     */
     public function resetPassword(): void {
         $token = trim($_POST['token'] ?? '');
         $password = trim($_POST['password'] ?? '');

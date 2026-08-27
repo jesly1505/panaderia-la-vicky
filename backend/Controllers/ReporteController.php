@@ -6,25 +6,43 @@ use App\Models\ReporteModel;
 class ReporteController {
     private ReporteModel $model;
 
+    /**
+     * Constructor del controlador de reportes.
+     *
+     * @param  ReporteModel  $model  Modelo de reportes.
+     */
     public function __construct(ReporteModel $model) {
         $this->model = $model;
     }
 
-    /** GET ?route=get_ventas_semanales */
+    /**
+     * Devuelve el reporte de ventas semanales. GET ?route=get_ventas_semanales.
+     *
+     * @return void  Responde con JSON con los datos de ventas semanales.
+     */
     public function getVentasSemanales(): void {
         header('Content-Type: application/json');
         $data = $this->model->getVentasSemanales();
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=get_ventas_mensuales */
+    /**
+     * Devuelve el reporte de ventas mensuales. GET ?route=get_ventas_mensuales.
+     *
+     * @return void  Responde con JSON con los datos de ventas mensuales.
+     */
     public function getVentasMensuales(): void {
         header('Content-Type: application/json');
         $data = $this->model->getVentasMensuales();
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=get_ventas_stats_reporte */
+    /**
+     * Devuelve las estadísticas de ventas para el rango de fechas indicado.
+     * GET ?route=get_ventas_stats_reporte.
+     *
+     * @return void  Responde con JSON con las estadísticas de ventas.
+     */
     public function getVentasStats(): void {
         header('Content-Type: application/json');
         $startDate = $_GET['start_date'] ?? '';
@@ -34,7 +52,11 @@ class ReporteController {
         echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
     }
 
-    /** GET ?route=export_ventas_csv */
+    /**
+     * Exporta el reporte de ventas a CSV. GET ?route=export_ventas_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportVentasCSV(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
@@ -66,7 +88,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_insumos_csv */
+    /**
+     * Exporta el reporte de insumos a CSV. GET ?route=export_insumos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportInsumosCSV(): void {
         $data = $this->model->getExportInsumos();
         $filename = "reporte_insumos_" . date('Ymd_His') . ".csv";
@@ -92,7 +118,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_productos_csv */
+    /**
+     * Exporta el reporte de productos a CSV. GET ?route=export_productos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportProductosCSV(): void {
         $data = $this->model->getExportProductos();
         $filename = "reporte_productos_" . date('Ymd_His') . ".csv";
@@ -119,7 +149,11 @@ class ReporteController {
         exit();
     }
 
-    /** GET ?route=export_gastos_csv */
+    /**
+     * Exporta el reporte de gastos a CSV. GET ?route=export_gastos_csv.
+     *
+     * @return void  Envía el archivo CSV al navegador.
+     */
     public function exportGastosCSV(): void {
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
@@ -145,5 +179,128 @@ class ReporteController {
         }
         fclose($output);
         exit();
+    }
+
+    private function renderPdfHtml(string $title, string $tableHeaders, string $tableRows): void {
+        $fecha = date('d/m/Y H:i');
+        echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>' . htmlspecialchars($title) . '</title>';
+        echo '<style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family:Arial,Helvetica,sans-serif; font-size:11pt; color:#333; padding:20mm; }
+            .header { text-align:center; border-bottom:2px solid #c0560f; padding-bottom:10px; margin-bottom:20px; }
+            .header h1 { font-size:18pt; color:#c0560f; margin-bottom:4px; }
+            .header p { font-size:10pt; color:#777; }
+            table { width:100%; border-collapse:collapse; margin-top:15px; }
+            th { background:#c0560f; color:#fff; padding:8px 10px; text-align:left; font-size:9pt; text-transform:uppercase; }
+            td { padding:7px 10px; border-bottom:1px solid #e0e0e0; font-size:10pt; }
+            tr:nth-child(even) { background:#fdf5ef; }
+            .total { font-weight:bold; background:#fdf5ef; }
+            .footer { text-align:center; margin-top:30px; padding-top:10px; border-top:1px solid #ddd; font-size:8pt; color:#999; }
+            @media print { body { padding:15mm; } @page { margin:15mm; } }
+        </style></head><body>';
+        echo '<div class="header"><h1>Panadería La Vicky</h1><p>' . htmlspecialchars($title) . '</p>';
+        echo '<p>Generado: ' . $fecha . '</p></div>';
+        echo '<table><thead><tr>' . $tableHeaders . '</tr></thead><tbody>' . $tableRows . '</tbody></table>';
+        echo '<div class="footer">Sistema de Gestión Panadería La Vicky — Documento generado automáticamente</div>';
+        echo '</body></html>';
+        exit();
+    }
+
+    /**
+     * Exporta el reporte de ventas a PDF. GET ?route=export_ventas_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
+    public function exportVentasPDF(): void {
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+        $data = $this->model->getExportVentas($startDate, $endDate);
+
+        $headers = '<th>ID</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Pago</th><th>Total</th><th>Ganancias</th><th>Estado</th>';
+        $rows = '';
+        $totalGeneral = 0;
+        $gananciasGeneral = 0;
+        foreach ($data as $r) {
+            $totalGeneral += (float)$r['total'];
+            $gananciasGeneral += (float)$r['ganancias'];
+            $estado = $r['estado'] === 'cancelado' ? '<span style="color:#dc3545">Cancelado</span>' : '<span style="color:#198754">Completado</span>';
+            $rows .= '<tr><td>' . (int)$r['id'] . '</td><td>' . htmlspecialchars($r['fecha_venta']) . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['cliente'] ?: 'Consumidor Final') . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['vendedor'] ?: 'N/A') . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['tipo_pago']) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['total'], 2) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['ganancias'], 2) . '</td><td>' . $estado . '</td></tr>';
+        }
+        $rows .= '<tr class="total"><td colspan="5">TOTALES</td><td>$' . number_format($totalGeneral, 2) . '</td><td>$' . number_format($gananciasGeneral, 2) . '</td><td></td></tr>';
+
+        $this->renderPdfHtml('Reporte de Ventas', $headers, $rows);
+    }
+
+    /**
+     * Exporta el reporte de insumos a PDF. GET ?route=export_insumos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
+    public function exportInsumosPDF(): void {
+        $data = $this->model->getExportInsumos();
+
+        $headers = '<th>ID</th><th>Nombre</th><th>Unidad</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Costo Unitario</th>';
+        $rows = '';
+        foreach ($data as $r) {
+            $rows .= '<tr><td>' . (int)$r['id'] . '</td><td>' . htmlspecialchars($r['nombre']) . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['unidad_medida']) . '</td>';
+            $rows .= '<td>' . number_format((float)$r['stock_actual'], 2) . '</td>';
+            $rows .= '<td>' . number_format((float)$r['stock_minimo'], 2) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['precio_costo'], 2) . '</td></tr>';
+        }
+
+        $this->renderPdfHtml('Reporte de Insumos', $headers, $rows);
+    }
+
+    /**
+     * Exporta el reporte de productos a PDF. GET ?route=export_productos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
+    public function exportProductosPDF(): void {
+        $data = $this->model->getExportProductos();
+
+        $headers = '<th>ID</th><th>Nombre</th><th>Categoría</th><th>Precio Venta</th><th>Costo Producción</th><th>Stock</th><th>Stock Mín.</th>';
+        $rows = '';
+        foreach ($data as $r) {
+            $rows .= '<tr><td>' . (int)$r['id'] . '</td><td>' . htmlspecialchars($r['nombre']) . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['categoria']) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['precio_venta'], 2) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['costo_produccion'], 2) . '</td>';
+            $rows .= '<td>' . number_format((float)$r['stock_actual'], 2) . '</td>';
+            $rows .= '<td>' . number_format((float)$r['stock_minimo'], 2) . '</td></tr>';
+        }
+
+        $this->renderPdfHtml('Reporte de Productos', $headers, $rows);
+    }
+
+    /**
+     * Exporta el reporte de gastos a PDF. GET ?route=export_gastos_pdf.
+     *
+     * @return void  Envía el documento HTML imprimible al navegador.
+     */
+    public function exportGastosPDF(): void {
+        $startDate = $_GET['start_date'] ?? '';
+        $endDate = $_GET['end_date'] ?? '';
+        $data = $this->model->getExportGastos($startDate, $endDate);
+
+        $headers = '<th>ID</th><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Descripción</th>';
+        $rows = '';
+        $totalGeneral = 0;
+        foreach ($data as $r) {
+            $totalGeneral += (float)$r['monto'];
+            $rows .= '<tr><td>' . (int)$r['id'] . '</td><td>' . htmlspecialchars($r['fecha']) . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['categoria']) . '</td>';
+            $rows .= '<td>$' . number_format((float)$r['monto'], 2) . '</td>';
+            $rows .= '<td>' . htmlspecialchars($r['descripcion']) . '</td></tr>';
+        }
+        $rows .= '<tr class="total"><td colspan="3">TOTAL GASTOS</td><td>$' . number_format($totalGeneral, 2) . '</td><td></td></tr>';
+
+        $this->renderPdfHtml('Reporte de Gastos', $headers, $rows);
     }
 }

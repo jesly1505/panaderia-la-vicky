@@ -5,12 +5,25 @@ use App\Helpers\DateFilterHelper;
 use PDO;
 
 class CmmiModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
+    /**
+     * Obtiene registros de bitácora con filtro de fechas.
+     *
+     * @param  int    $limite    Máximo de registros.
+     * @param  string $filterType Tipo de filtro (today, week, month, range, all).
+     * @param  string $startDate  Fecha inicio (para range).
+     * @param  string $endDate    Fecha fin (para range).
+     * @return array  Registros de bitácora.
+     */
     public function getBitacora($limite = 100, $filterType = 'all', $startDate = '', $endDate = '') {
         $dateCondition = DateFilterHelper::getSqlCondition('b.fecha_hora', $filterType, $startDate, $endDate);
         $query = "SELECT b.*, u.nombre as usuario 
@@ -24,6 +37,15 @@ class CmmiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene registros de auditoría de cambios con filtro de fechas.
+     *
+     * @param  int    $limite    Máximo de registros.
+     * @param  string $filterType Tipo de filtro.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Registros de auditoría.
+     */
     public function getAuditoria($limite = 100, $filterType = 'all', $startDate = '', $endDate = '') {
         $dateCondition = DateFilterHelper::getSqlCondition('a.fecha_hora', $filterType, $startDate, $endDate);
         $query = "SELECT a.*, u.nombre as usuario 
@@ -37,6 +59,14 @@ class CmmiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene incidencias con filtro de fechas.
+     *
+     * @param  string $filterType Tipo de filtro.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Lista de incidencias.
+     */
     public function getIncidencias($filterType = 'all', $startDate = '', $endDate = '') {
         $dateCondition = DateFilterHelper::getSqlCondition('i.fecha_reporte', $filterType, $startDate, $endDate);
         $query = "SELECT i.*, u.nombre as usuario_reporta_nombre 
@@ -49,6 +79,14 @@ class CmmiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Registra una nueva incidencia reportada por un usuario.
+     *
+     * @param  string   $modulo      Módulo afectado.
+     * @param  string   $descripcion Descripción del problema.
+     * @param  int|null $usuario_id  ID del usuario que reporta.
+     * @return bool
+     */
     public function registrarIncidencia($modulo, $descripcion, $usuario_id) {
         $query = "INSERT INTO incidencias (modulo, descripcion, usuario_reporta) VALUES (:modulo, :descripcion, :usuario_id)";
         $stmt = $this->conn->prepare($query);
@@ -58,6 +96,12 @@ class CmmiModel {
         return $stmt->execute();
     }
 
+    /**
+     * Marca una incidencia como resuelta.
+     *
+     * @param  int  $id ID de la incidencia.
+     * @return bool
+     */
     public function resolverIncidencia($id) {
         $query = "UPDATE incidencias SET estado = 'resuelta', fecha_resolucion = CURRENT_TIMESTAMP WHERE id = :id";
         $stmt = $this->conn->prepare($query);
@@ -65,6 +109,14 @@ class CmmiModel {
         return $stmt->execute();
     }
 
+    /**
+     * Obtiene alertas activas del sistema con filtro de fechas.
+     *
+     * @param  string $filterType Tipo de filtro.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Lista de alertas activas.
+     */
     public function getAlertasActivas($filterType = 'all', $startDate = '', $endDate = '') {
         $dateCondition = DateFilterHelper::getSqlCondition('fecha_creacion', $filterType, $startDate, $endDate);
         $query = "SELECT * FROM alertas_sistema WHERE estado = 'activa' AND $dateCondition ORDER BY fecha_creacion DESC";
@@ -73,6 +125,11 @@ class CmmiModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * KPI: Total de ventas y monto del día actual.
+     *
+     * @return array ['cantidad' => int, 'total' => float]
+     */
     public function getKpiVentasHoy() {
         $query = "SELECT COUNT(*) as cantidad, COALESCE(SUM(total), false) as total FROM ventas WHERE DATE(fecha_venta) = CURDATE() AND estado != 'cancelado'";
         $stmt = $this->conn->prepare($query);
@@ -80,6 +137,11 @@ class CmmiModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * KPI: Cantidad de incidencias activas (no resueltas).
+     *
+     * @return int
+     */
     public function getKpiErroresActivos() {
         $query = "SELECT COUNT(*) as total FROM incidencias WHERE estado != 'resuelta'";
         $stmt = $this->conn->prepare($query);
@@ -88,6 +150,11 @@ class CmmiModel {
         return (int)($row['total'] ?? 0);
     }
 
+    /**
+     * KPI: Cantidad de insumos con stock por debajo del mínimo.
+     *
+     * @return int
+     */
     public function getKpiBajoInventario() {
         $query = "SELECT COUNT(*) as total FROM insumos WHERE stock_actual <= stock_minimo AND visible = 1 AND eliminado = false";
         $stmt = $this->conn->prepare($query);

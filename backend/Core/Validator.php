@@ -8,6 +8,18 @@ namespace App\Core;
  */
 class Validator {
 
+    /** Lee un campo de $_POST o del body JSON. */
+    public static function input(string $key, $default = '') {
+        static $json = null;
+        if ($json === null) {
+            $raw = file_get_contents('php://input');
+            $json = json_decode($raw, true) ?: [];
+        }
+        if (array_key_exists($key, $json)) return $json[$key];
+        if (array_key_exists($key, $_POST)) return $_POST[$key];
+        return $default;
+    }
+
     public static function required($value, string $field): ?string {
         return empty(trim((string)$value)) ? "El campo {$field} es obligatorio." : null;
     }
@@ -65,13 +77,16 @@ class Validator {
         return in_array($value, $allowed, true) ? null : "El campo {$field} contiene un valor no permitido.";
     }
 
-    /** Fecha con formato YYYY-MM-DD (vacío permitido). */
+    /** Fecha con formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS (vacío permitido). */
     public static function date($value, string $field): ?string {
         if ($value === null || $value === '') {
             return null;
         }
         $d = \DateTime::createFromFormat('Y-m-d', $value);
-        return ($d && $d->format('Y-m-d') === $value) ? null : "El campo {$field} debe tener formato YYYY-MM-DD.";
+        if ($d && $d->format('Y-m-d') === $value) return null;
+        $d2 = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+        if ($d2 && $d2->format('Y-m-d H:i:s') === $value) return null;
+        return "El campo {$field} debe tener formato YYYY-MM-DD o YYYY-MM-DD HH:MM:SS.";
     }
 
     /** Devuelve el primer error no nulo, o null si todas las validaciones pasan. */

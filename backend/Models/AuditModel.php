@@ -9,6 +9,9 @@ use PDO;
 class AuditModel {
     private $conn;
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }

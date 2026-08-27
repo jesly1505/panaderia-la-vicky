@@ -5,28 +5,50 @@ use App\Core\AuditService;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 use App\Helpers\UnitConverter;
 use App\Models\ProduccionModel;
+use App\Utils\Logger;
 
 class ProduccionController {
     private $model;
     private $insumoModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de producción.
+     *
+     * @param  ProduccionModel             $model       Modelo de producción.
+     * @param  InsumoRepositoryInterface   $insumoModel Repositorio de insumos.
+     * @param  AuditService                $audit       Servicio de auditoría.
+     */
     public function __construct(ProduccionModel $model, InsumoRepositoryInterface $insumoModel, AuditService $audit) {
         $this->model = $model;
         $this->insumoModel = $insumoModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Obtiene el historial de producción paginado con filtros opcionales.
+     *
+     * @return void  Responde con JSON con los datos de producción y el total.
+     */
     public function getAll(): void {
         header('Content-Type: application/json');
         $filter = $_GET['filter'] ?? 'all';
         $startDate = $_GET['start_date'] ?? '';
         $endDate = $_GET['end_date'] ?? '';
 
-        $data = $this->model->getAll($filter, $startDate, $endDate);
-        echo json_encode(['success' => true, 'data' => $data], JSON_UNESCAPED_UNICODE);
-    }
+        $page = intval($_GET['page'] ?? 1);
+        $limit = intval($_GET['limit'] ?? 6);
+        $result = $this->model->getPaginated($filter, $startDate, $endDate, $page, $limit);
+        echo json_encode(['success' => true, 'data' => $result['data'], 'total' => $result['total']], JSON_UNESCAPED_UNICODE);
+        return;    }
 
+    /**
+     * Registra una producción manual a partir de datos JSON enviados por POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     *
+     * @throws \Exception  Si ocurre un error al procesar la conversión de unidades de los insumos.
+     */
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         
@@ -40,10 +62,10 @@ class ProduccionController {
 
         $producto_id        = $data['producto_id'] ?? 0;
         $cantidad_producida = $data['cantidad_producida'] ?? 0;
-        $insumos            = $data['insumos'] ?? [];
+        $insumos            = $data['insumos_usados'] ?? $data['insumos'] ?? [];
 
         if (empty($producto_id) || $cantidad_producida <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Selecciona un producto y una cantidad mayor a 0.']);
+            echo json_encode(['success' => false, 'message' => 'El campo Cantidad debe ser mayor que 0.']);
             return;
         }
 
@@ -59,26 +81,29 @@ class ProduccionController {
         try {
             foreach ($insumos as $ins) {
                 if (!empty($ins['insumo_id']) && isset($ins['cantidad_usada']) && $ins['cantidad_usada'] > 0) {
-                    $unidad_usada = $ins['unidad_usada'] ?? 'Unidades';
-                    
-                    // Obtener info del insumo base para saber a qué convertir
                     $infoInsumo = $insumoModel->getById($ins['insumo_id']);
                     if (!$infoInsumo) {
-                        throw new Exception("Insumo no encontrado en la base de datos.");
+                        throw new \Exception("Insumo no encontrado.");
                     }
-                    
+
+                    $unidad_usada = $ins['unidad_usada'] ?? null;
                     $unidad_base = $infoInsumo['unidad_medida'];
-                    $cantidad_convertida = UnitConverter::convert($ins['cantidad_usada'], $unidad_usada, $unidad_base);
-                    
+
+                    if ($unidad_usada && $unidad_usada !== $unidad_base) {
+                        $cantidad_convertida = UnitConverter::convert($ins['cantidad_usada'], $unidad_usada, $unidad_base);
+                    } else {
+                        $cantidad_convertida = (float)$ins['cantidad_usada'];
+                    }
+
                     $insumos_validos[] = [
                         'insumo_id' => (int)$ins['insumo_id'],
                         'cantidad_usada' => $cantidad_convertida,
-                        // El ProduccionModel asume que lo que le llega ya es exactamente lo que debe restar de BD.
                     ];
                 }
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => 'Error de conversión de unidades: ' . $e->getMessage()]);
+            Logger::error($e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Error al procesar la conversión de unidades.']);
             return;
         }
 
@@ -96,7 +121,7 @@ class ProduccionController {
             $msg = "No hay stock suficiente de: " . implode(", ", $result['insuficiente']);
             echo json_encode(['success' => false, 'message' => $msg]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error al registrar: ' . ($result['error'] ?? 'Desconocido')]);
+            echo json_encode(['success' => false, 'message' => 'Error al registrar la producción.']);
         }
     }
 }

@@ -9,19 +9,35 @@ class EmpresaController {
     private $empresaModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de empresa.
+     *
+     * @param  EmpresaModel  $empresaModel  Modelo de empresa.
+     * @param  AuditService  $audit         Servicio de auditoría.
+     */
     public function __construct(EmpresaModel $empresaModel, AuditService $audit) {
         $this->empresaModel = $empresaModel;
         $this->audit = $audit;
     }
 
-    /** Perfil del negocio. */
+    /**
+     * Devuelve el perfil del negocio como JSON.
+     *
+     * @return void  Responde con JSON con el perfil del negocio.
+     */
     public function getPerfil() {
+        header('Content-Type: application/json');
         $perfil = $this->empresaModel->getPerfil();
         echo json_encode(['success' => true, 'data' => $perfil]);
     }
 
-    /** Actualiza el perfil del negocio (POST JSON). */
+    /**
+     * Actualiza el perfil del negocio a partir de datos JSON enviados por POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function updatePerfil() {
+        header('Content-Type: application/json');
         $data = json_decode(file_get_contents('php://input'), true);
         if (!$data) {
             echo json_encode(['success' => false, 'message' => 'Datos inválidos.']);

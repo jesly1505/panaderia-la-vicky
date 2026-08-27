@@ -1,8 +1,9 @@
 <?php
 // frontend/configuracion.php
-session_start();
-if (!isset($_SESSION['usuario'])) {
-    header("Location: login.html");
+require_once __DIR__ . '/includes/auth_guard.php';
+
+if (!tiene_permiso('empleados.ver')) {
+    header("Location: index.php");
     exit();
 }
 
@@ -11,15 +12,37 @@ $pageHeader = "Ajustes del Sistema";
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <?php include 'includes/head.php'; ?>
     <style>
-        .config-card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); height: 100%; transition: var(--transition); }
-        .config-card:hover { box-shadow: var(--shadow-md); }
-        .employee-stat-card { background: var(--light); border-radius: var(--radius-sm); border: 1px solid #eee; padding: 1.25rem; transition: var(--transition); }
-        .employee-stat-card:hover { border-color: var(--primary-light); transform: translateY(-3px); }
+        .config-card {
+            border: none;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            height: 100%;
+            transition: var(--transition);
+        }
+
+        .config-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .employee-stat-card {
+            background: var(--light);
+            border-radius: var(--radius-sm);
+            border: 1px solid #eee;
+            padding: 1.25rem;
+            transition: var(--transition);
+        }
+
+        .employee-stat-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-3px);
+        }
     </style>
 </head>
+
 <body>
     <div class="wrapper">
         <?php include 'includes/sidebar.php'; ?>
@@ -34,10 +57,12 @@ $pageHeader = "Ajustes del Sistema";
                         <div class="card config-card border-top border-4 border-info">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                                 <div>
-                                    <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-users-cog me-2 text-info"></i>Gestión de Personal</h5>
+                                    <h5 class="mb-0 fw-bold text-dark"><i
+                                            class="fas fa-users-cog me-2 text-info"></i>Gestión de Personal</h5>
                                     <p class="text-muted x-small mb-0">Control de usuarios y accesos</p>
                                 </div>
-                                <button class="btn btn-info btn-sm text-white fw-bold px-3 shadow-xs" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                                <button class="btn btn-info btn-sm text-white fw-bold px-3 shadow-xs"
+                                    data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
                                     <i class="fas fa-plus me-1"></i>AÑADIR
                                 </button>
                             </div>
@@ -47,16 +72,21 @@ $pageHeader = "Ajustes del Sistema";
                                         <thead class="bg-light">
                                             <tr>
                                                 <th class="ps-4">Nombre / Usuario</th>
+                                                <th>Email</th>
                                                 <th>Rol</th>
                                                 <th class="text-end pe-4">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody id="employeeTableBody">
-                                            <tr><td colspan="3" class="text-center py-4 text-muted small">Cargando personal...</td></tr>
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-muted small">Cargando
+                                                    personal...</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
+                            <div id="employeePagination" class="my-3 d-flex justify-content-center"></div>
                         </div>
                     </div>
 
@@ -64,11 +94,13 @@ $pageHeader = "Ajustes del Sistema";
                     <div class="col-12">
                         <div class="card config-card border-0">
                             <div class="card-header bg-dark text-white py-3">
-                                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2 text-warning"></i>Rendimiento Individual de Ventas</h6>
+                                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2 text-warning"></i>Rendimiento
+                                    Individual de Ventas</h6>
                             </div>
                             <div class="card-body p-4 bg-light bg-opacity-50">
                                 <div class="row g-4" id="employeeStatsRows">
-                                    <div class="col-12 text-center text-muted py-5 italic">Calculando métricas de productividad...</div>
+                                    <div class="col-12 text-center text-muted py-5 italic">Calculando métricas de
+                                        productividad...</div>
                                 </div>
                             </div>
                         </div>
@@ -90,29 +122,71 @@ $pageHeader = "Ajustes del Sistema";
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted text-uppercase">Nombre Completo</label>
-                            <input type="text" name="nombre" class="form-control" required maxlength="100" placeholder="Ej. Ricardo Mendoza">
+                            <input type="text" name="nombre" class="form-control" required maxlength="100"
+                                placeholder="Ej. Ricardo Mendoza">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold small text-muted text-uppercase">Email (Usuario)</label>
-                            <input type="email" name="email" class="form-control" required placeholder="usuario@lavicky.com">
+                            <input type="email" name="email" class="form-control" required
+                                placeholder="usuario@lavicky.com">
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Contraseña</label>
-                                <input type="password" name="password" class="form-control" required minlength="6" placeholder="Mínimo 6 caracteres">
+                                <input type="password" name="password" class="form-control" required minlength="6"
+                                    placeholder="Mínimo 6 caracteres">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Rol</label>
-                                <select name="rol_id" class="form-select" id="selectRolEmpleado">
-                                    <option value="2">Cajero / Vendedor</option>
-                                    <option value="1">Administrador</option>
+                                <select name="rol_id" class="form-select" id="selectRolEmpleado" required>
+                                    <option value="">Cargando roles...</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-3 bg-light rounded-bottom">
-                        <button type="button" class="btn btn-link link-secondary text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-info text-white px-4 fw-bold shadow-sm">CREAR USUARIO</button>
+                        <button type="button" class="btn btn-link link-secondary text-decoration-none"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-info text-white px-4 fw-bold shadow-sm">CREAR
+                            USUARIO</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Empleado -->
+    <div class="modal fade" id="editEmployeeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form id="editEmployeeForm">
+                    <input type="hidden" name="id">
+                    <div class="modal-header bg-primary text-white border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>Editar Empleado</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Nombre Completo</label>
+                            <input type="text" name="nombre" class="form-control" required maxlength="100"
+                                placeholder="Ej. Ricardo Mendoza">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Email (Usuario)</label>
+                            <input type="email" name="email" class="form-control" required
+                                placeholder="usuario@lavicky.com">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Rol</label>
+                            <select name="rol_id" class="form-select" id="editSelectRolEmpleado" required>
+                                <option value="">Cargando roles...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light rounded-bottom">
+                        <button type="button" class="btn btn-link link-secondary text-decoration-none"
+                            data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">GUARDAR CAMBIOS</button>
                     </div>
                 </form>
             </div>
@@ -121,43 +195,87 @@ $pageHeader = "Ajustes del Sistema";
 
     <?php include 'includes/footer.php'; ?>
     <script>
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
         document.addEventListener('DOMContentLoaded', () => {
-            loadEmployees();
+            loadRolesForSelect();
+            loadEmployees(1);
             loadEmployeeStats();
         });
 
-        async function loadEmployees() {
+        async function loadRolesForSelect() {
             try {
-                const res = await fetch('../backend/api.php?route=get_employees');
+                const res = await fetch('../backend/api.php?route=get_roles');
+                const data = await res.json();
+                const selectNew = document.getElementById('selectRolEmpleado');
+                const selectEdit = document.getElementById('editSelectRolEmpleado');
+
+                if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+                    let optionsHtml = '<option value="">Seleccione un rol...</option>';
+                    data.data.forEach(r => {
+                        optionsHtml += `<option value="${r.id}">${r.nombre}</option>`;
+                    });
+                    if (selectNew) selectNew.innerHTML = optionsHtml;
+                    if (selectEdit) selectEdit.innerHTML = optionsHtml;
+                } else {
+                    const fallback = '<option value="">No hay roles disponibles</option>';
+                    if (selectNew) selectNew.innerHTML = fallback;
+                    if (selectEdit) selectEdit.innerHTML = fallback;
+                }
+            } catch (e) {
+                console.error('Error cargando roles:', e);
+                const errorOpt = '<option value="">Error al cargar roles</option>';
+                const selectNew = document.getElementById('selectRolEmpleado');
+                const selectEdit = document.getElementById('editSelectRolEmpleado');
+                if (selectNew) selectNew.innerHTML = errorOpt;
+                if (selectEdit) selectEdit.innerHTML = errorOpt;
+            }
+        }
+
+        function escJs(value) {
+            return String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/\r?\n/g, ' ');
+        }
+
+        async function loadEmployees(page = 1) {
+            currentPage = page;
+            try {
+                const offset = (page - 1) * itemsPerPage;
+                const res = await fetch(`../backend/api.php?route=get_employees&page=${page}&limit=${itemsPerPage}`);
                 const data = await res.json();
                 const tbody = document.getElementById('employeeTableBody');
                 tbody.innerHTML = '';
-                if (data.success) {
-                    data.data.forEach(emp => {
+                if (data.success && data.data && data.data.length > 0) {
+                    data.data.forEach((emp, index) => {
+                        const rowNumber = offset + index + 1;
                         const isMainAdmin = (emp.id == 1);
                         tbody.innerHTML += `
                             <tr class="animate-fade-in">
                                 <td class="ps-4">
-                                    <div class="fw-bold text-dark">${emp.nombre}</div>
-                                    <div class="x-small text-muted italic">${emp.email}</div>
+                                    <div class="fw-bold text-dark">${rowNumber}. ${emp.nombre}</div>
                                 </td>
+                                <td><small class="text-muted">${emp.email}</small></td>
                                 <td>
                                     <span class="badge ${emp.rol_nombre === 'Administrador' ? 'bg-primary bg-opacity-10 text-primary border-primary' : 'bg-info bg-opacity-10 text-info border-info'} border small px-2 py-1">
                                         ${emp.rol_nombre.toUpperCase()}
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    ${!isMainAdmin ? `
-                                        <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteEmployee(${emp.id})" title="Dar de baja">
-                                            <i class="fas fa-user-slash"></i>
-                                        </button>
-                                    ` : '<span class="text-muted x-small italic">System Protected</span>'}
+                                    ${!isMainAdmin ? TA.edit(`openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})`) + TA.custom(`deleteEmployee(${emp.id})`, 'fa-user-slash', 'Dar de baja', 'btn-outline-danger') : '<span class="text-muted x-small italic">System Protected</span>'}
                                 </td>
                             </tr>
                         `;
                     });
+                    renderPagination(data.total, itemsPerPage, page, 'employeePagination', 'loadEmployees');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted small">No se encontraron empleados.</td></tr>';
+                    document.getElementById('employeePagination').innerHTML = '';
                 }
-            } catch (e) { 
+            } catch (e) {
                 console.error(e);
             }
         }
@@ -180,7 +298,7 @@ $pageHeader = "Ajustes del Sistema";
                                         <h6 class="fw-bold text-dark mb-0 text-truncate">${stat.nombre}</h6>
                                     </div>
                                     <div class="small text-muted text-uppercase fw-bold fs-xs opacity-75 mb-1">Ventas Generadas</div>
-                                    <h4 class="fw-bold text-primary mb-0">$${parseFloat(stat.total_ganado).toLocaleString('en-US', {minimumFractionDigits: 2})}</h4>
+                                    <h4 class="fw-bold text-primary mb-0">${formatCurrency(stat.total_ganado)}</h4>
                                 </div>
                             </div>
                         `;
@@ -211,17 +329,18 @@ $pageHeader = "Ajustes del Sistema";
                 if (data.success) {
                     bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
                     e.target.reset();
-                    loadEmployees();
+                    loadEmployees(currentPage);
                     loadEmployeeStats();
-                } else alert(data.message);
-            } catch (e) { 
-                alert('Error de red');
+                    showAlert('Empleado registrado correctamente', 'success');
+                } else showAlert(data.message, 'info');
+            } catch (e) {
+                showAlert('Error de red', 'error');
                 console.error(e);
             }
         });
 
         async function deleteEmployee(id) {
-            if (!confirm('¿Está seguro de dar de baja a este empleado? Perderá acceso inmediato al sistema.')) return;
+            if (!(await showConfirm('¿Está seguro de dar de baja a este empleado? Perderá acceso inmediato al sistema.'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_employee', {
                     method: 'POST',
@@ -230,13 +349,51 @@ $pageHeader = "Ajustes del Sistema";
                 });
                 const data = await res.json();
                 if (data.success) {
-                    loadEmployees();
+                    loadEmployees(currentPage);
                     loadEmployeeStats();
-                } else alert(data.message);
+                    showAlert('Empleado dado de baja correctamente', 'success');
+                } else showAlert(data.message, 'info');
             } catch (e) {
                 console.error(e);
             }
         }
+
+        function openEditEmployeeModal(id, nombre, email, rol_id) {
+            const form = document.getElementById('editEmployeeForm');
+            form.elements['id'].value = id;
+            form.elements['nombre'].value = nombre;
+            form.elements['email'].value = email;
+            form.elements['rol_id'].value = rol_id;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editEmployeeModal')).show();
+        }
+
+        document.getElementById('editEmployeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formObj = {
+                id: e.target.elements['id'].value,
+                nombre: e.target.nombre.value,
+                email: e.target.email.value,
+                rol_id: e.target.rol_id.value
+            };
+            try {
+                const res = await fetch('../backend/api.php?route=update_employee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formObj)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editEmployeeModal')).hide();
+                    loadEmployees(currentPage);
+                    loadEmployeeStats();
+                    showAlert('Empleado actualizado correctamente', 'success');
+                } else showAlert(data.message, 'info');
+            } catch (e) {
+                showAlert('Error de red', 'error');
+                console.error(e);
+            }
+        });
     </script>
 </body>
+
 </html>

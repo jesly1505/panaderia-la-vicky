@@ -1,14 +1,8 @@
 <?php
 // frontend/reportes.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
+require_once __DIR__ . '/includes/auth_guard.php';
 
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
-
-if (!tiene_permiso('reportes.ver')) {
+if (!tiene_permiso('reportes.ver', 'gastos.ver', 'gastos.gestionar')) {
     header("Location: index.php");
     exit();
 }
@@ -98,10 +92,16 @@ $pageHeader = "Reportes y Estadísticas";
                                     <h5 class="mb-1 fw-bold text-dark">Tendencia de Ventas Semanales</h5>
                                     <p class="text-muted small mb-0">Ingresos de los últimos 7 días</p>
                                 </div>
-                                <a href="../backend/api.php?route=export_ventas_csv&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" 
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-download me-1"></i>Exportar CSV
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="../backend/api.php?route=export_ventas_csv&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-file-csv me-1"></i>CSV
+                                    </a>
+                                    <a href="../backend/api.php?route=export_ventas_pdf&start_date=<?php echo urlencode($start_date); ?>&end_date=<?php echo urlencode($end_date); ?>" 
+                                       class="btn btn-sm btn-outline-danger" target="_blank">
+                                        <i class="fas fa-file-pdf me-1"></i>PDF
+                                    </a>
+                                </div>
                             </div>
                             <canvas id="ventasChart" height="100"></canvas>
                         </div>
@@ -127,25 +127,28 @@ $pageHeader = "Reportes y Estadísticas";
 
                     <?php
                     $exports = [
-                        ['label' => 'Reporte de Ventas', 'desc' => 'Historial completo con totales, ganancias y pagos.', 'icon' => 'fa-shopping-cart', 'color' => 'text-primary', 'route' => 'export_ventas_csv', 'extra' => '&start_date=' . urlencode($start_date) . '&end_date=' . urlencode($end_date)],
-                        ['label' => 'Reporte de Insumos', 'desc' => 'Inventario actual, stock y costos unitarios.', 'icon' => 'fa-boxes', 'color' => 'text-success', 'route' => 'export_insumos_csv', 'extra' => ''],
-                        ['label' => 'Reporte de Productos', 'desc' => 'Catálogo completo con precios y stock disponible.', 'icon' => 'fa-bread-slice', 'color' => 'text-warning', 'route' => 'export_productos_csv', 'extra' => ''],
-                        ['label' => 'Reporte de Gastos', 'desc' => 'Egresos por categoría y fecha del periodo.', 'icon' => 'fa-file-invoice-dollar', 'color' => 'text-danger', 'route' => 'export_gastos_csv', 'extra' => '&start_date=' . urlencode($start_date) . '&end_date=' . urlencode($end_date)],
+                        ['label' => 'Reporte de Ventas', 'desc' => 'Historial completo con totales, ganancias y pagos.', 'icon' => 'fa-shopping-cart', 'color' => 'text-primary', 'route_csv' => 'export_ventas_csv', 'route_pdf' => 'export_ventas_pdf', 'extra' => '&start_date=' . urlencode($start_date) . '&end_date=' . urlencode($end_date)],
+                        ['label' => 'Reporte de Insumos', 'desc' => 'Inventario actual, stock y costos unitarios.', 'icon' => 'fa-boxes', 'color' => 'text-success', 'route_csv' => 'export_insumos_csv', 'route_pdf' => 'export_insumos_pdf', 'extra' => ''],
+                        ['label' => 'Reporte de Productos', 'desc' => 'Catálogo completo con precios y stock disponible.', 'icon' => 'fa-bread-slice', 'color' => 'text-warning', 'route_csv' => 'export_productos_csv', 'route_pdf' => 'export_productos_pdf', 'extra' => ''],
+                        ['label' => 'Reporte de Gastos', 'desc' => 'Egresos por categoría y fecha del periodo.', 'icon' => 'fa-file-invoice-dollar', 'color' => 'text-danger', 'route_csv' => 'export_gastos_csv', 'route_pdf' => 'export_gastos_pdf', 'extra' => '&start_date=' . urlencode($start_date) . '&end_date=' . urlencode($end_date)],
                     ];
                     ?>
 
                     <?php foreach ($exports as $exp): ?>
                         <div class="col-12 col-sm-6 col-lg-3">
-                            <a href="../backend/api.php?route=<?php echo $exp['route'] . $exp['extra']; ?>" class="text-decoration-none d-block">
-                                <div class="export-item text-center">
-                                    <i class="fas <?php echo $exp['icon']; ?> fs-2 <?php echo $exp['color']; ?> mb-3"></i>
-                                    <h6 class="fw-bold text-dark mb-1"><?php echo $exp['label']; ?></h6>
-                                    <p class="text-muted small mb-3"><?php echo $exp['desc']; ?></p>
-                                    <span class="btn btn-sm btn-outline-secondary w-100">
-                                        <i class="fas fa-download me-1"></i> Descargar .CSV
-                                    </span>
+                            <div class="export-item text-center">
+                                <i class="fas <?php echo $exp['icon']; ?> fs-2 <?php echo $exp['color']; ?> mb-3"></i>
+                                <h6 class="fw-bold text-dark mb-1"><?php echo $exp['label']; ?></h6>
+                                <p class="text-muted small mb-3"><?php echo $exp['desc']; ?></p>
+                                <div class="d-flex gap-2">
+                                    <a href="../backend/api.php?route=<?php echo $exp['route_csv'] . $exp['extra']; ?>" class="btn btn-sm btn-outline-secondary flex-fill">
+                                        <i class="fas fa-file-csv me-1"></i>CSV
+                                    </a>
+                                    <a href="../backend/api.php?route=<?php echo $exp['route_pdf'] . $exp['extra']; ?>" class="btn btn-sm btn-outline-danger flex-fill" target="_blank">
+                                        <i class="fas fa-file-pdf me-1"></i>PDF
+                                    </a>
                                 </div>
-                            </a>
+                            </div>
                         </div>
                     <?php endforeach; ?>
 
@@ -181,6 +184,7 @@ $pageHeader = "Reportes y Estadísticas";
                                                 </tr>
                                             </tbody>
                                         </table>
+                                        <div id="gastosPagination" class="mt-2"></div>
                                     </div>
                                 </div>
                             </div>
@@ -203,12 +207,8 @@ $pageHeader = "Reportes y Estadísticas";
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-uppercase text-muted">Categoría</label>
-                            <select name="categoria" class="form-select py-2" required>
-                                <option value="Insumos">Insumos / Materias Primas</option>
-                                <option value="Servicios">Servicios (Agua, Luz, Gas)</option>
-                                <option value="Mantenimiento">Mantenimiento / Equipos</option>
-                                <option value="Personal">Personal / Salarios</option>
-                                <option value="Otros">Otros Gastos</option>
+                            <select name="categoria" id="addGastoCategoria" class="form-select py-2" required>
+                                <option value="" disabled selected>Cargando categorías...</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -217,7 +217,7 @@ $pageHeader = "Reportes y Estadísticas";
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold small text-uppercase text-muted">Descripción</label>
-                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Detalle del gasto..."></textarea>
+                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Detalle del gasto..." required></textarea>
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-semibold small text-uppercase text-muted">Fecha</label>
@@ -233,22 +233,88 @@ $pageHeader = "Reportes y Estadísticas";
         </div>
     </div>
 
+    <!-- Modal Editar Gasto -->
+    <div class="modal fade" id="editGastoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <form id="editGastoForm">
+                    <input type="hidden" name="id">
+                    <div class="modal-header bg-warning text-dark border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Editar Gasto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Categoría</label>
+                            <select name="categoria" id="editGastoCategoria" class="form-select py-2" required>
+                                <option value="" disabled selected>Cargando categorías...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Monto ($)</label>
+                            <input type="number" step="0.01" min="0.01" max="999999.99" name="monto" class="form-control py-2" required placeholder="0.00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Descripción</label>
+                            <textarea name="descripcion" class="form-control" rows="2" maxlength="255" placeholder="Detalle del gasto..." required></textarea>
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">Fecha</label>
+                            <input type="date" name="fecha" class="form-control py-2" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light">
+                        <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning text-dark px-4 fw-bold shadow-sm">Actualizar Gasto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <?php include 'includes/footer.php'; ?>
     <script>
         let ventasChart = null;
         let gastosChart = null;
 
+        function escJs(value) {
+            return String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;')
+                .replace(/\r?\n/g, ' ');
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const currentFilter = urlParams.get('filter') || 'all';
         const currentStart = urlParams.get('start_date') || '';
         const currentEnd = urlParams.get('end_date') || '';
+        let gastosPage = 1;
+        const gastosLimit = 10;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            await loadCategorias();
             await loadStats();
             await loadVentasChart();
             await loadGastosChart();
             await loadGastosTable();
         });
+
+        async function loadCategorias() {
+            try {
+                const res = await fetch('../backend/api.php?route=get_catalogo_activos&tipo=gastos');
+                const data = await res.json();
+                const opts = '<option value="" disabled selected>Seleccione categoría...</option>';
+                const buildOpts = (items) => items.map(c => `<option value="${escapeHtml(c.valor)}">${escapeHtml(c.etiqueta)}</option>`).join('');
+                if (data.success && data.data) {
+                    const html = opts + buildOpts(data.data);
+                    const addSel = document.getElementById('addGastoCategoria');
+                    const editSel = document.getElementById('editGastoCategoria');
+                    if (addSel) addSel.innerHTML = html;
+                    if (editSel) editSel.innerHTML = html;
+                }
+            } catch (e) { console.error('Error loading categories:', e); }
+        }
 
         async function loadStats() {
             try {
@@ -256,9 +322,9 @@ $pageHeader = "Reportes y Estadísticas";
                 const data = await res.json();
                 if (data.success && data.data) {
                     const d = data.data;
-                    document.getElementById('ventasVal').textContent = '$' + parseFloat(d.total_ventas || 0).toFixed(2);
-                    document.getElementById('costosVal').textContent = '$' + parseFloat(d.total_costos || 0).toFixed(2);
-                    document.getElementById('utilidadVal').textContent = '$' + parseFloat(d.total_ganancias || 0).toFixed(2);
+                    document.getElementById('ventasVal').textContent = formatCurrency(d.total_ventas || 0);
+                    document.getElementById('costosVal').textContent = formatCurrency(d.total_costos || 0);
+                    document.getElementById('utilidadVal').textContent = formatCurrency(d.total_ganancias || 0);
                     document.getElementById('transaccionesVal').textContent = d.total_transacciones || 0;
                 }
             } catch (e) { console.error(e); }
@@ -341,7 +407,7 @@ $pageHeader = "Reportes y Estadísticas";
             if (!tbody) return;
 
             try {
-                const res = await fetch(`../backend/api.php?route=get_gastos_by_date&start_date=${currentStart}&end_date=${currentEnd}`);
+                const res = await fetch(`../backend/api.php?route=get_gastos_by_date&start_date=${currentStart}&end_date=${currentEnd}&page=${gastosPage}&limit=${gastosLimit}`);
                 const data = await res.json();
                 tbody.innerHTML = '';
 
@@ -353,20 +419,21 @@ $pageHeader = "Reportes y Estadísticas";
                                 <td><small>${g.fecha}</small></td>
                                 <td><span class="badge bg-light text-dark border">${g.categoria}</span></td>
                                 <td class="text-muted small">${g.descripcion || '-'}</td>
-                                <td class="fw-bold text-danger">$${parseFloat(g.monto).toFixed(2)}</td>
+                                <td class="fw-bold text-danger">${formatCurrency(g.monto)}</td>
                                 ${puedeGestionar ? `
                                     <td>
-                                        <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteGasto(${g.id})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        ${TA.edit(`openEditGastoModal(${g.id}, '${escJs(g.fecha)}', '${escJs(g.categoria)}', ${parseFloat(g.monto)}, '${escJs(g.descripcion || '')}')`)}
+                                        ${TA.remove(`deleteGasto(${g.id})`, 'Eliminar gasto')}
                                     </td>
                                 ` : ''}
                             </tr>
                         `;
                     });
+                    renderPagination(data.pagination.total, gastosLimit, gastosPage, 'gastosPagination', 'goGastosPage');
                 } else {
                     const cols = (typeof tienePermiso === 'function' && tienePermiso('gastos.gestionar')) ? 5 : 4;
                     tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-4 text-muted">No hay gastos registrados para el periodo seleccionado.</td></tr>`;
+                    document.getElementById('gastosPagination').innerHTML = '';
                 }
             } catch (e) { console.error(e); }
         }
@@ -389,8 +456,9 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto registrado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al guardar el gasto.');
+                    showAlert(data.message || 'Error al guardar el gasto.', 'error');
                 }
             } catch (err) {
                 console.error(err);
@@ -398,7 +466,7 @@ $pageHeader = "Reportes y Estadísticas";
         });
 
         async function deleteGasto(id) {
-            if (!confirm('¿Está seguro de eliminar este gasto?')) return;
+            if (!(await showConfirm('¿Está seguro de eliminar este gasto?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_gasto', {
                     method: 'POST',
@@ -410,10 +478,52 @@ $pageHeader = "Reportes y Estadísticas";
                     await loadStats();
                     await loadGastosChart();
                     await loadGastosTable();
+                    showAlert('Gasto eliminado correctamente', 'success');
                 } else {
-                    alert(data.message || 'Error al eliminar el gasto.');
+                    showAlert(data.message || 'Error al eliminar el gasto.', 'error');
                 }
             } catch (e) { console.error(e); }
+        }
+
+        function openEditGastoModal(id, fecha, categoria, monto, descripcion) {
+            const form = document.getElementById('editGastoForm');
+            form.elements['id'].value = id;
+            form.elements['fecha'].value = fecha;
+            form.elements['categoria'].value = categoria;
+            form.elements['monto'].value = monto;
+            form.elements['descripcion'].value = descripcion;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editGastoModal')).show();
+        }
+
+        document.getElementById('editGastoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = Object.fromEntries(formData);
+
+            try {
+                const res = await fetch('../backend/api.php?route=update_gasto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editGastoModal')).hide();
+                    await loadStats();
+                    await loadGastosChart();
+                    await loadGastosTable();
+                    showAlert('Gasto actualizado correctamente', 'success');
+                } else {
+                    showAlert(data.message || 'Error al actualizar el gasto.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function goGastosPage(p) {
+            gastosPage = p;
+            loadGastosTable();
         }
     </script>
 </body>
