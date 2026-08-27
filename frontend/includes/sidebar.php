@@ -16,7 +16,7 @@ $mainNav = [
     'pedidos' => ['pedidos.php', 'fa-cart-shopping', 'Pedidos', ['pedidos.ver']],
     'ventas' => ['ventas.php', 'fa-chart-line', 'Ventas', ['ventas.ver']],
     'clientes' => ['clientes.php', 'fa-users', 'Clientes', ['clientes.ver']],
-    'reportes' => ['reportes.php', 'fa-chart-pie', 'Reportes', ['reportes.ver']],
+    'reportes' => ['reportes.php', 'fa-chart-pie', 'Reportes', ['reportes.ver', 'gastos.ver', 'gastos.gestionar']],
     'bitacora' => ['bitacora.php', 'fa-clipboard-list', 'Bitácora', ['auditoria.ver']],
     'incidencias' => ['incidencias.php', 'fa-triangle-exclamation', 'Incidencias', ['dashboard.ver', 'auditoria.ver'], 'incidencias'],
 ];
@@ -27,7 +27,6 @@ $configSection = [
     'configuracion' => ['configuracion.php', 'fa-users-gear', 'Empleados', ['empleados.ver']],
     'roles' => ['roles.php', 'fa-user-shield', 'Roles y Permisos', ['permisos.gestionar']],
     'respaldo' => ['respaldo.php', 'fa-database', 'Respaldo', ['permisos.gestionar', 'perfil.gestionar', 'auditoria.ver']],
-    'ajustes' => ['configuracion.php', 'fa-sliders', 'Ajustes del Sistema', ['perfil.gestionar', 'empleados.ver']],
 ];
 
 $configPermisos = array_reduce($configSection, function ($acc, $item) {
@@ -102,7 +101,7 @@ $isConfigActive = array_key_exists($active, $configSection) || in_array($current
                 <?php foreach ($configSection as $key => [$href, $icon, $label, $req]): ?>
                     <?php if (tiene_permiso(...$req)): ?>
                         <a href="<?= $href ?>"
-                            class="sidebar-sublink <?= ($active === $key || ($currentPage === $href && ($key !== 'ajustes' || $active === 'ajustes'))) ? 'active' : '' ?>"
+                            class="sidebar-sublink <?= ($active === $key || $currentPage === $href) ? 'active' : '' ?>"
                             title="<?= htmlspecialchars($label) ?>">
                             <i class="fas <?= $icon ?>"></i>
                             <span class="sub-text"><?= htmlspecialchars($label) ?></span>
@@ -173,7 +172,7 @@ $isConfigActive = array_key_exists($active, $configSection) || in_array($current
                     <?php foreach ($configSection as $key => [$href, $icon, $label, $req]): ?>
                         <?php if (tiene_permiso(...$req)): ?>
                             <a href="<?= $href ?>"
-                                class="sidebar-sublink <?= ($active === $key || ($currentPage === $href && ($key !== 'ajustes' || $active === 'ajustes'))) ? 'active' : '' ?>">
+                                class="sidebar-sublink <?= ($active === $key || $currentPage === $href) ? 'active' : '' ?>">
                                 <i class="fas <?= $icon ?>"></i>
                                 <span class="sub-text"><?= htmlspecialchars($label) ?></span>
                             </a>

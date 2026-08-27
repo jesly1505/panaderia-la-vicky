@@ -5,20 +5,38 @@ use App\Models\ProductoModel;
 use App\Models\InsumoModel;
 
 class InventoryLogic {
+    /** @var ProductoModel */
     private $productoModel;
+    /** @var InsumoModel */
     private $insumoModel;
 
+    /**
+     * @param ProductoModel $productoModel Modelo de productos.
+     * @param InsumoModel   $insumoModel   Modelo de insumos.
+     */
     public function __construct(ProductoModel $productoModel, InsumoModel $insumoModel) {
         $this->productoModel = $productoModel;
         $this->insumoModel = $insumoModel;
     }
 
+    /**
+     * Descuenta stock de múltiples productos y sus insumos asociados.
+     *
+     * @param  array $detalles Lista de [producto_id, cantidad].
+     * @return void
+     */
     public function descontarVarios($detalles) {
         foreach ($detalles as $detalle) {
             $this->descontarStockYReceta($detalle['producto_id'], $detalle['cantidad']);
         }
     }
 
+    /**
+     * Revierte stock de múltiples productos y sus insumos asociados.
+     *
+     * @param  array $detalles Lista de [producto_id, cantidad].
+     * @return void
+     */
     public function revertirVarios($detalles) {
         foreach ($detalles as $detalle) {
             $this->revertirStockYReceta($detalle['producto_id'], $detalle['cantidad']);

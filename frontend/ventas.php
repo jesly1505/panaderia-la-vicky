@@ -1,12 +1,6 @@
 <?php
 // frontend/ventas.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('ventas.ver')) {
     header("Location: index.php");
@@ -490,6 +484,30 @@ $end_date = $_GET['end_date'] ?? '';
                         <i class="fas fa-print me-1"></i> Imprimir Factura
                     </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal post-venta: ¿imprimir factura o cerrar? -->
+    <div class="modal fade" id="facturaActionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-check-circle text-success" style="font-size: 3.5rem;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">¡Venta registrada con éxito!</h5>
+                    <p class="text-muted mb-0">N.º factura: <strong id="facturaActionNum">#—</strong></p>
+                    <p class="text-muted mb-4">¿Desea imprimir la factura?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i> Cerrar
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 fw-bold" id="btnPrintFacturaAfter">
+                            <i class="fas fa-print me-1"></i> Imprimir Factura
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -994,8 +1012,7 @@ $end_date = $_GET['end_date'] ?? '';
 
                 if (data.success) {
                     showAlert('¡Venta realizada con éxito!', 'success');
-                    window.open(`factura.php?id=${data.venta_id}`, '_blank');
-                    
+
                     const modalEl = document.getElementById('nuevaVentaModal');
                     if (modalEl) {
                         const modalInstance = bootstrap.Modal.getInstance(modalEl);
@@ -1012,6 +1029,23 @@ $end_date = $_GET['end_date'] ?? '';
                     renderPayments();
                     await loadProducts();
                     await loadSalesHistory(1);
+
+                    // Mostrar modal para decidir si imprimir la factura
+                    const actionModalEl = document.getElementById('facturaActionModal');
+                    if (actionModalEl && data.venta_id) {
+                        document.getElementById('facturaActionNum').textContent = '#' + data.venta_id;
+                        document.getElementById('btnPrintFacturaAfter').onclick = () => {
+                            window.open(`factura.php?id=${data.venta_id}`, '_blank');
+                            bootstrap.Modal.getInstance(actionModalEl)?.hide();
+                        };
+                        // Espera a que termine de ocultarse la modal de la venta
+                        setTimeout(() => {
+                            const actionModal = bootstrap.Modal.getInstance(actionModalEl);
+                            if (actionModal) actionModal.show();
+                        }, 350);
+                    } else {
+                        window.open(`factura.php?id=${data.venta_id}`, '_blank');
+                    }
                 } else {
                     showAlert(data.message || 'Error procesando la venta.', 'error');
                 }

@@ -1,12 +1,6 @@
 <?php
 // frontend/bitacora.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('auditoria.ver')) {
     header("Location: index.php");
@@ -106,15 +100,6 @@ $pageHeader = "Auditoría y Trazabilidad";
 
     <?php include 'includes/footer.php'; ?>
     <script>
-        function escapeHtml(text) {
-            if (!text) return '-';
-            return String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
         async function loadBitacora() {
             const body = document.getElementById('bitacora-body');
             body.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</td></tr>';

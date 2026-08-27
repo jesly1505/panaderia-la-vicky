@@ -10,12 +10,23 @@ class GastoController {
     private $model;
     private $audit;
 
+    /**
+     * Constructor del controlador de gastos.
+     *
+     * @param  GastoModel    $model  Modelo de gastos.
+     * @param  AuditService  $audit  Servicio de auditoría.
+     */
     public function __construct(GastoModel $model, AuditService $audit) {
         $this->model = $model;
         $this->audit = $audit;
     }
 
-    /** GET ?route=get_gastos_by_date&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD */
+    /**
+     * Obtiene los gastos filtrados por fecha de forma paginada.
+     * GET ?route=get_gastos_by_date&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+     *
+     * @return void  Responde con JSON de gastos y datos de paginación.
+     */
     public function getByDate() {
         header('Content-Type: application/json');
         $startDate = $_GET['start_date'] ?? '';
@@ -32,7 +43,11 @@ class GastoController {
         ]);
     }
 
-    /** POST route=add_gasto */
+    /**
+     * Registra un nuevo gasto. POST route=add_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function add() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -65,7 +80,11 @@ class GastoController {
         }
     }
 
-    /** POST route=delete_gasto */
+    /**
+     * Elimina un gasto por su ID. POST route=delete_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function delete() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -86,7 +105,11 @@ class GastoController {
         }
     }
 
-    /** POST route=update_gasto */
+    /**
+     * Actualiza un gasto existente. POST route=update_gasto.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     */
     public function update() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;

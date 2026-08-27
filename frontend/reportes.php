@@ -1,14 +1,8 @@
 <?php
 // frontend/reportes.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
+require_once __DIR__ . '/includes/auth_guard.php';
 
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
-
-if (!tiene_permiso('reportes.ver')) {
+if (!tiene_permiso('reportes.ver', 'gastos.ver', 'gastos.gestionar')) {
     header("Location: index.php");
     exit();
 }

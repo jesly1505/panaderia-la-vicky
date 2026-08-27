@@ -5,14 +5,28 @@ use PDO;
 
 class ProveedorModel
 {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla principal. */
     private $table_name = "proveedores";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db)
     {
         $this->conn = $db;
     }
 
+    /**
+     * Crea un nuevo proveedor.
+     *
+     * @param  string $nombre   Nombre del proveedor.
+     * @param  string $contacto Nombre de contacto.
+     * @param  string $telefono Teléfono.
+     * @param  string $email    Correo electrónico.
+     * @return bool
+     */
     public function create($nombre, $contacto, $telefono, $email)
     {
         $query = "INSERT INTO " . $this->table_name . " (nombre, contacto, telefono, email, eliminado) 
@@ -25,6 +39,11 @@ class ProveedorModel
         return $stmt->execute();
     }
 
+    /**
+     * Lista todos los proveedores activos.
+     *
+     * @return array Lista de proveedores.
+     */
     // Existing method unchanged
     public function readAll()
     {
@@ -89,6 +108,16 @@ class ProveedorModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Actualiza los datos de un proveedor.
+     *
+     * @param  int    $id       ID del proveedor.
+     * @param  string $nombre   Nuevo nombre.
+     * @param  string $contacto Nuevo contacto.
+     * @param  string $telefono Nuevo teléfono.
+     * @param  string $email    Nuevo email.
+     * @return bool
+     */
     public function update($id, $nombre, $contacto, $telefono, $email)
     {
         $query = "UPDATE " . $this->table_name . " 
@@ -103,6 +132,12 @@ class ProveedorModel
         return $stmt->execute();
     }
 
+    /**
+     * Elimina un proveedor (borrado lógico).
+     *
+     * @param  int  $id ID del proveedor.
+     * @return bool
+     */
     public function delete($id)
     {
         $query = "UPDATE " . $this->table_name . " SET eliminado = 1, deleted_at = NOW() WHERE id = :id AND eliminado = 0";
@@ -111,6 +146,12 @@ class ProveedorModel
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
+    /**
+     * Obtiene un proveedor por su ID.
+     *
+     * @param  int         $id ID del proveedor.
+     * @return array|false Fila del proveedor o false si no existe.
+     */
     public function getById($id)
     {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = 0";

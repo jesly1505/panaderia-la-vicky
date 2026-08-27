@@ -271,6 +271,7 @@ if (empty($token)) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/common.js"></script>
     <script>
         document.getElementById('togglePassword').addEventListener('click', function() {
             const pwdInput = document.getElementById('password');
@@ -333,20 +334,6 @@ if (empty($token)) {
                 showToast('Error', 'Error de conexión con el servidor.', 'bg-danger');
             });
         });
-
-        function showToast(title, message, bgClass) {
-            const toastEl = document.getElementById('loginToast');
-            const toastHeader = document.getElementById('toastHeader');
-            const toastTitle = document.getElementById('toastTitle');
-            const toastBody = document.getElementById('toastBody');
-            
-            toastHeader.className = `toast-header text-white ${bgClass}`;
-            toastTitle.innerText = title;
-            toastBody.innerText = message;
-            
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
-        }
     </script>
 </body>
 </html>

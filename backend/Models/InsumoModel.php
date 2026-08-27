@@ -5,13 +5,29 @@ use PDO;
 use App\Core\Interfaces\InsumoRepositoryInterface;
 
 class InsumoModel implements InsumoRepositoryInterface {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla principal. */
     private $table_name = "insumos";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
+    /**
+     * Crea un nuevo insumo en el inventario.
+     *
+     * @param  int|float $proveedor_id   ID del proveedor.
+     * @param  string    $nombre         Nombre del insumo.
+     * @param  string    $unidad_medida  Unidad de medida (kg, lt, ud).
+     * @param  float     $stock_inicial  Stock inicial.
+     * @param  float     $stock_minimo   Stock mínimo para alertas.
+     * @param  float     $precio_costo   Costo por unidad.
+     * @return bool
+     */
     public function create($proveedor_id, $nombre, $unidad_medida, $stock_inicial, $stock_minimo, $precio_costo) {
         $query = "INSERT INTO " . $this->table_name . " 
                   (proveedor_id, nombre, unidad_medida, stock_actual, stock_minimo, precio_costo, eliminado, visible) 
@@ -27,6 +43,13 @@ class InsumoModel implements InsumoRepositoryInterface {
         return $stmt->execute();
     }
 
+    /**
+     * Ajusta el stock actual de un insumo (suma/resta).
+     *
+     * @param  int|float $id       ID del insumo.
+     * @param  float     $cantidad Cantidad a sumar (negativo para restar).
+     * @return bool
+     */
     public function updateStock($id, $cantidad) {
         $query = "UPDATE " . $this->table_name . " SET stock_actual = stock_actual + :cantidad WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -94,6 +117,12 @@ class InsumoModel implements InsumoRepositoryInterface {
         return $row ? (int)$row['total'] : 0;
     }
 
+    /**
+     * Obtiene un insumo por su ID.
+     *
+     * @param  int        $id ID del insumo.
+     * @return array|false Fila del insumo o false si no existe.
+     */
     public function getById($id) {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -102,6 +131,13 @@ class InsumoModel implements InsumoRepositoryInterface {
         return $stmt->fetch();
     }
 
+    /**
+     * Cambia la visibilidad de un insumo (ocultar/mostrar).
+     *
+     * @param  int   $id      ID del insumo.
+     * @param  int   $visible 1 = visible, 0 = oculto.
+     * @return bool
+     */
     public function setVisibility($id, $visible) {
         $query = "UPDATE " . $this->table_name . " SET visible = :visible WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -110,6 +146,11 @@ class InsumoModel implements InsumoRepositoryInterface {
         return $stmt->execute();
     }
 
+    /**
+     * Devuelve los insumos con stock por debajo del mínimo.
+     *
+     * @return array Lista de insumos con bajo stock.
+     */
     public function getLowStock() {
         $query = "SELECT * FROM " . $this->table_name . " WHERE stock_actual <= stock_minimo AND visible = 1 AND eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -124,6 +165,15 @@ class InsumoModel implements InsumoRepositoryInterface {
         return $stmt->execute() && $stmt->rowCount() > 0;
     }
 
+    /**
+     * Registra una compra de insumo: inserta en compras_insumos y actualiza stock y precio.
+     *
+     * @param  int|float $insumo_id     ID del insumo.
+     * @param  int       $proveedor_id  ID del proveedor.
+     * @param  float     $cantidad      Cantidad comprada.
+     * @param  float     $precio_compra Precio unitario de compra.
+     * @return bool
+     */
     public function registrarCompra($insumo_id, $proveedor_id, $cantidad, $precio_compra) {
         try {
             $this->conn->beginTransaction();
@@ -150,6 +200,18 @@ class InsumoModel implements InsumoRepositoryInterface {
         }
     }
 
+    /**
+     * Actualiza todos los campos de un insumo existente.
+     *
+     * @param  int|float $id             ID del insumo.
+     * @param  int       $proveedor_id   Nuevo proveedor.
+     * @param  string    $nombre         Nuevo nombre.
+     * @param  string    $unidad_medida  Nueva unidad.
+     * @param  float     $stock_actual   Nuevo stock.
+     * @param  float     $stock_minimo   Nuevo mínimo.
+     * @param  float     $precio_costo   Nuevo costo.
+     * @return bool
+     */
     public function update($id, $proveedor_id, $nombre, $unidad_medida, $stock_actual, $stock_minimo, $precio_costo) {
         $query = "UPDATE " . $this->table_name . " SET proveedor_id = :proveedor_id, nombre = :nombre, unidad_medida = :unidad_medida, stock_actual = :stock_actual, stock_minimo = :stock_minimo, precio_costo = :precio_costo WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);

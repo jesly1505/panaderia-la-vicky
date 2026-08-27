@@ -1,12 +1,6 @@
 <?php
 // frontend/perfil.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('perfil.gestionar')) {
     header("Location: index.php");
@@ -113,10 +107,6 @@ $pageHeader = "Datos del Negocio";
 
     <?php include 'includes/footer.php'; ?>
     <script>
-        function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
         function mostrarAlerta(tipo, html) {
             const el = document.getElementById('resultAlert');
             el.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;

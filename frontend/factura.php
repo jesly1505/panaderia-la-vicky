@@ -107,10 +107,6 @@ $venta_id = intval($_GET['id'] ?? 0);
     </div>
 
     <script>
-        function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-
         async function api(route, params = {}) {
             const qs = new URLSearchParams({ route, ...params });
             const res = await fetch(`../backend/api.php?${qs}`);

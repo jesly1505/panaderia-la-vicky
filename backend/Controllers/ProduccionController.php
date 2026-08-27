@@ -12,12 +12,24 @@ class ProduccionController {
     private $insumoModel;
     private $audit;
 
+    /**
+     * Constructor del controlador de producción.
+     *
+     * @param  ProduccionModel             $model       Modelo de producción.
+     * @param  InsumoRepositoryInterface   $insumoModel Repositorio de insumos.
+     * @param  AuditService                $audit       Servicio de auditoría.
+     */
     public function __construct(ProduccionModel $model, InsumoRepositoryInterface $insumoModel, AuditService $audit) {
         $this->model = $model;
         $this->insumoModel = $insumoModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Obtiene el historial de producción paginado con filtros opcionales.
+     *
+     * @return void  Responde con JSON con los datos de producción y el total.
+     */
     public function getAll(): void {
         header('Content-Type: application/json');
         $filter = $_GET['filter'] ?? 'all';
@@ -30,6 +42,13 @@ class ProduccionController {
         echo json_encode(['success' => true, 'data' => $result['data'], 'total' => $result['total']], JSON_UNESCAPED_UNICODE);
         return;    }
 
+    /**
+     * Registra una producción manual a partir de datos JSON enviados por POST.
+     *
+     * @return void  Responde con JSON indicando el resultado de la operación.
+     *
+     * @throws \Exception  Si ocurre un error al procesar la conversión de unidades de los insumos.
+     */
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
         

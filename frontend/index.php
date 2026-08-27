@@ -1,12 +1,6 @@
 <?php
 // frontend/index.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('dashboard.ver')) {
     header("Location: ventas.php");

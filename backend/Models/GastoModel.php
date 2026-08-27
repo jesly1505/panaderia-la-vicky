@@ -4,9 +4,14 @@ namespace App\Models;
 use PDO;
 
 class GastoModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla. */
     private $table = "gastos";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
@@ -37,6 +42,13 @@ class GastoModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Cuenta el total de gastos en el período dado.
+     *
+     * @param  string $startDate Fecha inicio.
+     * @param  string $endDate   Fecha fin.
+     * @return int    Cantidad de gastos.
+     */
     public function countByDate($startDate = '', $endDate = '') {
         $where = "WHERE eliminado = 0";
         $params = [];

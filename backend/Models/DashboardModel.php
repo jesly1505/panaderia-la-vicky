@@ -5,12 +5,24 @@ use App\Helpers\DateFilterHelper;
 use PDO;
 
 class DashboardModel {
+    /** @var PDO Conexión a la base de datos. */
     private PDO $conn;
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
+    /**
+     * Suma total de ventas en el período dado.
+     *
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return float  Total de ventas.
+     */
     public function getVentasHoy(string $filterType = 'today', string $startDate = '', string $endDate = ''): float {
         $dateCondition = DateFilterHelper::getSqlCondition('fecha_venta', $filterType, $startDate, $endDate);
         $query = "SELECT SUM(total) as total_ventas FROM ventas WHERE $dateCondition AND estado != 'cancelado'";
@@ -20,6 +32,14 @@ class DashboardModel {
         return $row && $row['total_ventas'] ? (float)$row['total_ventas'] : 0.0;
     }
 
+    /**
+     * Suma total de ganancias en el período dado.
+     *
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return float  Total de ganancias.
+     */
     public function getGananciasHoy(string $filterType = 'today', string $startDate = '', string $endDate = ''): float {
         $dateCondition = DateFilterHelper::getSqlCondition('fecha_venta', $filterType, $startDate, $endDate);
         $query = "SELECT SUM(ganancias) as total_ganas FROM ventas WHERE $dateCondition AND estado != 'cancelado'";
@@ -29,6 +49,14 @@ class DashboardModel {
         return $row && $row['total_ganas'] ? (float)$row['total_ganas'] : 0.0;
     }
 
+    /**
+     * Cuenta pedidos pendientes en el período dado.
+     *
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return int    Cantidad de pedidos pendientes.
+     */
     public function getPedidosPendientes(string $filterType = 'all', string $startDate = '', string $endDate = ''): int {
         $dateCondition = DateFilterHelper::getSqlCondition('fecha_pedido', $filterType, $startDate, $endDate);
         $query = "SELECT COUNT(*) as pendientes FROM pedidos WHERE estado = 'pendiente' AND eliminado = false AND $dateCondition";
@@ -38,6 +66,11 @@ class DashboardModel {
         return (int)($row['pendientes'] ?? 0);
     }
 
+    /**
+     * Cuenta el total de productos en catálogo.
+     *
+     * @return int
+     */
     public function getProductosCatalogo(): int {
         $query = "SELECT COUNT(*) as total_productos FROM productos WHERE eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -46,6 +79,11 @@ class DashboardModel {
         return (int)($row['total_productos'] ?? 0);
     }
 
+    /**
+     * Cuenta el total de clientes registrados.
+     *
+     * @return int
+     */
     public function getClientesRegistrados(): int {
         $query = "SELECT COUNT(*) as total_clientes FROM clientes WHERE eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -54,6 +92,15 @@ class DashboardModel {
         return (int)($row['total_clientes'] ?? 0);
     }
 
+    /**
+     * Obtiene los últimos pedidos pendientes con nombre del cliente.
+     *
+     * @param  int    $limit      Cantidad máxima.
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Lista de pedidos.
+     */
     public function getLastPedidos(int $limit = 10, string $filterType = 'all', string $startDate = '', string $endDate = ''): array {
         $dateCondition = DateFilterHelper::getSqlCondition('p.fecha_pedido', $filterType, $startDate, $endDate);
         $query = "SELECT p.*, c.nombre as cliente_nombre 
@@ -68,6 +115,11 @@ class DashboardModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene alertas de stock bajo de productos e insumos.
+     *
+     * @return array Lista de alertas con tipo, nombre y stock actual.
+     */
     public function getStockAlerts(): array {
         $alerts = [];
 
@@ -86,6 +138,14 @@ class DashboardModel {
         return $alerts;
     }
 
+    /**
+     * KPIs dinámicos del sistema: eventos, usuarios activos, errores, ventas, producción.
+     *
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Associativo con los 5 KPIs.
+     */
     public function getKpisDinamicos(string $filterType = 'today', string $startDate = '', string $endDate = ''): array {
         $condBitacora = DateFilterHelper::getSqlCondition('fecha_hora', $filterType, $startDate, $endDate);
         $condIncidencias = DateFilterHelper::getSqlCondition('fecha_reporte', $filterType, $startDate, $endDate);
@@ -132,6 +192,14 @@ class DashboardModel {
         return $kpis;
     }
 
+    /**
+     * Devuelve el resumen completo del dashboard para el período dado.
+     *
+     * @param  string $filterType Tipo de filtro temporal.
+     * @param  string $startDate  Fecha inicio.
+     * @param  string $endDate    Fecha fin.
+     * @return array  Associativo con ventas, ganancias, pedidos, alertas y KPIs.
+     */
     public function getResumen(string $filterType = 'today', string $startDate = '', string $endDate = ''): array {
         return [
             'ventas_hoy'           => $this->getVentasHoy($filterType, $startDate, $endDate),

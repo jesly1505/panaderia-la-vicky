@@ -4,7 +4,9 @@ namespace App\Models;
 use PDO;
 
 class ProductoModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla principal. */
     private $table_name = "productos";
 
     /**
@@ -21,10 +23,25 @@ class ProductoModel {
         WHERE dv.venta_id = v.id
     )";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
 
+    /**
+     * Crea un producto con su receta de insumos y descuenta stock inicial si aplica.
+     *
+     * @param  string     $nombre        Nombre del producto.
+     * @param  string     $descripcion   Descripción.
+     * @param  float      $precio        Precio de venta.
+     * @param  string     $categoria     Categoría del producto.
+     * @param  float      $cantidad      Stock inicial a producir.
+     * @param  array      $ingredientes  Lista de [insumo_id, cantidad_requerida].
+     * @param  float      $stock_minimo  Stock mínimo para alertas.
+     * @return true|array true si éxito; array con 'insuficiente' si falta stock.
+     */
     public function create($nombre, $descripcion, $precio, $categoria, $cantidad, $ingredientes, $stock_minimo = 0) {
         try {
             // Validar stock si hay cantidad inicial
@@ -80,6 +97,11 @@ class ProductoModel {
         }
     }
 
+    /**
+     * Lista todos los productos activos ordenados por categoría y nombre.
+     *
+     * @return array Lista de productos.
+     */
     public function readAll() {
         $query = "SELECT * FROM " . $this->table_name . " 
                   WHERE eliminado = false 
@@ -89,6 +111,12 @@ class ProductoModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene productos filtrados por categoría.
+     *
+     * @param  string $categoria Nombre de la categoría.
+     * @return array  Lista de productos de esa categoría.
+     */
     public function getByCategoria($categoria) {
         $query = "SELECT * FROM " . $this->table_name . " 
                   WHERE categoria = :categoria AND eliminado = false 
@@ -99,6 +127,12 @@ class ProductoModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Obtiene un producto por su ID.
+     *
+     * @param  int        $id ID del producto.
+     * @return array|false Fila del producto o false si no existe.
+     */
     public function getById($id) {
         $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id AND eliminado = false";
         $stmt = $this->conn->prepare($query);
@@ -107,6 +141,12 @@ class ProductoModel {
         return $stmt->fetch();
     }
 
+    /**
+     * Obtiene la receta (insumos requeridos) de un producto.
+     *
+     * @param  int   $id ID del producto.
+     * @return array Lista de ingredientes con insumo_id y cantidad_requerida.
+     */
     public function getReceta($id) {
         $query = "SELECT * FROM producto_receta WHERE producto_id = :id";
         $stmt = $this->conn->prepare($query);
@@ -115,6 +155,13 @@ class ProductoModel {
         return $stmt->fetchAll();
     }
 
+    /**
+     * Actualiza el stock actual de un producto.
+     *
+     * @param  int   $id         ID del producto.
+     * @param  float $nuevoStock Nuevo valor de stock.
+     * @return bool
+     */
     public function updateStock($id, $nuevoStock) {
         $query = "UPDATE " . $this->table_name . " SET stock_actual = :stock WHERE id = :id";
         $stmt = $this->conn->prepare($query);
@@ -123,6 +170,12 @@ class ProductoModel {
         return $stmt->execute();
     }
 
+    /**
+     * Calcula el costo de producción de un producto sumando la receta.
+     *
+     * @param  int   $id ID del producto.
+     * @return float Costo total de producción.
+     */
     public function getCost($id) {
         $query = "SELECT pr.cantidad_requerida, i.precio_costo 
                   FROM producto_receta pr
@@ -278,6 +331,17 @@ class ProductoModel {
         }
     }
 
+    /**
+     * Actualiza los datos generales de un producto (no incluye stock).
+     *
+     * @param  int    $id            ID del producto.
+     * @param  string $nombre        Nuevo nombre.
+     * @param  string $descripcion   Nueva descripción.
+     * @param  float  $precio_venta  Nuevo precio de venta.
+     * @param  string $categoria     Nueva categoría.
+     * @param  float  $stock_minimo  Nuevo stock mínimo.
+     * @return bool
+     */
     public function update($id, $nombre, $descripcion, $precio_venta, $categoria, $stock_minimo) {
         $query = "UPDATE " . $this->table_name . " 
                   SET nombre = :nombre, 

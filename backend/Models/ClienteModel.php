@@ -6,9 +6,14 @@ use App\Utils\Logger;
 
 class ClienteModel
 {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
+    /** @var string Nombre de la tabla principal. */
     private $table_name = "clientes";
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db)
     {
         $this->conn = $db;
@@ -16,6 +21,16 @@ class ClienteModel
 
     }
 
+    /**
+     * Crea un nuevo cliente. Verifica duplicados de email y DNI.
+     *
+     * @param  string $nombre    Nombre completo.
+     * @param  string $email     Correo electrónico.
+     * @param  string $telefono  Teléfono.
+     * @param  string $direccion Dirección.
+     * @param  string $dni       Documento de identidad.
+     * @return bool
+     */
     public function create($nombre, $email, $telefono, $direccion, $dni)
     {
         // Check for duplicate email
@@ -55,6 +70,12 @@ class ClienteModel
         }
     }
 
+    /**
+     * Verifica si ya existe un cliente con el email dado.
+     *
+     * @param  string $email Correo a verificar.
+     * @return bool  true si ya existe.
+     */
     // Check if email already exists
     public function existsEmail($email)
     {
@@ -70,6 +91,12 @@ class ClienteModel
         }
     }
 
+    /**
+     * Verifica si ya existe un cliente con el DNI dado.
+     *
+     * @param  string $dni Documento a verificar.
+     * @return bool  true si ya existe.
+     */
     // Check if DNI already exists
     public function existsDNI($dni)
     {
@@ -85,6 +112,14 @@ class ClienteModel
         }
     }
 
+    /**
+     * Lista clientes con paginación y búsqueda opcional.
+     *
+     * @param  int|null    $limit  Registros por página (null = sin límite).
+     * @param  int|null    $offset Offset de inicio.
+     * @param  string      $search Término de búsqueda.
+     * @return array       Lista de clientes.
+     */
     public function readAll($limit = null, $offset = null, string $search = '')
     {
         try {
@@ -117,6 +152,12 @@ class ClienteModel
         }
     }
 
+    /**
+     * Cuenta el total de clientes activos, opcionalmente filtrados por búsqueda.
+     *
+     * @param  string $search Término de búsqueda.
+     * @return int    Total de clientes.
+     */
     // Count total non‑deleted clients
     public function countAll(string $search = ''): int
     {
@@ -141,6 +182,12 @@ class ClienteModel
         }
     }
 
+    /**
+     * Obtiene el historial de compras (ventas) de un cliente.
+     *
+     * @param  int   $cliente_id ID del cliente.
+     * @return array Lista de ventas asociadas al cliente.
+     */
     public function getPurchaseHistory($cliente_id)
     {
         // No duplicate check needed here
@@ -161,6 +208,17 @@ class ClienteModel
         }
     }
 
+    /**
+     * Actualiza los datos de un cliente. Verifica duplicados de email y DNI.
+     *
+     * @param  int    $id        ID del cliente.
+     * @param  string $nombre    Nuevo nombre.
+     * @param  string $email     Nuevo email.
+     * @param  string $telefono  Nuevo teléfono.
+     * @param  string $direccion Nueva dirección.
+     * @param  string $dni       Nuevo DNI.
+     * @return bool
+     */
     public function update($id, $nombre, $email, $telefono, $direccion, $dni)
     {
         // Prevent duplicate email on other records
@@ -211,6 +269,12 @@ class ClienteModel
         }
     }
 
+    /**
+     * Elimina un cliente (borrado lógico).
+     *
+     * @param  int  $id ID del cliente.
+     * @return bool
+     */
     public function delete($id)
     {
         // Start transaction for atomic soft‑delete

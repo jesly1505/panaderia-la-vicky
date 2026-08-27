@@ -1,12 +1,6 @@
 <?php
 // frontend/proveedores.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('proveedores.ver')) {
     header("Location: index.php");
@@ -322,16 +316,6 @@ $pageHeader = "Gestión de Proveedores";
                 }
                 else showAlert(data.message || 'Error al eliminar.', 'error');
             } catch (e) { console.error(e); }
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            return String(text)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
     </script>
 </body>

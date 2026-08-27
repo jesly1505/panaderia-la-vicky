@@ -7,14 +7,25 @@ use App\Utils\Logger;
 use App\Models\ClienteModel;
 
 class ClienteController {
+    /** @var ClienteModel */
     private $clienteModel;
+    /** @var AuditService */
     private $audit;
 
+    /**
+     * @param ClienteModel $clienteModel Modelo de clientes.
+     * @param AuditService $audit        Servicio de auditoría.
+     */
     public function __construct(ClienteModel $clienteModel, AuditService $audit) {
         $this->clienteModel = $clienteModel;
         $this->audit = $audit;
     }
 
+    /**
+     * Lista clientes con paginación y búsqueda.
+     *
+     * @return void Emite JSON con data y total.
+     */
     public function getAll()
     {
         if (!isset($this->clienteModel) || !method_exists($this->clienteModel, 'readAll')) {
@@ -42,6 +53,11 @@ class ClienteController {
         }
     }
 
+    /**
+     * Crea un nuevo cliente.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function add() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -91,6 +107,11 @@ class ClienteController {
         }
     }
 
+    /**
+     * Obtiene el historial de compras de un cliente.
+     *
+     * @return void Emite JSON con las ventas del cliente.
+     */
     public function getHistory() {
         header('Content-Type: application/json');
         $id = $_GET['id'] ?? null;
@@ -102,6 +123,11 @@ class ClienteController {
         echo json_encode(['success' => true, 'data' => $data]);
     }
 
+    /**
+     * Actualiza los datos de un cliente existente.
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function update() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
@@ -139,6 +165,11 @@ class ClienteController {
         }
     }
 
+    /**
+     * Elimina un cliente (borrado lógico).
+     *
+     * @return void Emite JSON con resultado.
+     */
     public function delete() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;

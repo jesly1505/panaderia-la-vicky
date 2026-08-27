@@ -59,4 +59,11 @@ build/
 *.seed
 .phpunit.cache/
 
+# Diagnostic / Test files (not for production)
+diagnostico.php
+test_*.php
+check_db_status.php
+read_apache_log.php
+cleanup_temps.php
+
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocod

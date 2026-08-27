@@ -1,12 +1,6 @@
 <?php
 // frontend/roles.php
-session_start();
-require_once __DIR__ . '/includes/permisos.php';
-
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
-    exit();
-}
+require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('permisos.gestionar')) {
     header("Location: index.php");
@@ -150,10 +144,6 @@ $pageHeader = "Gestión de Roles";
     <?php include 'includes/footer.php'; ?>
     <script>
         let rolPermisosActual = null;
-
-        function escapeHtml(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
 
         function mostrarAlerta(tipo, html) {
             const el = document.getElementById('resultAlert');

@@ -14,6 +14,19 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function showToast(title, message, bgClass) {
+    const toastEl = document.getElementById('loginToast');
+    if (!toastEl) return;
+    const toastHeader = document.getElementById('toastHeader');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastBody = document.getElementById('toastBody');
+    if (toastHeader) toastHeader.className = 'toast-header text-white ' + bgClass;
+    if (toastTitle) toastTitle.innerText = title;
+    if (toastBody) toastBody.innerText = message;
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
 // Loader global automático para peticiones al backend
 (function() {
     const MIN_LOADER_MS = 500;
@@ -28,6 +41,18 @@ function escapeHtml(text) {
     window.fetch = function() {
         const url = arguments[0];
         const isApi = isApiUrl(url);
+        const options = arguments[1] || {};
+        const method = (options.method || 'GET').toUpperCase();
+
+        if (isApi && method !== 'GET') {
+            const metaCsrf = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = metaCsrf ? metaCsrf.getAttribute('content') : '';
+            if (csrfToken) {
+                options.headers = options.headers || {};
+                options.headers['X-CSRF-Token'] = csrfToken;
+            }
+            arguments[1] = options;
+        }
 
         if (isApi) {
             if (activeRequests === 0 && loader) loader.style.display = '';

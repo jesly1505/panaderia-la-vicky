@@ -5,8 +5,12 @@ use PDO;
 use App\Models\ProductoModel;
 
 class ReporteModel {
+    /** @var PDO Conexión a la base de datos. */
     private $conn;
 
+    /**
+     * @param PDO $db Conexión PDO activa.
+     */
     public function __construct(PDO $db) {
         $this->conn = $db;
     }
@@ -140,6 +144,13 @@ class ReporteModel {
         ];
     }
 
+    /**
+     * Exporta ventas para CSV/PDF filtradas por rango de fechas.
+     *
+     * @param  string $startDate Fecha inicio (YYYY-MM-DD).
+     * @param  string $endDate   Fecha fin (YYYY-MM-DD).
+     * @return array  Lista de ventas con detalles.
+     */
     // --- Exportaciones CSV ---
     public function getExportVentas($startDate, $endDate) {
         $where = "WHERE v.estado != 'cancelado'";
@@ -162,6 +173,11 @@ class ReporteModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Exporta insumos visibles para CSV/PDF.
+     *
+     * @return array Lista de insumos con stock y precio.
+     */
     public function getExportInsumos() {
         $query = "SELECT id, nombre, unidad_medida, stock_actual, stock_minimo, precio_costo 
                   FROM insumos WHERE visible = 1 AND eliminado = false ORDER BY nombre ASC";
@@ -170,6 +186,11 @@ class ReporteModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Exporta productos activos para CSV/PDF.
+     *
+     * @return array Lista de productos con precio, costo y stock.
+     */
     public function getExportProductos() {
         $query = "SELECT id, nombre, categoria, precio_venta, costo_produccion, stock_actual, stock_minimo 
                   FROM productos WHERE eliminado = false ORDER BY nombre ASC";
@@ -178,6 +199,13 @@ class ReporteModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Exporta gastos filtrados por rango de fechas para CSV/PDF.
+     *
+     * @param  string $startDate Fecha inicio (YYYY-MM-DD).
+     * @param  string $endDate   Fecha fin (YYYY-MM-DD).
+     * @return array  Lista de gastos.
+     */
     public function getExportGastos($startDate, $endDate) {
         $where = "WHERE eliminado = 0";
         $params = [];
