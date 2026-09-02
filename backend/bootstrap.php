@@ -63,19 +63,19 @@ $router->register('reset_password', AuthController::class, 'resetPassword', true
 
 // Inventario (Insumos)
 $router->register('get_insumos', InsumoController::class, 'getAll', true, null, ['GET'], 'inventario.ver');
-$router->register('add_insumo', InsumoController::class, 'add', true, null, ['POST'], 'inventario.gestionar');
-$router->register('update_insumo', InsumoController::class, 'update', true, null, ['POST'], 'inventario.gestionar');
-$router->register('adjust_stock', InsumoController::class, 'adjustStock', true, null, ['POST'], 'inventario.gestionar');
+$router->register('add_insumo', InsumoController::class, 'add', true, null, ['POST'], 'inventario.crear');
+$router->register('update_insumo', InsumoController::class, 'update', true, null, ['POST'], 'inventario.editar');
+$router->register('adjust_stock', InsumoController::class, 'adjustStock', true, null, ['POST'], 'inventario.editar');
 $router->register('delete_insumo', InsumoController::class, 'delete', true, null, ['POST'], 'inventario.eliminar');
-$router->register('toggle_insumo_visibility', InsumoController::class, 'toggleVisibility', true, null, ['POST'], 'inventario.gestionar');
+$router->register('toggle_insumo_visibility', InsumoController::class, 'toggleVisibility', true, null, ['POST'], 'inventario.editar');
 $router->register('get_low_stock_alerts', InsumoController::class, 'getLowStock', true, null, ['GET'], 'inventario.ver');
-$router->register('registrar_compra_insumo', InsumoController::class, 'registrarCompra', true, null, ['POST'], 'inventario.gestionar');
+$router->register('registrar_compra_insumo', InsumoController::class, 'registrarCompra', true, null, ['POST'], 'inventario.editar');
 
 // Gastos
 $router->register('get_gastos_by_date', GastoController::class, 'getByDate', true, null, ['GET'], 'gastos.ver');
-$router->register('add_gasto', GastoController::class, 'add', true, null, ['POST'], 'gastos.gestionar');
-$router->register('delete_gasto', GastoController::class, 'delete', true, null, ['POST'], 'gastos.gestionar');
-$router->register('update_gasto', GastoController::class, 'update', true, null, ['POST'], 'gastos.gestionar');
+$router->register('add_gasto', GastoController::class, 'add', true, null, ['POST'], 'gastos.crear');
+$router->register('delete_gasto', GastoController::class, 'delete', true, null, ['POST'], 'gastos.eliminar');
+$router->register('update_gasto', GastoController::class, 'update', true, null, ['POST'], 'gastos.editar');
 
 // Reportes y Exportaciones CSV
 $router->register('get_ventas_semanales', ReporteController::class, 'getVentasSemanales', true, null, ['GET'], 'reportes.ver');
@@ -95,54 +95,55 @@ $router->register('export_gastos_pdf', ReporteController::class, 'exportGastosPD
 // Proveedores
 $router->register('get_proveedores', ProveedorController::class, 'getAll', true, null, ['GET'], 'proveedores.ver');
 $router->register('get_proveedores_paginated', ProveedorController::class, 'getPaginated', true, null, ['GET'], 'proveedores.ver');
-$router->register('add_proveedor', ProveedorController::class, 'add', true, null, ['POST'], 'proveedores.gestionar');
-$router->register('update_proveedor', ProveedorController::class, 'update', true, null, ['POST'], 'proveedores.gestionar');
-$router->register('delete_proveedor', ProveedorController::class, 'delete', true, null, ['POST'], 'proveedores.gestionar');
+$router->register('add_proveedor', ProveedorController::class, 'add', true, null, ['POST'], 'proveedores.crear');
+$router->register('update_proveedor', ProveedorController::class, 'update', true, null, ['POST'], 'proveedores.editar');
+$router->register('delete_proveedor', ProveedorController::class, 'delete', true, null, ['POST'], 'proveedores.eliminar');
 
 // Productos
 $router->register('get_productos', ProductoController::class, 'getAll', true, null, ['GET'], 'productos.ver');
 $router->register('get_productos_by_categoria', ProductoController::class, 'getByCategoria', true, null, ['GET'], 'productos.ver');
-$router->register('add_producto', ProductoController::class, 'add', true, null, ['POST'], 'productos.gestionar');
-$router->register('update_producto', ProductoController::class, 'update', true, null, ['POST'], 'productos.gestionar');
+$router->register('add_producto', ProductoController::class, 'add', true, null, ['POST'], 'productos.crear');
+$router->register('update_producto', ProductoController::class, 'update', true, null, ['POST'], 'productos.editar');
 $router->register('delete_producto', ProductoController::class, 'delete', true, null, ['POST'], 'productos.eliminar');
-$router->register('producir_producto', ProductoController::class, 'producir', true, null, ['POST'], 'productos.gestionar');
+$router->register('producir_producto', ProductoController::class, 'producir', true, null, ['POST'], 'productos.editar');
 
 // Producción manual
 $router->register('get_produccion_historial', ProduccionController::class, 'getAll', true, null, ['GET'], 'produccion.ver');
-$router->register('add_produccion_manual', ProduccionController::class, 'create', true, null, ['POST'], 'produccion.gestionar');
+$router->register('add_produccion_manual', ProduccionController::class, 'create', true, null, ['POST'], 'produccion.crear');
 
 // Clientes
 $router->register('get_clientes', ClienteController::class, 'getAll', true, null, ['GET'], 'clientes.ver');
-$router->register('add_cliente', ClienteController::class, 'add', true, null, ['POST'], 'clientes.gestionar');
+$router->register('add_cliente', ClienteController::class, 'add', true, null, ['POST'], 'clientes.crear');
 $router->register('get_cliente_historial', ClienteController::class, 'getHistory', true, null, ['GET'], 'clientes.ver');
-$router->register('update_cliente', ClienteController::class, 'update', true, null, ['POST'], 'clientes.gestionar');
-$router->register('delete_cliente', ClienteController::class, 'delete', true, null, ['POST'], 'clientes.gestionar');
+$router->register('update_cliente', ClienteController::class, 'update', true, null, ['POST'], 'clientes.editar');
+$router->register('delete_cliente', ClienteController::class, 'delete', true, null, ['POST'], 'clientes.eliminar');
 
 // Pedidos
 $router->register('get_pedidos', PedidoController::class, 'getAll', true, null, ['GET'], 'pedidos.ver');
-$router->register('add_pedido', PedidoController::class, 'create', true, null, ['POST'], 'pedidos.gestionar');
-$router->register('update_pedido_estado', PedidoController::class, 'updateEstado', true, null, ['POST'], 'pedidos.gestionar');
+$router->register('add_pedido', PedidoController::class, 'create', true, null, ['POST'], 'pedidos.crear');
+$router->register('update_pedido_estado', PedidoController::class, 'updateEstado', true, null, ['POST'], 'pedidos.editar');
 $router->register('get_pedido_detalles', PedidoController::class, 'getDetalles', true, null, ['GET'], 'pedidos.ver');
-$router->register('delete_pedido', PedidoController::class, 'delete', true, null, ['POST'], 'pedidos.gestionar');
-$router->register('update_pedido', PedidoController::class, 'update', true, null, ['POST'], 'pedidos.gestionar');
+$router->register('delete_pedido', PedidoController::class, 'delete', true, null, ['POST'], 'pedidos.eliminar');
+$router->register('update_pedido', PedidoController::class, 'update', true, null, ['POST'], 'pedidos.editar');
 
 // Ventas
 $router->register('get_ventas', VentaController::class, 'getAll', true, null, ['GET'], 'ventas.ver');
 $router->register('get_vendedores', VentaController::class, 'getVendedores', true, null, ['GET'], 'ventas.ver');
-$router->register('add_venta_directa', VentaController::class, 'createDirecta', true, null, ['POST'], 'ventas.gestionar');
+$router->register('add_venta_directa', VentaController::class, 'createDirecta', true, null, ['POST'], 'ventas.crear');
 $router->register('get_top_products', VentaController::class, 'getTopProducts', true, null, ['GET'], 'ventas.ver');
 $router->register('get_revenue_chart', VentaController::class, 'getRevenueChart', true, null, ['GET'], 'ventas.ver');
 $router->register('get_venta_detalles', VentaController::class, 'getDetalles', true, null, ['GET'], 'ventas.ver');
-$router->register('cancel_venta', VentaController::class, 'cancel', true, null, ['POST'], 'ventas.gestionar');
+$router->register('get_factura_detalles', VentaController::class, 'getDetalles', true, null, ['GET'], 'ventas.ver_factura');
+$router->register('cancel_venta', VentaController::class, 'cancel', true, null, ['POST'], 'ventas.eliminar');
 
 // Dashboard
 $router->register('get_dashboard_resumen', DashboardController::class, 'getResumen', true, null, ['GET'], 'dashboard.ver');
 
 // Empleados
 $router->register('get_employees', EmployeeController::class, 'getAll', true, null, ['GET'], 'empleados.ver');
-$router->register('add_employee', EmployeeController::class, 'create', true, null, ['POST'], 'empleados.gestionar');
-$router->register('delete_employee', EmployeeController::class, 'delete', true, null, ['POST'], 'empleados.gestionar');
-$router->register('update_employee', EmployeeController::class, 'update', true, null, ['POST'], 'empleados.gestionar');
+$router->register('add_employee', EmployeeController::class, 'create', true, null, ['POST'], 'empleados.crear');
+$router->register('delete_employee', EmployeeController::class, 'delete', true, null, ['POST'], 'empleados.eliminar');
+$router->register('update_employee', EmployeeController::class, 'update', true, null, ['POST'], 'empleados.editar');
 $router->register('get_employee_stats', EmployeeController::class, 'getStats', true, null, ['GET'], 'empleados.ver');
 
 // Perfil de la panadería (empresa)

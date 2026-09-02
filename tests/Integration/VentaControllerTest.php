@@ -29,7 +29,7 @@ class VentaControllerTest extends TestCase {
             'usuario_id' => 1,
             'rol' => 'Administrador',
             'rol_id' => 1,
-            'permisos' => ['ventas.ver', 'ventas.gestionar'],
+            'permisos' => ['ventas.ver', 'ventas.crear', 'ventas.editar'],
         ];
     }
 

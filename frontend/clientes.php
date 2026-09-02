@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('clientes.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -33,7 +33,7 @@ $pageHeader = "Gestión de Clientes";
                                 <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-address-book me-2 text-primary"></i>Directorio de Clientes</h5>
                                 <p class="text-muted small mb-0">Base de datos de clientes y fidelidad</p>
                             </div>
-                            <?php if (tiene_permiso('clientes.gestionar')): ?>
+                            <?php if (tiene_permiso('clientes.crear')): ?>
                                 <button class="btn btn-primary shadow-sm fw-bold px-4 text-nowrap" data-bs-toggle="modal" data-bs-target="#addClienteModal">
                                     <i class="fas fa-user-plus me-2"></i>NUEVO CLIENTE
                                 </button>
@@ -268,7 +268,8 @@ $pageHeader = "Gestión de Clientes";
 
                 if (data.success && data.data && data.data.length > 0) {
                     clientsData = data.data;
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.gestionar') : true);
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.editar') : true);
+                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('clientes.eliminar') : true);
                     data.data.forEach((c, index) => {
                         const rowNumber = offset + index + 1;
                         tbody.innerHTML += `
@@ -283,6 +284,8 @@ $pageHeader = "Gestión de Clientes";
                                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewHistory(${c.id})" title="Historial"><i class="fas fa-history"></i></button>
                                     ${puedeGestionar ? `
                                         <button class="btn btn-sm btn-outline-secondary me-1" onclick="openEditModal(${c.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                                    ` : ''}
+                                    ${puedeEliminar ? `
                                         <button class="btn btn-sm btn-outline-danger" onclick="deleteClient(${c.id})" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
                                     ` : ''}
                                 </td>
@@ -334,6 +337,7 @@ $pageHeader = "Gestión de Clientes";
             document.getElementById('editClientId').value = client.id;
             document.getElementById('editClientNombre').value = client.nombre;
             document.getElementById('editClientEmail').value = client.email || '';
+            document.getElementById('editClientDni').value = client.dni || '';
             document.getElementById('editClientTelefono').value = client.telefono || '';
             document.getElementById('editClientDireccion').value = client.direccion || '';
 
@@ -390,6 +394,10 @@ $pageHeader = "Gestión de Clientes";
         });
 
         async function deleteClient(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('clientes.eliminar')) {
+                showAlert('No dispone de permisos para eliminar clientes.', 'warning');
+                return;
+            }
             if (!(await showConfirm('¿Desea eliminar a este cliente?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_cliente', {

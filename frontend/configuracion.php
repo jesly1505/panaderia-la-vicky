@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('empleados.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -250,6 +250,8 @@ $pageHeader = "Ajustes del Sistema";
                 const tbody = document.getElementById('employeeTableBody');
                 tbody.innerHTML = '';
                 if (data.success && data.data && data.data.length > 0) {
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('empleados.editar') : true);
+                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('empleados.eliminar') : true);
                     data.data.forEach((emp, index) => {
                         const rowNumber = offset + index + 1;
                         const isMainAdmin = (emp.id == 1);
@@ -265,7 +267,12 @@ $pageHeader = "Ajustes del Sistema";
                                     </span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    ${!isMainAdmin ? TA.edit(`openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})`) + TA.custom(`deleteEmployee(${emp.id})`, 'fa-user-slash', 'Dar de baja', 'btn-outline-danger') : '<span class="text-muted x-small italic">System Protected</span>'}
+                                    ${isMainAdmin
+                                        ? '<span class="text-muted x-small italic">System Protected</span>'
+                                        : (puedeGestionar || puedeEliminar ? `
+                                            ${puedeGestionar ? TA.edit(`openEditEmployeeModal(${emp.id}, '${escJs(emp.nombre)}', '${escJs(emp.email)}', ${emp.rol_id})`) : ''}
+                                            ${puedeEliminar ? TA.custom(`deleteEmployee(${emp.id})`, 'fa-user-slash', 'Dar de baja', 'btn-outline-danger') : ''}
+                                        ` : '')}
                                 </td>
                             </tr>
                         `;
@@ -340,6 +347,10 @@ $pageHeader = "Ajustes del Sistema";
         });
 
         async function deleteEmployee(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('empleados.eliminar')) {
+                showAlert('No dispone de permisos para dar de baja empleados.', 'warning');
+                return;
+            }
             if (!(await showConfirm('¿Está seguro de dar de baja a este empleado? Perderá acceso inmediato al sistema.'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_employee', {

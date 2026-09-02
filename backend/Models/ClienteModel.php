@@ -113,6 +113,42 @@ class ClienteModel
     }
 
     /**
+     * Verifica si ya existe un email en otro cliente distinto del indicado.
+     */
+    public function existsEmailExcluding($email, $excludeId)
+    {
+        try {
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE email = :email AND id != :id AND eliminado = false";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(":id", $excludeId);
+            $stmt->execute();
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            Logger::error("Error checking duplicate email: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si ya existe un DNI en otro cliente distinto del indicado.
+     */
+    public function existsDNIExcluding($dni, $excludeId)
+    {
+        try {
+            $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE dni = :dni AND id != :id AND eliminado = false";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":dni", $dni);
+            $stmt->bindParam(":id", $excludeId);
+            $stmt->execute();
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            Logger::error("Error checking duplicate DNI: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Lista clientes con paginación y búsqueda opcional.
      *
      * @param  int|null    $limit  Registros por página (null = sin límite).

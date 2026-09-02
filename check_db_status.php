@@ -19,7 +19,7 @@ try {
     echo json_encode([
         'adminPermisosCount' => count($permisosAdmin),
         'adminPermisos' => array_column($permisosAdmin, 'codigo'),
-        'hasInventarioGestionar' => in_array('inventario.gestionar', array_column($permisosAdmin, 'codigo')),
+        'hasInventarioCrear' => in_array('inventario.crear', array_column($permisosAdmin, 'codigo')),
         'allPermisos' => $allPermisos
     ], JSON_PRETTY_PRINT);
 } catch (Throwable $e) {

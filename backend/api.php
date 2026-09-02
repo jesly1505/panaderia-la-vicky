@@ -18,7 +18,7 @@ ini_set('display_errors', $debug ? '1' : '0');
 // Excluir rutas públicas que no tienen sesión (login, forgot, reset)
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $route = $_GET['route'] ?? '';
-$publicRoutes = ['login', 'login_redirect', 'forgot_password', 'reset_password', 'check_session'];
+$publicRoutes = ['login', 'login_redirect', 'forgot_password', 'reset_password', 'check_session', 'logout'];
 
 if (in_array($requestMethod, ['POST', 'PUT', 'DELETE'], true) && !in_array($route, $publicRoutes, true)) {
     $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN']
@@ -35,5 +35,14 @@ if (in_array($requestMethod, ['POST', 'PUT', 'DELETE'], true) && !in_array($rout
 
 // Resolución de la ruta a través del router
 list($router, $container) = require __DIR__ . '/bootstrap.php';
+
+// Modo mantenimiento: bloquear la API a usuarios no administradores
+// (se excluyen las rutas públicas que no requieren sesión).
+if (!in_array($route, $publicRoutes, true)) {
+    $security = $container->get(\App\Core\Security::class);
+    if ($security->isLoggedIn()) {
+        $security->requireMaintenanceOpen();
+    }
+}
 
 $router->dispatch($_GET['route'] ?? '', $container);

@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('permisos.gestionar', 'perfil.gestionar', 'auditoria.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -53,7 +53,7 @@ $pageHeader = "Copias de Seguridad y Base de Datos";
                                 </div>
                             </div>
 
-                            <a href="../backend/Controllers/CmmiController.php?action=backup_db" class="btn btn-lg btn-primary shadow-sm py-3 px-4">
+                            <a href="../backend/api.php?route=backup_db" class="btn btn-lg btn-primary shadow-sm py-3 px-4">
                                 <i class="fas fa-download me-2"></i> Generar y Descargar Respaldo (.SQL)
                             </a>
                         </div>

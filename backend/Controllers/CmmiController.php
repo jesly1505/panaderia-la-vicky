@@ -117,15 +117,32 @@ class CmmiController {
         $filename = "backup_la_vicky_" . date("Y-m-d_H-i-s") . ".sql";
         $mysqldump_path = getenv('MYSQLDUMP_PATH') ?: 'mysqldump';
         if ($mysqldump_path === 'mysqldump') {
-            $xampp_mysql = "C:\\xampp\\mysql\\bin\\mysqldump.exe";
-            if (file_exists($xampp_mysql)) {
-                $mysqldump_path = $xampp_mysql;
+            // Common install locations (XAMPP, MySQL standalone, MariaDB, etc.)
+            $candidates = [
+                "C:\\xampp\\mysql\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.4\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.1\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.2\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.3\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MySQL\\MySQL Server 8.4\\bin\\mysqldump.exe",
+                "C:\\Program Files\\MariaDB\\mariadb-10.11\\bin\\mysqldump.exe",
+                "C:\\wamp64\\bin\\mysql\\mysql8.0\\bin\\mysqldump.exe",
+            ];
+            foreach ($candidates as $candidate) {
+                if (file_exists($candidate)) {
+                    $mysqldump_path = $candidate;
+                    break;
+                }
             }
         }
 
         $temp_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
         $pass_arg = $pass ? "--password=" . escapeshellarg($pass) : "";
-        $command = "\"" . $mysqldump_path . "\" --host=" . escapeshellarg($host) . " --user=" . escapeshellarg($user) . " $pass_arg " . escapeshellarg($dbname) . " > " . escapeshellarg($temp_file) . " 2>&1";
+        // stdout (dump SQL) -> archivo; stderr (advertencias) -> NUL para que el
+        // archivo descargado comience con el dump limpio. Errores reales del CLI
+        // se detectan por el código de salida ($result) y activan el fallback nativo.
+        $command = "\"" . $mysqldump_path . "\" --host=" . escapeshellarg($host) . " --user=" . escapeshellarg($user) . " $pass_arg " . escapeshellarg($dbname) . " > " . escapeshellarg($temp_file) . " 2> NUL";
 
         exec($command, $output, $result);
 

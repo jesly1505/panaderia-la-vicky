@@ -156,6 +156,21 @@ class ClienteController {
             return;
         }
 
+        // Check for duplicate email (en otro cliente).
+        if (!empty($email) && $this->clienteModel->existsEmailExcluding($email, $id)) {
+            $msg = 'Ya existe un cliente con el mismo email.';
+            Logger::error($msg);
+            echo json_encode(['success' => false, 'message' => $msg]);
+            return;
+        }
+        // Check for duplicate DNI (en otro cliente).
+        if (!empty($dni) && $this->clienteModel->existsDNIExcluding($dni, $id)) {
+            $msg = 'Ya existe un cliente con el mismo DNI.';
+            Logger::error($msg);
+            echo json_encode(['success' => false, 'message' => $msg]);
+            return;
+        }
+
         if ($this->clienteModel->update($id, $nombre, $email, $telefono, $direccion, $dni)) {
             $this->audit->log('Clientes', 'Actualización de cliente', "Cliente ID {$id} actualizado.");
             echo json_encode(['success' => true, 'message' => 'Cliente actualizado correctamente.']);

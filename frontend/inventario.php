@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('inventario.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -44,10 +44,12 @@ $pageHeader = "Inventario";
 
                                 <!-- Botones de Acción -->
                                 <div class="d-flex gap-2">
-                                    <?php if (tiene_permiso('inventario.gestionar')): ?>
+                                    <?php if (tiene_permiso('inventario.editar')): ?>
                                         <button class="btn btn-sm btn-warning shadow-sm text-dark fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#registrarCompraModal">
                                             <i class="fas fa-shopping-cart me-1"></i> Registrar Compra
                                         </button>
+                                    <?php endif; ?>
+                                    <?php if (tiene_permiso('inventario.crear')): ?>
                                         <button class="btn btn-sm btn-primary shadow-sm fw-semibold text-nowrap" data-bs-toggle="modal" data-bs-target="#addInsumoModal">
                                             <i class="fas fa-plus me-1"></i>Nuevo Insumo
                                         </button>
@@ -342,7 +344,7 @@ $pageHeader = "Inventario";
                 insumosData = (data.success && data.data) ? data.data : [];
 
                 if (data.success && data.data && data.data.length > 0) {
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('inventario.gestionar') : true);
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('inventario.editar') : true);
                     const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('inventario.eliminar') : true);
 
                     data.data.forEach(i => {
@@ -559,6 +561,10 @@ $pageHeader = "Inventario";
         });
 
         async function deleteInsumo(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('inventario.eliminar')) {
+                showAlert('No dispone de permisos para eliminar insumos.', 'warning');
+                return;
+            }
             if (!(await showConfirm('¿Está seguro de eliminar este insumo?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_insumo', {

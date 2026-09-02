@@ -1,8 +1,9 @@
 <?php
 // frontend/factura.php  —  Comprobante de venta imprimible (no requiere layout de sidebar)
-session_start();
-if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
-    header("Location: login.php");
+require_once __DIR__ . '/includes/auth_guard.php';
+
+if (!tiene_permiso('ventas.ver_factura')) {
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -133,7 +134,7 @@ $venta_id = intval($_GET['id'] ?? 0);
             } catch (err) { /* Use default header */ }
 
             try {
-                const json = await api('get_venta_detalles', { id });
+                const json = await api('get_factura_detalles', { id });
 
                 if (json.success && json.data) {
                     const v = json.data;

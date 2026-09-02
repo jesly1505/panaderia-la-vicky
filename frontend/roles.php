@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('permisos.gestionar')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 

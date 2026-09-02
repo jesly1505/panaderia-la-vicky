@@ -59,7 +59,7 @@ try {
         'session_user' => $_SESSION['user_name'],
         'session_role' => $_SESSION['user_role'],
         'permisos_count' => count($_SESSION['permisos']),
-        'has_inventario_gestionar' => in_array('inventario.gestionar', $_SESSION['permisos']),
+        'has_inventario_crear' => in_array('inventario.crear', $_SESSION['permisos']),
         'controller_response' => $responseJson,
         'db_inserted_record' => $insertedRow
     ], JSON_PRETTY_PRINT);

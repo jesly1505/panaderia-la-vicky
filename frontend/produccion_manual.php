@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('produccion.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -63,7 +63,7 @@ $pageHeader = "Registro de Producción Libre";
                                         </div>
                                         <div id="insumosContainer"></div>
                                     </div>
-                                    <?php if (tiene_permiso('produccion.gestionar')): ?>
+                                    <?php if (tiene_permiso('produccion.crear')): ?>
                                         <div class="d-grid">
                                             <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm">
                                                 <i class="fas fa-industry me-2"></i> Registrar Producción

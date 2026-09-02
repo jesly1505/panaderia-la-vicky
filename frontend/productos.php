@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('productos.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -129,7 +129,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
                         <h5 class="mb-1 fw-bold text-dark">Catálogo de Productos</h5>
                         <p class="text-muted small mb-0" id="productCount">Cargando catálogo...</p>
                     </div>
-                    <?php if (tiene_permiso('productos.gestionar')): ?>
+                    <?php if (tiene_permiso('productos.crear')): ?>
                         <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductoModal">
                             <i class="fas fa-plus me-2"></i>Añadir Producto
                         </button>
@@ -469,7 +469,7 @@ $pageHeader = "Catálogo y Recetas de Productos";
 
                 countBadge.textContent = `Mostrando ${startIndex + 1}–${endIndex} de ${total} productos`;
 
-                const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.gestionar') : true);
+                const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('productos.editar') : true);
                 const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('productos.eliminar') : true);
 
                 pageProducts.forEach(p => {

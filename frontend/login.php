@@ -442,6 +442,13 @@ $remembered_email = isset($_COOKIE['remember_email']) ? $_COOKIE['remember_email
                                 <p class="card-subtitle-text mb-0">Gestión de Panadería Profesional</p>
                             </div>
 
+                            <?php if (filter_var(getenv('APP_MAINTENANCE') ?: false, FILTER_VALIDATE_BOOLEAN)): ?>
+                                <div class="alert alert-warning small text-center py-2 mb-4">
+                                    <i class="fas fa-screwdriver-wrench me-2"></i>
+                                    El sistema se encuentra en <strong>mantenimiento</strong>. Solo los administradores pueden acceder.
+                                </div>
+                            <?php endif; ?>
+
                             <!-- Login Form -->
                             <form id="loginForm">
                                 <!-- Email -->

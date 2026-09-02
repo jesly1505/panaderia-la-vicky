@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('ventas.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -74,7 +74,7 @@ $end_date = $_GET['end_date'] ?? '';
                                         <button class="btn btn-sm btn-outline-secondary shadow-sm text-nowrap" onclick="loadSalesHistory(currentPage)">
                                             <i class="fas fa-sync-alt me-1"></i> Actualizar
                                         </button>
-                                        <?php if (tiene_permiso('ventas.gestionar')): ?>
+                                        <?php if (tiene_permiso('ventas.crear')): ?>
                                             <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm text-nowrap" onclick="openClientSelectionModal()">
                                                 <i class="fas fa-plus me-1"></i>Nueva Venta
                                             </button>
@@ -480,9 +480,11 @@ $end_date = $_GET['end_date'] ?? '';
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <a href="#" id="btnPrintInvoice" target="_blank" class="btn btn-outline-primary">
-                        <i class="fas fa-print me-1"></i> Imprimir Factura
-                    </a>
+                    <?php if (tiene_permiso('ventas.ver_factura')): ?>
+                        <a href="#" id="btnPrintInvoice" target="_blank" class="btn btn-outline-primary">
+                            <i class="fas fa-print me-1"></i> Imprimir Factura
+                        </a>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -504,9 +506,11 @@ $end_date = $_GET['end_date'] ?? '';
                         <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">
                             <i class="fas fa-times me-1"></i> Cerrar
                         </button>
-                        <button type="button" class="btn btn-primary px-4 fw-bold" id="btnPrintFacturaAfter">
-                            <i class="fas fa-print me-1"></i> Imprimir Factura
-                        </button>
+                        <?php if (tiene_permiso('ventas.ver_factura')): ?>
+                            <button type="button" class="btn btn-primary px-4 fw-bold" id="btnPrintFacturaAfter">
+                                <i class="fas fa-print me-1"></i> Imprimir Factura
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -534,7 +538,7 @@ $end_date = $_GET['end_date'] ?? '';
             await loadVendedoresSelect();
             await loadSalesHistory(1);
 
-            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.crear')) {
                 const btnCheckout = document.getElementById('btnCheckout');
                 if (btnCheckout) {
                     btnCheckout.disabled = true;
@@ -954,7 +958,7 @@ $end_date = $_GET['end_date'] ?? '';
         }
 
         async function processCheckout() {
-            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.crear')) {
                 showAlert('No cuenta con el permiso requerido para registrar ventas.', 'warning');
                 return;
             }
@@ -1031,19 +1035,23 @@ $end_date = $_GET['end_date'] ?? '';
                     await loadSalesHistory(1);
 
                     // Mostrar modal para decidir si imprimir la factura
+                    const puedeFacturaAfter = (typeof tienePermiso === 'function' ? tienePermiso('ventas.ver_factura') : true);
                     const actionModalEl = document.getElementById('facturaActionModal');
                     if (actionModalEl && data.venta_id) {
                         document.getElementById('facturaActionNum').textContent = '#' + data.venta_id;
-                        document.getElementById('btnPrintFacturaAfter').onclick = () => {
-                            window.open(`factura.php?id=${data.venta_id}`, '_blank');
-                            bootstrap.Modal.getInstance(actionModalEl)?.hide();
-                        };
+                        const btnPrintAfter = document.getElementById('btnPrintFacturaAfter');
+                        if (btnPrintAfter) {
+                            btnPrintAfter.onclick = () => {
+                                window.open(`factura.php?id=${data.venta_id}`, '_blank');
+                                bootstrap.Modal.getInstance(actionModalEl)?.hide();
+                            };
+                        }
                         // Espera a que termine de ocultarse la modal de la venta
                         setTimeout(() => {
                             const actionModal = bootstrap.Modal.getInstance(actionModalEl);
                             if (actionModal) actionModal.show();
                         }, 350);
-                    } else {
+                    } else if (puedeFacturaAfter && data.venta_id) {
                         window.open(`factura.php?id=${data.venta_id}`, '_blank');
                     }
                 } else {
@@ -1166,7 +1174,9 @@ $end_date = $_GET['end_date'] ?? '';
                         if (v.estado === 'cancelado') statusBadge = '<span class="badge bg-danger">Cancelada</span>';
                         else if (v.estado === 'pendiente') statusBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
 
-                        const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('ventas.gestionar') : true);
+                        const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('ventas.editar') : true);
+                        const puedeAnular = (typeof tienePermiso === 'function' ? tienePermiso('ventas.eliminar') : true);
+                        const puedeFactura = (typeof tienePermiso === 'function' ? tienePermiso('ventas.ver_factura') : true);
 
                         tbody.innerHTML += `
                             <tr>
@@ -1182,10 +1192,10 @@ $end_date = $_GET['end_date'] ?? '';
                                     <button class="btn btn-sm btn-outline-info me-1" onclick="viewSaleDetails(${v.id})" title="Ver Detalle">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <a href="factura.php?id=${v.id}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Factura">
+                                    ${puedeFactura ? `<a href="factura.php?id=${v.id}" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Factura">
                                         <i class="fas fa-print"></i>
-                                    </a>
-                                    ${v.estado !== 'cancelado' && puedeGestionar ? `
+                                    </a>` : ''}
+                                    ${v.estado !== 'cancelado' && puedeAnular ? `
                                         <button class="btn btn-sm btn-outline-danger" onclick="cancelSale(${v.id})" title="Anular">
                                             <i class="fas fa-ban"></i>
                                         </button>
@@ -1265,7 +1275,8 @@ $end_date = $_GET['end_date'] ?? '';
                     document.getElementById('dtImpuestos').textContent = formatCurrency(v.impuestos || 0);
                     document.getElementById('dtTotal').textContent = formatCurrency(v.total);
 
-                    document.getElementById('btnPrintInvoice').href = `factura.php?id=${v.id}`;
+                    const btnPrintInvoice = document.getElementById('btnPrintInvoice');
+                    if (btnPrintInvoice) btnPrintInvoice.href = `factura.php?id=${v.id}`;
 
                     const modal = new bootstrap.Modal(document.getElementById('saleDetailsModal'));
                     modal.show();
@@ -1276,7 +1287,7 @@ $end_date = $_GET['end_date'] ?? '';
         }
 
         async function cancelSale(id) {
-            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.gestionar')) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('ventas.eliminar')) {
                 showAlert('No dispone de permisos para anular ventas.', 'warning');
                 return;
             }

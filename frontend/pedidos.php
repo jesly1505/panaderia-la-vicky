@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('pedidos.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -249,7 +249,7 @@ $pageHeader = "Gestión de Pedidos";
             document.getElementById('fechaEntrega').value = tomorrow.toISOString().split('T')[0];
             document.getElementById('horaEntrega').value = '10:00';
 
-            if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.gestionar')) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.crear')) {
                 const btn = document.getElementById('btnProcesarPedido');
                 if (btn) btn.disabled = true;
             }
@@ -362,7 +362,7 @@ $pageHeader = "Gestión de Pedidos";
         }
 
         async function procesarPedido() {
-            if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.gestionar')) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('pedidos.crear')) {
                 showAlert('No dispone de permisos para registrar pedidos.', 'warning');
                 return;
             }
@@ -458,7 +458,7 @@ $pageHeader = "Gestión de Pedidos";
 
                 if (data.success && data.data && data.data.length > 0) {
                     pedidosData = data.data;
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.gestionar') : true);
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('pedidos.editar') : true);
 
                     data.data.forEach((p, index) => {
                         const rowNumber = offset + index + 1;

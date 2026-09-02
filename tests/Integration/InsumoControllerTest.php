@@ -24,7 +24,7 @@ class InsumoControllerTest extends TestCase {
             'usuario_id' => 1,
             'rol' => 'Administrador',
             'rol_id' => 1,
-            'permisos' => ['inventario.ver', 'inventario.gestionar', 'inventario.eliminar'],
+            'permisos' => ['inventario.ver', 'inventario.crear', 'inventario.editar', 'inventario.eliminar'],
         ];
     }
 

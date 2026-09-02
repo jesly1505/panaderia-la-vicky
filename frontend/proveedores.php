@@ -3,7 +3,7 @@
 require_once __DIR__ . '/includes/auth_guard.php';
 
 if (!tiene_permiso('proveedores.ver')) {
-    header("Location: index.php");
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -43,7 +43,7 @@ $pageHeader = "Gestión de Proveedores";
                                 </div>
 
                                 <!-- Botón Nuevo Proveedor -->
-                                <?php if (tiene_permiso('proveedores.gestionar')): ?>
+                                <?php if (tiene_permiso('proveedores.crear')): ?>
                                     <button class="btn btn-success shadow-sm fw-bold px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#addProveedorModal">
                                         <i class="fas fa-plus me-1"></i>Nuevo Proveedor
                                     </button>
@@ -206,7 +206,8 @@ $pageHeader = "Gestión de Proveedores";
 
                 if (data.success && data.data && data.data.length > 0) {
                     proveedoresData = data.data;
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.gestionar') : true);
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.editar') : true);
+                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('proveedores.eliminar') : true);
                     const offset = (page - 1) * itemsPerPage;
 
                     data.data.forEach((p, index) => {
@@ -219,7 +220,8 @@ $pageHeader = "Gestión de Proveedores";
                                 <td class="small">${escapeHtml(p.telefono || 'N/A')}</td>
                                 <td class="small text-muted">${escapeHtml(p.email || 'Sin email')}</td>
                                 <td class="text-end pe-4">
-                                    ${puedeGestionar ? TA.edit(`openEditModal(${p.id})`) + TA.remove(`deleteProveedor(${p.id})`) : ''}
+                                    ${puedeGestionar ? TA.edit(`openEditModal(${p.id})`) : ''}
+                                    ${puedeEliminar ? TA.remove(`deleteProveedor(${p.id})`) : ''}
                                 </td>
                             </tr>
                         `;
@@ -302,6 +304,10 @@ $pageHeader = "Gestión de Proveedores";
         });
 
         async function deleteProveedor(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('proveedores.eliminar')) {
+                showAlert('No dispone de permisos para eliminar proveedores.', 'warning');
+                return;
+            }
             if (!(await showConfirm('¿Está seguro de eliminar este proveedor?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_proveedor', {

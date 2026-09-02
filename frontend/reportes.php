@@ -2,8 +2,8 @@
 // frontend/reportes.php
 require_once __DIR__ . '/includes/auth_guard.php';
 
-if (!tiene_permiso('reportes.ver', 'gastos.ver', 'gastos.gestionar')) {
-    header("Location: index.php");
+if (!tiene_permiso('reportes.ver', 'gastos.ver', 'gastos.crear', 'gastos.editar')) {
+    header("Location: error.php?code=403");
     exit();
 }
 
@@ -153,12 +153,12 @@ $pageHeader = "Reportes y Estadísticas";
                     <?php endforeach; ?>
 
                     <!-- Gastos por fecha (solo para quien tiene permiso) -->
-                    <?php if (tiene_permiso('gastos.ver', 'gastos.gestionar')): ?>
+                    <?php if (tiene_permiso('gastos.ver', 'gastos.crear', 'gastos.editar', 'gastos.eliminar')): ?>
                         <div class="col-12 mt-4">
                             <div class="card border-0 shadow-sm">
                                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                                     <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-minus-circle me-2 text-danger"></i>Registro de Gastos</h5>
-                                    <?php if (tiene_permiso('gastos.gestionar')): ?>
+                                    <?php if (tiene_permiso('gastos.crear')): ?>
                                         <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addGastoModal">
                                             <i class="fas fa-plus me-1"></i> Nuevo Gasto
                                         </button>
@@ -173,7 +173,7 @@ $pageHeader = "Reportes y Estadísticas";
                                                     <th>Categoría</th>
                                                     <th>Descripción</th>
                                                     <th>Monto</th>
-                                                    <?php if (tiene_permiso('gastos.gestionar')): ?><th>Acción</th><?php endif; ?>
+                                                    <?php if (tiene_permiso('gastos.editar') || tiene_permiso('gastos.eliminar')): ?><th>Acción</th><?php endif; ?>
                                                 </tr>
                                             </thead>
                                             <tbody id="gastosTableBody">
@@ -412,7 +412,8 @@ $pageHeader = "Reportes y Estadísticas";
                 tbody.innerHTML = '';
 
                 if (data.success && data.data && data.data.length > 0) {
-                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('gastos.gestionar') : true);
+                    const puedeGestionar = (typeof tienePermiso === 'function' ? tienePermiso('gastos.editar') : true);
+                    const puedeEliminar = (typeof tienePermiso === 'function' ? tienePermiso('gastos.eliminar') : true);
                     data.data.forEach(g => {
                         tbody.innerHTML += `
                             <tr>
@@ -420,10 +421,10 @@ $pageHeader = "Reportes y Estadísticas";
                                 <td><span class="badge bg-light text-dark border">${g.categoria}</span></td>
                                 <td class="text-muted small">${g.descripcion || '-'}</td>
                                 <td class="fw-bold text-danger">${formatCurrency(g.monto)}</td>
-                                ${puedeGestionar ? `
+                                ${puedeGestionar || puedeEliminar ? `
                                     <td>
-                                        ${TA.edit(`openEditGastoModal(${g.id}, '${escJs(g.fecha)}', '${escJs(g.categoria)}', ${parseFloat(g.monto)}, '${escJs(g.descripcion || '')}')`)}
-                                        ${TA.remove(`deleteGasto(${g.id})`, 'Eliminar gasto')}
+                                        ${puedeGestionar ? TA.edit(`openEditGastoModal(${g.id}, '${escJs(g.fecha)}', '${escJs(g.categoria)}', ${parseFloat(g.monto)}, '${escJs(g.descripcion || '')}')`) : ''}
+                                        ${puedeEliminar ? TA.remove(`deleteGasto(${g.id})`, 'Eliminar gasto') : ''}
                                     </td>
                                 ` : ''}
                             </tr>
@@ -431,7 +432,7 @@ $pageHeader = "Reportes y Estadísticas";
                     });
                     renderPagination(data.pagination.total, gastosLimit, gastosPage, 'gastosPagination', 'goGastosPage');
                 } else {
-                    const cols = (typeof tienePermiso === 'function' && tienePermiso('gastos.gestionar')) ? 5 : 4;
+                    const cols = (typeof tienePermiso === 'function' && (tienePermiso('gastos.editar') || tienePermiso('gastos.eliminar'))) ? 5 : 4;
                     tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-4 text-muted">No hay gastos registrados para el periodo seleccionado.</td></tr>`;
                     document.getElementById('gastosPagination').innerHTML = '';
                 }
@@ -466,6 +467,10 @@ $pageHeader = "Reportes y Estadísticas";
         });
 
         async function deleteGasto(id) {
+            if (typeof tienePermiso === 'function' && !tienePermiso('gastos.eliminar')) {
+                showAlert('No dispone de permisos para eliminar gastos.', 'warning');
+                return;
+            }
             if (!(await showConfirm('¿Está seguro de eliminar este gasto?'))) return;
             try {
                 const res = await fetch('../backend/api.php?route=delete_gasto', {

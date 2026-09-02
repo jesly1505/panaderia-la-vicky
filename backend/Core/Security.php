@@ -31,6 +31,28 @@ class Security {
         return in_array($permiso, $_SESSION['permisos'] ?? [], true);
     }
 
+    /** True si el modo mantenimiento está activo (APP_MAINTENANCE en .env). */
+    public function isMaintenance(): bool {
+        return filter_var(getenv('APP_MAINTENANCE') ?: false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /** Bloquea el acceso a usuarios no administradores durante el mantenimiento.
+     *  Devuelve 503 JSON. Los administradores siempre pueden operar. */
+    public function requireMaintenanceOpen(): void {
+        if (!$this->isMaintenance()) {
+            return;
+        }
+        $rol = $_SESSION['rol'] ?? '';
+        $rolId = (int)($_SESSION['rol_id'] ?? 0);
+        if ($rol === 'Administrador' || $rolId === 1) {
+            return;
+        }
+        http_response_code(503);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Sistema en mantenimiento. Intente más tarde.']);
+        exit;
+    }
+
     /** Exige una sesión activa. Devuelve 401 JSON si no la hay. */
     public function requireLogin(): void {
         if ($this->isLoggedIn()) {

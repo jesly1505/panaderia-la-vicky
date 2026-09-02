@@ -16,3 +16,10 @@ if (!isset($_SESSION['usuario_id']) && !isset($_SESSION['usuario'])) {
     header("Location: login.php");
     exit();
 }
+
+// Mantenimiento global del sistema: solo el administrador puede operar.
+$maintenance = filter_var(getenv('APP_MAINTENANCE') ?: false, FILTER_VALIDATE_BOOLEAN);
+if ($maintenance && !tiene_permiso('perfil.gestionar')) {
+    header("Location: error.php?code=503");
+    exit();
+}
